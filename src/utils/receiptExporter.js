@@ -1,4 +1,5 @@
 import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 /**
  * Captures an HTML element and exports as PNG or JPG using an isolated off-screen container.
@@ -81,7 +82,7 @@ export async function exportElementAsImage(element, fileName = 'receipt', format
       scale: 3, // High DPI for crystal clear text & icons
       useCORS: true,
       allowTaint: true,
-      backgroundColor: null,
+      backgroundColor: '#ffffff',
       logging: false,
       width: fullWidth,
       height: fullHeight,
@@ -103,6 +104,112 @@ export async function exportElementAsImage(element, fileName = 'receipt', format
     return dataUrl;
   } catch (err) {
     console.error('Image export error:', err);
+    throw err;
+  } finally {
+    if (document.body.contains(container)) {
+      document.body.removeChild(container);
+    }
+  }
+}
+
+/**
+ * Captures an HTML element and exports as a crystal-clear PDF document using jsPDF
+ * @param {HTMLElement} element 
+ * @param {string} fileName 
+ */
+export async function exportElementAsPDF(element, fileName = 'receipt_report') {
+  if (!element) return;
+
+  // Ensure fonts are fully loaded
+  if (document.fonts && document.fonts.ready) {
+    try {
+      await document.fonts.ready;
+    } catch (e) {
+      console.warn('Font loading wait skipped:', e);
+    }
+  }
+
+  const clone = element.cloneNode(true);
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  container.style.zIndex = '-9999';
+  container.style.width = 'max-content';
+  container.style.height = 'max-content';
+  container.style.overflow = 'visible';
+  container.style.backgroundColor = 'transparent';
+  container.style.pointerEvents = 'none';
+
+  clone.style.margin = '0';
+  clone.style.maxHeight = 'none';
+  clone.style.height = 'auto';
+  clone.style.overflow = 'visible';
+  clone.style.transform = 'none';
+
+  const allNodes = clone.querySelectorAll('*');
+  allNodes.forEach((node) => {
+    node.style.overflow = 'visible';
+    node.style.textOverflow = 'clip';
+    if (node.tagName === 'svg' || node.tagName === 'rect' || node.tagName === 'text' || node.tagName === 'path' || (node.classList && node.classList.contains('status-badge'))) {
+      return;
+    }
+    if (node.tagName === 'SPAN' || node.tagName === 'P' || node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'H3' || node.tagName === 'H4') {
+      node.style.lineHeight = '1.6';
+      node.style.letterSpacing = 'normal';
+      node.style.paddingTop = '1px';
+      node.style.paddingBottom = '2px';
+    }
+  });
+
+  container.appendChild(clone);
+  document.body.appendChild(container);
+
+  try {
+    const images = Array.from(clone.querySelectorAll('img'));
+    await Promise.all(images.map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise(resolve => {
+        img.onload = resolve;
+        img.onerror = resolve;
+      });
+    }));
+
+    const fullWidth = clone.offsetWidth || 350;
+    const fullHeight = clone.scrollHeight || clone.offsetHeight || 600;
+
+    const canvas = await html2canvas(clone, {
+      scale: 3,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      width: fullWidth,
+      height: fullHeight,
+      scrollX: 0,
+      scrollY: 0
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+
+    // Standard width in mm for a clean receipt slip PDF (105mm ~ A6 slip)
+    const pdfWidth = 105;
+    const pdfHeight = (imgHeight * pdfWidth) / imgWidth;
+
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: [pdfWidth, pdfHeight]
+    });
+
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+    pdf.save(`${fileName}.pdf`);
+
+    return pdf;
+  } catch (err) {
+    console.error('PDF export error:', err);
     throw err;
   } finally {
     if (document.body.contains(container)) {
@@ -178,7 +285,7 @@ export async function shareToWhatsApp(element, captionText = '') {
       scale: 2.5,
       useCORS: true,
       allowTaint: true,
-      backgroundColor: null,
+      backgroundColor: '#ffffff',
       logging: false,
       width: fullWidth,
       height: fullHeight,
