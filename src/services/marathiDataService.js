@@ -224,13 +224,12 @@ export const marathiDataService = {
     const trimmed = (newName || '').trim();
     if (!trimmed) throw new Error('प्रकाराचे नाव आवश्यक आहे.');
 
-    if (isSupabaseConfigured() && userId && !userId.startsWith('demo-')) {
+    if (isSupabaseConfigured()) {
       try {
         const { data, error } = await supabase
           .from('categories')
           .update({ name: trimmed, updated_at: new Date().toISOString() })
           .eq('id', categoryId)
-          .eq('user_id', userId)
           .select()
           .single();
 
@@ -241,11 +240,12 @@ export const marathiDataService = {
       }
     }
 
-    const categories = getLocalData(`categories_${userId}`, []);
+    const categories = getLocalData(`categories_shared`, getLocalData(`categories_${userId}`, []));
     const idx = categories.findIndex(c => c.id === categoryId);
     if (idx !== -1) {
       categories[idx].name = trimmed;
-      setLocalData(`categories_${userId}`, categories);
+      setLocalData(`categories_shared`, categories);
+      if (userId) setLocalData(`categories_${userId}`, categories);
     }
     return { id: categoryId, name: trimmed };
   },
@@ -258,13 +258,12 @@ export const marathiDataService = {
       throw new Error(`या प्रकारात ${count} खर्च नोंदवलेले आहेत. आधी ते खर्च बदला किंवा हटवा.`);
     }
 
-    if (isSupabaseConfigured() && userId && !userId.startsWith('demo-')) {
+    if (isSupabaseConfigured()) {
       try {
         const { error } = await supabase
           .from('categories')
           .delete()
-          .eq('id', categoryId)
-          .eq('user_id', userId);
+          .eq('id', categoryId);
 
         if (error) throw error;
         return true;
@@ -273,9 +272,10 @@ export const marathiDataService = {
       }
     }
 
-    const categories = getLocalData(`categories_${userId}`, []);
+    const categories = getLocalData(`categories_shared`, getLocalData(`categories_${userId}`, []));
     const filtered = categories.filter(c => c.id !== categoryId);
-    setLocalData(`categories_${userId}`, filtered);
+    setLocalData(`categories_shared`, filtered);
+    if (userId) setLocalData(`categories_${userId}`, filtered);
     return true;
   },
 
