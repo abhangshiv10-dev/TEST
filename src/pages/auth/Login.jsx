@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Phone, Lock, Loader2, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAuth, ALLOWED_MOBILES } from '../../contexts/AuthContext';
+import loginBg from '../../assets/login-bg.png';
 
 export default function Login() {
   const [mobile, setMobile] = useState('');
@@ -60,8 +61,14 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 selection:bg-slate-900 selection:text-white">
-      <div className="w-full max-w-md glass-card rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4 selection:bg-slate-900 selection:text-white relative bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url(${loginBg})` }}
+    >
+      {/* Subtle backdrop tint overlay for perfect contrast */}
+      <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px] pointer-events-none" />
+
+      <div className="w-full max-w-md bg-white/85 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/60 space-y-6 relative z-10">
         {/* Brand Header */}
         <div className="text-center space-y-2">
           <div className="w-14 h-14 rounded-2xl bg-slate-900 text-white mx-auto flex items-center justify-center text-2xl shadow-lg ring-4 ring-slate-900/5">
