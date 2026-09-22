@@ -77,12 +77,12 @@ export default function PhotoUploader({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="w-full py-4 px-4 rounded-xl border-2 border-dashed border-slate-200 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-100/50 transition-colors flex flex-col items-center justify-center gap-1.5 text-slate-500 hover:text-slate-800"
+          className="w-full py-3 px-3 rounded-xl border-2 border-dashed border-slate-200 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-100/50 transition-colors flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-800"
         >
-          <div className="w-8 h-8 rounded-full bg-white shadow-xs border border-slate-200 flex items-center justify-center text-slate-600">
-            <Camera className="w-4 h-4" />
+          <div className="w-7 h-7 rounded-full bg-white shadow-xs border border-slate-200 flex items-center justify-center text-slate-600">
+            <Camera className="w-3.5 h-3.5" />
           </div>
-          <div className="text-xs font-medium">
+          <div className="text-xs font-semibold text-slate-700">
             + फोटो किंवा बिल जोडा
           </div>
           <div className="text-[10px] text-slate-400">

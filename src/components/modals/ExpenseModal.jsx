@@ -103,12 +103,12 @@ export default function ExpenseModal({
   };
 
   const modalContent = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="relative max-w-lg w-full bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="relative max-w-lg w-full bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh] animate-in zoom-in-95 duration-150">
         {/* Fixed Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-white shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 sm:px-5 sm:py-3.5 border-b border-slate-100 bg-white shrink-0">
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
+            <h2 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
               {expenseToEdit ? 'खर्च संपादित करा' : 'नवीन खर्च नोंदवा'}
             </h2>
             <p className="text-[11px] text-slate-500 font-normal mt-0.5">
@@ -125,7 +125,7 @@ export default function ExpenseModal({
         </div>
 
         {/* Scrollable Form Body */}
-        <form onSubmit={handleSave} id="expense-modal-form" className="p-5 overflow-y-auto flex-1 space-y-4">
+        <form onSubmit={handleSave} id="expense-modal-form" className="p-3.5 sm:p-5 overflow-y-auto overscroll-contain flex-1 space-y-3 sm:space-y-4">
           {/* 1. Category Searchable Combobox */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -165,7 +165,7 @@ export default function ExpenseModal({
                   setErrors((prev) => ({ ...prev, amount: null }));
                 }}
                 placeholder="उदा. 8000"
-                className={`w-full pl-8 pr-3.5 py-2.5 bg-white border rounded-xl text-base font-bold text-slate-900 focus:outline-none transition-colors ${
+                className={`w-full pl-8 pr-3.5 py-2 sm:py-2.5 bg-white border rounded-xl text-sm sm:text-base font-bold text-slate-900 focus:outline-none transition-colors ${
                   errors.amount ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10'
                 }`}
               />
@@ -177,33 +177,33 @@ export default function ExpenseModal({
 
           {/* 3. Payment Status (पूर्ण / बाकी) */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
               पेमेंट स्थिती (Payment Status)
             </label>
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setPaymentStatus('Paid')}
-                className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`py-2 px-2 sm:px-3 rounded-xl border text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer min-h-[38px] ${
                   paymentStatus === 'Paid'
                     ? 'bg-emerald-50 border-emerald-500 text-emerald-800 ring-2 ring-emerald-500/20 shadow-2xs'
                     : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span>पूर्ण (Completed)</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                <span className="truncate">पूर्ण (Completed)</span>
               </button>
               <button
                 type="button"
                 onClick={() => setPaymentStatus('Pending')}
-                className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`py-2 px-2 sm:px-3 rounded-xl border text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer min-h-[38px] ${
                   paymentStatus === 'Pending'
                     ? 'bg-amber-50 border-amber-500 text-amber-900 ring-2 ring-amber-500/20 shadow-2xs'
                     : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
-                <span>बाकी (Pending)</span>
+                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                <span className="truncate">बाकी (Pending)</span>
               </button>
             </div>
           </div>
@@ -222,7 +222,7 @@ export default function ExpenseModal({
                   setExpenseDate(e.target.value);
                   setErrors((prev) => ({ ...prev, date: null }));
                 }}
-                className="w-full pl-9 pr-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-slate-900 cursor-pointer"
+                className="w-full pl-9 pr-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-slate-900 cursor-pointer min-h-[38px]"
               />
             </div>
             {errors.date && (
@@ -230,7 +230,7 @@ export default function ExpenseModal({
             )}
           </div>
 
-          {/* 4. Description Notes */}
+          {/* 5. Description Notes */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               तपशील (वैकल्पिक)
@@ -242,12 +242,12 @@ export default function ExpenseModal({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="उदा. 20 पोती सिमेंट, 2 ट्रॉली वाळू"
-                className="w-full pl-9 pr-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-slate-900 resize-none"
+                className="w-full pl-9 pr-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-slate-900 resize-none min-h-[52px]"
               />
             </div>
           </div>
 
-          {/* 5. Photo Upload */}
+          {/* 6. Photo Upload */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               पावती / फोटो (वैकल्पिक)
@@ -270,11 +270,11 @@ export default function ExpenseModal({
         </form>
 
         {/* Fixed Sticky Footer */}
-        <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 border-t border-slate-100 bg-slate-50 shrink-0">
+        <div className="flex items-center justify-end gap-2.5 px-3.5 py-3 sm:px-5 sm:py-3.5 border-t border-slate-100 bg-slate-50 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/70 rounded-xl transition-colors"
+            className="flex-1 sm:flex-none px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/70 rounded-xl transition-colors text-center border border-slate-200 sm:border-transparent"
           >
             रद्द करा
           </button>
@@ -282,11 +282,11 @@ export default function ExpenseModal({
             type="submit"
             form="expense-modal-form"
             disabled={saving}
-            className="px-5 py-2 text-xs sm:text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+            className="flex-1 sm:flex-none px-5 py-2 text-xs sm:text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 whitespace-nowrap"
           >
             {saving ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
                 <span>जतन करत आहे...</span>
               </>
             ) : (
