@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }) => {
       throw new Error('पासवर्ड चुकीचा आहे. कृपया पुन्हा तपासा.');
     }
 
-    const authUser = {
+    let authUser = {
       id: `user-${cleanMobile}`,
       mobile: cleanMobile,
       email: `${cleanMobile}@gharbhandkam.com`,
@@ -65,6 +65,40 @@ export const AuthProvider = ({ children }) => {
         mobile: cleanMobile
       }
     };
+
+    if (isSupabaseConfigured()) {
+      const email = `mobile_${cleanMobile}@gharbhandkam.com`;
+      const supabasePassword = `GharPass${COMMON_PASSWORD}!`;
+
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password: supabasePassword
+        });
+
+        if (error) {
+          // If user doesn't exist yet in Supabase Auth, register them automatically
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email,
+            password: supabasePassword,
+            options: {
+              data: {
+                full_name: `घरमालक (${cleanMobile})`,
+                mobile: cleanMobile
+              }
+            }
+          });
+
+          if (!signUpError && signUpData?.user) {
+            authUser = signUpData.user;
+          }
+        } else if (data?.user) {
+          authUser = data.user;
+        }
+      } catch (err) {
+        console.warn('Supabase mobile auth bridge:', err);
+      }
+    }
 
     localStorage.setItem('homebuild_marathi_auth_user', JSON.stringify(authUser));
     setUser(authUser);

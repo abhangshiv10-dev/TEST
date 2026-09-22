@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useBudget } from '../contexts/BudgetContext';
+import { useAuth } from '../contexts/AuthContext';
 import { formatINR } from '../utils/marathiCurrency';
 import { getCategoryIconMeta } from '../utils/categoryIcons';
 import ExpenseCard from '../components/common/ExpenseCard';
@@ -26,11 +27,13 @@ import BudgetModal from '../components/modals/BudgetModal';
 import PhotoViewerModal from '../components/modals/PhotoViewerModal';
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const {
     summary,
     expenses,
     loading,
     isFirstTime,
+    setIsFirstTime,
     updateBudget,
     deleteExpense
   } = useBudget();
@@ -594,8 +597,20 @@ export default function Dashboard() {
         isOpen={budgetModalOpen || isFirstTime}
         currentBudget={totalBudget}
         isFirstTime={isFirstTime}
-        onClose={() => setBudgetModalOpen(false)}
-        onSave={updateBudget}
+        onClose={() => {
+          setBudgetModalOpen(false);
+          setIsFirstTime(false);
+          if (user?.id) {
+            localStorage.setItem(`budget_prompt_dismissed_${user.id}`, 'true');
+          }
+        }}
+        onSave={async (newBudget) => {
+          await updateBudget(newBudget);
+          setIsFirstTime(false);
+          if (user?.id) {
+            localStorage.setItem(`budget_prompt_dismissed_${user.id}`, 'true');
+          }
+        }}
       />
 
       <PhotoViewerModal

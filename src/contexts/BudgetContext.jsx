@@ -38,8 +38,9 @@ export const BudgetProvider = ({ children }) => {
       setCategories(cats);
       setExpenses(expList);
 
-      // Check if budget is not set yet
-      if (!sum.totalBudget || sum.totalBudget === 0) {
+      // Check if budget is not set yet and hasn't been dismissed by user
+      const hasDismissed = localStorage.getItem(`budget_prompt_dismissed_${user.id}`);
+      if ((!sum.totalBudget || sum.totalBudget === 0) && !hasDismissed) {
         setIsFirstTime(true);
       } else {
         setIsFirstTime(false);
