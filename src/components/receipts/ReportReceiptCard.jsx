@@ -88,6 +88,7 @@ export const ReportReceiptCard = forwardRef(({
         boxSizing: 'border-box',
         width: '348px',
         backgroundColor: '#ffffff',
+        borderRadius: '28px',
         fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif'
       }}
     >

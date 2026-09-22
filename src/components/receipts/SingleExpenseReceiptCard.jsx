@@ -92,11 +92,13 @@ export const SingleExpenseReceiptCard = forwardRef(({
   return (
     <div
       ref={ref}
-      className="receipt-capture-root w-[340px] sm:w-[350px] mx-auto bg-[#F2FBF6] rounded-[28px] overflow-hidden shadow-xl border border-emerald-100 flex flex-col font-sans text-slate-800"
+      className="receipt-capture-root w-[340px] sm:w-[350px] mx-auto bg-[#F2FBF6] rounded-[32px] overflow-hidden shadow-xl border border-emerald-100 flex flex-col font-sans text-slate-800"
       style={{
         boxSizing: 'border-box',
         width: '344px',
         backgroundColor: '#F2FBF6',
+        borderRadius: '32px',
+        overflow: 'hidden',
         fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif'
       }}
     >
@@ -104,8 +106,10 @@ export const SingleExpenseReceiptCard = forwardRef(({
       <div 
         className="relative bg-gradient-to-r from-[#059669] via-[#10B981] to-[#0D9488] pt-4 pb-8 px-4 text-white"
         style={{
+          borderTopLeftRadius: '31px',
+          borderTopRightRadius: '31px',
           borderBottomLeftRadius: '0px',
-          borderBottomRightRadius: '50px'
+          borderBottomRightRadius: '56px'
         }}
       >
         <div className="flex items-start justify-between">
