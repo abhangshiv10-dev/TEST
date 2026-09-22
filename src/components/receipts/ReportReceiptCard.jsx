@@ -192,18 +192,18 @@ export const ReportReceiptCard = forwardRef(({
                   >
                     {formatINR(item.amount)}
                   </span>
-                  <div className="mt-1" style={{ overflow: 'visible' }}>
+                  <div className="mt-0.5" style={{ overflow: 'visible' }}>
                     {isCompleted ? (
                       <span 
-                        className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[#DEF7EC] text-[#03543F]"
-                        style={{ lineHeight: '1.4' }}
+                        className="inline-block px-1.5 py-[1px] rounded-full text-[8px] font-bold bg-[#E6F9EE] text-[#059669] border border-[#A7F3D0]/70"
+                        style={{ lineHeight: '1.2' }}
                       >
                         Completed
                       </span>
                     ) : (
                       <span 
-                        className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[#FEF08A] text-[#854D0E]"
-                        style={{ lineHeight: '1.4' }}
+                        className="inline-block px-1.5 py-[1px] rounded-full text-[8px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]/70"
+                        style={{ lineHeight: '1.2' }}
                       >
                         Pending
                       </span>
