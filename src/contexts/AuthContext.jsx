@@ -5,6 +5,9 @@ const AuthContext = createContext({});
 
 export const useAuth = () => useContext(AuthContext);
 
+export const ALLOWED_MOBILES = ['7499563202', '8446887819', '8830156972', '8180852939'];
+export const COMMON_PASSWORD = '1234';
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -12,11 +15,10 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Check saved session
     const checkUser = async () => {
-      // 1. Check local demo session
-      const demoUser = localStorage.getItem('homebuild_marathi_auth_user');
-      if (demoUser) {
+      const savedUser = localStorage.getItem('homebuild_marathi_auth_user');
+      if (savedUser) {
         try {
-          setUser(JSON.parse(demoUser));
+          setUser(JSON.parse(savedUser));
           setLoading(false);
           return;
         } catch {
@@ -24,18 +26,12 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
-      // 2. Check Supabase session
       if (isSupabaseConfigured()) {
         try {
           const { data: { session } } = await supabase.auth.getSession();
-          setUser(session?.user || null);
-
-          const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user || null);
-          });
-
-          setLoading(false);
-          return () => subscription.unsubscribe();
+          if (session?.user) {
+            setUser(session.user);
+          }
         } catch (err) {
           console.warn('Supabase auth error:', err.message);
         }
@@ -47,54 +43,32 @@ export const AuthProvider = ({ children }) => {
     checkUser();
   }, []);
 
-  // 1-Click Demo Login
-  const loginDemo = () => {
-    const mockUser = {
-      id: 'demo-user-1',
-      email: 'demo@gharbhandkam.com',
-      user_metadata: { full_name: 'घरमालक' }
+  // Sign in with Mobile & Password
+  const signInWithMobile = async (mobile, password) => {
+    const cleanMobile = (mobile || '').replace(/\D/g, '').slice(-10);
+    const cleanPassword = (password || '').trim();
+
+    if (!ALLOWED_MOBILES.includes(cleanMobile)) {
+      throw new Error('हा मोबाईल नंबर अधिकृत नाही. कृपया नोंदणीकृत मोबाईल नंबर टाका.');
+    }
+
+    if (cleanPassword !== COMMON_PASSWORD) {
+      throw new Error('पासवर्ड चुकीचा आहे. कृपया पुन्हा तपासा.');
+    }
+
+    const authUser = {
+      id: `user-${cleanMobile}`,
+      mobile: cleanMobile,
+      email: `${cleanMobile}@gharbhandkam.com`,
+      user_metadata: {
+        full_name: `घरमालक (${cleanMobile})`,
+        mobile: cleanMobile
+      }
     };
-    setUser(mockUser);
-    localStorage.setItem('homebuild_marathi_auth_user', JSON.stringify(mockUser));
-    return { success: true };
-  };
 
-  // Sign in with Email/Password
-  const signIn = async (email, password) => {
-    if (!isSupabaseConfigured()) {
-      // Offline fallback
-      return loginDemo();
-    }
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) throw error;
-    setUser(data.user);
-    return data;
-  };
-
-  // Sign up
-  const signUp = async (email, password, fullName) => {
-    if (!isSupabaseConfigured()) {
-      return loginDemo();
-    }
-
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
-
-    if (error) throw error;
-    setUser(data.user);
-    return data;
+    localStorage.setItem('homebuild_marathi_auth_user', JSON.stringify(authUser));
+    setUser(authUser);
+    return authUser;
   };
 
   // Sign out
@@ -113,10 +87,8 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     loading,
-    signIn,
-    signUp,
+    signInWithMobile,
     signOut,
-    loginDemo,
     isAuthenticated: !!user,
   };
 
