@@ -395,8 +395,8 @@ export default function Expenses() {
             : dateFilter === 'this_month'
             ? 'या महिन्यात (This Month)'
             : dateFilter === 'custom' && (customStartDate || customEndDate)
-            ? `${customStartDate || 'सुरुवात'} - ${customEndDate || 'आज'}`
-            : '01 Jan 2026 - 30 Sep 2026'
+            ? `${customStartDate || ''} - ${customEndDate || ''}`.trim()
+            : ''
         }
         onClose={() => setReportReceiptOpen(false)}
       />

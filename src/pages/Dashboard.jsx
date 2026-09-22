@@ -845,7 +845,7 @@ export default function Dashboard() {
         expenses={expenses.slice(0, 10)}
         totalExpenses={summary.totalSpent}
         totalEntries={expenses.length}
-        dateRangeText="01 Jan 2026 - 30 Sep 2026"
+        dateRangeText=""
         onClose={() => setReportReceiptOpen(false)}
       />
     </div>
