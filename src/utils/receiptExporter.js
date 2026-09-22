@@ -46,7 +46,15 @@ export async function exportElementAsImage(element, fileName = 'receipt', format
     node.style.textOverflow = 'clip';
     
     // Apply ample line-height for ascenders and descenders in Marathi & English
-    if (node.tagName === 'SPAN' || node.tagName === 'P' || node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'H3' || node.tagName === 'H4') {
+    if (node.classList && node.classList.contains('status-badge')) {
+      node.style.display = 'inline-flex';
+      node.style.alignItems = 'center';
+      node.style.justifyContent = 'center';
+      node.style.textAlign = 'center';
+      node.style.lineHeight = '1';
+      node.style.padding = '2px 7px';
+      node.style.boxSizing = 'border-box';
+    } else if (node.tagName === 'SPAN' || node.tagName === 'P' || node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'H3' || node.tagName === 'H4') {
       node.style.lineHeight = '1.6';
       node.style.letterSpacing = 'normal';
       node.style.paddingTop = '1px';
@@ -151,7 +159,15 @@ export async function shareToWhatsApp(element, captionText = '') {
   allNodes.forEach((node) => {
     node.style.overflow = 'visible';
     node.style.textOverflow = 'clip';
-    if (node.tagName === 'SPAN' || node.tagName === 'P' || node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'H3' || node.tagName === 'H4') {
+    if (node.classList && node.classList.contains('status-badge')) {
+      node.style.display = 'inline-flex';
+      node.style.alignItems = 'center';
+      node.style.justifyContent = 'center';
+      node.style.textAlign = 'center';
+      node.style.lineHeight = '1';
+      node.style.padding = '2px 7px';
+      node.style.boxSizing = 'border-box';
+    } else if (node.tagName === 'SPAN' || node.tagName === 'P' || node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'H3' || node.tagName === 'H4') {
       node.style.lineHeight = '1.6';
       node.style.letterSpacing = 'normal';
       node.style.paddingTop = '1px';

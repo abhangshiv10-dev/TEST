@@ -193,18 +193,34 @@ export const ReportReceiptCard = forwardRef(({
                   >
                     {formatINR(item.amount)}
                   </span>
-                  <div className="mt-0.5" style={{ overflow: 'visible' }}>
+                  <div className="mt-1" style={{ overflow: 'visible', display: 'flex', justifyContent: 'flex-end' }}>
                     {isCompleted ? (
                       <span 
-                        className="inline-block px-1.5 py-[1px] rounded-full text-[8px] font-bold bg-[#E6F9EE] text-[#059669] border border-[#A7F3D0]/70"
-                        style={{ lineHeight: '1.2' }}
+                        className="status-badge rounded-full text-[8px] font-bold bg-[#E6F9EE] text-[#059669] border border-[#A7F3D0]/70"
+                        style={{ 
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          textAlign: 'center',
+                          lineHeight: '1',
+                          padding: '2px 7px',
+                          boxSizing: 'border-box'
+                        }}
                       >
                         Completed
                       </span>
                     ) : (
                       <span 
-                        className="inline-block px-1.5 py-[1px] rounded-full text-[8px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]/70"
-                        style={{ lineHeight: '1.2' }}
+                        className="status-badge rounded-full text-[8px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]/70"
+                        style={{ 
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          textAlign: 'center',
+                          lineHeight: '1',
+                          padding: '2px 7px',
+                          boxSizing: 'border-box'
+                        }}
                       >
                         Pending
                       </span>
