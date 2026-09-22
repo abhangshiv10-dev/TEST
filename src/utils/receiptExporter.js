@@ -1,7 +1,8 @@
 import html2canvas from 'html2canvas';
 
 /**
- * Captures an HTML element and exports as PNG or JPG with crystal-clear typography
+ * Captures an HTML element and exports as PNG or JPG using an isolated off-screen container
+ * This completely prevents any modal scroll or viewport height clipping!
  * @param {HTMLElement} element 
  * @param {string} fileName 
  * @param {'png'|'jpg'} format 
@@ -9,32 +10,54 @@ import html2canvas from 'html2canvas';
 export async function exportElementAsImage(element, fileName = 'receipt', format = 'png') {
   if (!element) return;
 
+  // Clone the element into an isolated off-screen container
+  const clone = element.cloneNode(true);
+  
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  container.style.zIndex = '-9999';
+  container.style.width = 'max-content';
+  container.style.height = 'max-content';
+  container.style.overflow = 'visible';
+  container.style.backgroundColor = 'transparent';
+  container.style.pointerEvents = 'none';
+  
+  clone.style.margin = '0';
+  clone.style.maxHeight = 'none';
+  clone.style.height = 'auto';
+  clone.style.overflow = 'visible';
+  clone.style.transform = 'none';
+  
+  container.appendChild(clone);
+  document.body.appendChild(container);
+
   try {
-    const canvas = await html2canvas(element, {
+    // Wait for any images inside clone to be loaded
+    const images = Array.from(clone.querySelectorAll('img'));
+    await Promise.all(images.map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise(resolve => {
+        img.onload = resolve;
+        img.onerror = resolve;
+      });
+    }));
+
+    // Measure untruncated dimensions
+    const fullWidth = clone.offsetWidth || 350;
+    const fullHeight = clone.scrollHeight || clone.offsetHeight || 600;
+
+    const canvas = await html2canvas(clone, {
       scale: 3, // High DPI for crystal clear text & icons
       useCORS: true,
       allowTaint: true,
-      backgroundColor: '#ffffff',
+      backgroundColor: null,
       logging: false,
+      width: fullWidth,
+      height: fullHeight,
       scrollX: 0,
-      scrollY: 0,
-      onclone: (clonedDoc) => {
-        // Find cloned element
-        const target = clonedDoc.querySelector('.receipt-capture-root') || clonedDoc.body;
-        if (target) {
-          target.style.transform = 'none';
-          target.style.boxSizing = 'border-box';
-          
-          // Ensure all text elements have ample line-height and no overflow clipping
-          const allText = target.querySelectorAll('*');
-          allText.forEach((node) => {
-            const computedStyle = window.getComputedStyle(node);
-            if (computedStyle.overflow === 'hidden') {
-              node.style.overflow = 'visible';
-            }
-          });
-        }
-      }
+      scrollY: 0
     });
 
     const mimeType = format === 'jpg' ? 'image/jpeg' : 'image/png';
@@ -52,50 +75,83 @@ export async function exportElementAsImage(element, fileName = 'receipt', format
   } catch (err) {
     console.error('Image export error:', err);
     throw err;
+  } finally {
+    if (document.body.contains(container)) {
+      document.body.removeChild(container);
+    }
   }
 }
 
 /**
- * Shares image and text to WhatsApp
+ * Shares image and text to WhatsApp using isolated off-screen capture
  * @param {HTMLElement} element 
  * @param {string} captionText 
  */
 export async function shareToWhatsApp(element, captionText = '') {
   const textEncoded = encodeURIComponent(captionText);
   
-  // Try Web Share API with file if supported on mobile
-  if (navigator.canShare && element) {
-    try {
-      const canvas = await html2canvas(element, {
-        scale: 2.5,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        onclone: (clonedDoc) => {
-          const target = clonedDoc.querySelector('.receipt-capture-root') || clonedDoc.body;
-          if (target) {
-            target.style.transform = 'none';
-          }
-        }
-      });
+  if (!element) {
+    window.open(`https://api.whatsapp.com/send?text=${textEncoded}`, '_blank');
+    return;
+  }
 
-      canvas.toBlob(async (blob) => {
-        if (blob) {
-          const file = new File([blob], 'construction_receipt.png', { type: 'image/png' });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: 'बांधकाम खर्च पावती',
-              text: captionText
-            });
-            return;
-          }
+  // Clone into isolated off-screen container
+  const clone = element.cloneNode(true);
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  container.style.zIndex = '-9999';
+  container.style.width = 'max-content';
+  container.style.height = 'max-content';
+  container.style.overflow = 'visible';
+  container.style.backgroundColor = 'transparent';
+  container.style.pointerEvents = 'none';
+
+  clone.style.margin = '0';
+  clone.style.maxHeight = 'none';
+  clone.style.height = 'auto';
+  clone.style.overflow = 'visible';
+  clone.style.transform = 'none';
+
+  container.appendChild(clone);
+  document.body.appendChild(container);
+
+  try {
+    const fullWidth = clone.offsetWidth || 350;
+    const fullHeight = clone.scrollHeight || clone.offsetHeight || 600;
+
+    const canvas = await html2canvas(clone, {
+      scale: 2.5,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      logging: false,
+      width: fullWidth,
+      height: fullHeight,
+      scrollX: 0,
+      scrollY: 0
+    });
+
+    if (navigator.canShare) {
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      if (blob) {
+        const file = new File([blob], 'construction_receipt.png', { type: 'image/png' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'बांधकाम खर्च पावती',
+            text: captionText
+          });
+          return;
         }
-        window.open(`https://api.whatsapp.com/send?text=${textEncoded}`, '_blank');
-      }, 'image/png');
-      return;
-    } catch (err) {
-      console.warn('Native share failed, fallback to url share:', err);
+      }
+    }
+  } catch (err) {
+    console.warn('Share error fallback:', err);
+  } finally {
+    if (document.body.contains(container)) {
+      document.body.removeChild(container);
     }
   }
 
