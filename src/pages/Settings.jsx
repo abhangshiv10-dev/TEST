@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   IndianRupee,
   Layers,
@@ -8,8 +7,6 @@ import {
   Trash2,
   Check,
   X,
-  User,
-  LogOut,
   Sparkles,
   Loader2,
   Shield,
@@ -22,7 +19,7 @@ import { formatINR } from '../utils/marathiCurrency';
 import { getCategoryIconMeta } from '../utils/categoryIcons';
 
 export default function Settings() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const {
     summary,
     categories,
@@ -31,7 +28,6 @@ export default function Settings() {
     updateCategory,
     deleteCategory
   } = useBudget();
-  const navigate = useNavigate();
 
   // Budget editing state
   const [isEditingBudget, setIsEditingBudget] = useState(false);
@@ -167,24 +163,6 @@ export default function Settings() {
     }
   };
 
-  const handleLogout = async () => {
-    const res = await Swal.fire({
-      title: 'लॉगआउट करायचे आहे?',
-      text: 'तुम्ही पुन्हा कधीही लॉगिन करू शकता.',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#0f172a',
-      cancelButtonColor: '#94a3b8',
-      confirmButtonText: 'लॉगआउट',
-      cancelButtonText: 'रद्द करा'
-    });
-
-    if (res.isConfirmed) {
-      await signOut();
-      navigate('/login');
-    }
-  };
-
   return (
     <div className="space-y-6 pb-20 sm:pb-8 animate-in fade-in duration-200">
       {/* Header */}
@@ -276,33 +254,6 @@ export default function Settings() {
                 </span>
               </div>
             )}
-          </div>
-
-          {/* 2. User Profile & Logout */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-card space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-sm shadow-xs">
-                  {user?.user_metadata?.full_name ? user.user_metadata.full_name[0].toUpperCase() : <User className="w-5 h-5" />}
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-slate-900">
-                    {user?.user_metadata?.full_name || 'घरमालक'}
-                  </div>
-                  <div className="text-xs text-slate-400">
-                    {user?.email || 'demo@gharbhandkam.com'}
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={handleLogout}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>लॉगआउट</span>
-              </button>
-            </div>
           </div>
         </div>
 
