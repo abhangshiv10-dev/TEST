@@ -392,8 +392,9 @@ export const marathiDataService = {
           `)
           .single();
 
-        // If payment_status column doesn't exist yet on remote DB, retry without payment_status
-        if (insertRes.error && insertRes.error.code === '42703') {
+        // If payment_status column doesn't exist yet on remote DB (PGRST204 or 42703), retry without payment_status
+        if (insertRes.error && (insertRes.error.code === '42703' || insertRes.error.code === 'PGRST204' || (insertRes.error.message && insertRes.error.message.includes('payment_status')))) {
+          console.warn('Column payment_status not yet in DB schema, falling back to inserting without it:', insertRes.error.message);
           const { payment_status, ...safePayload } = payload;
           insertRes = await supabase
             .from('expenses')
@@ -481,7 +482,8 @@ export const marathiDataService = {
           `)
           .single();
 
-        if (updateRes.error && updateRes.error.code === '42703') {
+        if (updateRes.error && (updateRes.error.code === '42703' || updateRes.error.code === 'PGRST204' || (updateRes.error.message && updateRes.error.message.includes('payment_status')))) {
+          console.warn('Column payment_status not yet in DB schema on update, falling back:', updateRes.error.message);
           const { payment_status, ...safePayload } = payload;
           updateRes = await supabase
             .from('expenses')
