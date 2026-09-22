@@ -177,15 +177,24 @@ export const marathiDataService = {
     // Save to Supabase budget_history table if available
     if (isSupabaseConfigured()) {
       try {
-        await supabase.from('budget_history').insert([{
+        const { data: inserted, error: insertError } = await supabase.from('budget_history').insert([{
           user_id: userId || 'user-shared',
           change_type: historyEntry.change_type,
-          amount_changed: historyEntry.amount_changed,
-          previous_budget: historyEntry.previous_budget,
-          new_budget: historyEntry.new_budget,
+          amount_changed: Number(historyEntry.amount_changed) || 0,
+          previous_budget: Number(historyEntry.previous_budget) || 0,
+          new_budget: Number(historyEntry.new_budget) || 0,
           note: historyEntry.note,
           created_at: historyEntry.created_at
-        }]);
+        }]).select();
+
+        if (!insertError && inserted && inserted.length > 0) {
+          const cloudEntry = inserted[0];
+          const updatedHistory = [cloudEntry, ...historyList.filter(h => h.id !== historyEntry.id)];
+          setLocalData('budget_history_shared', updatedHistory);
+          if (userId) setLocalData(`budget_history_${userId}`, updatedHistory);
+        } else if (insertError) {
+          console.warn('Supabase budget_history insert error:', insertError.message);
+        }
       } catch (err) {
         console.warn('Supabase budget_history insert fallback:', err.message);
       }
@@ -204,7 +213,10 @@ export const marathiDataService = {
 
         if (!error && data && data.length > 0) {
           setLocalData('budget_history_shared', data);
+          if (userId) setLocalData(`budget_history_${userId}`, data);
           return data;
+        } else if (error) {
+          console.warn('Supabase getBudgetHistory error (table might need to be created):', error.message);
         }
       } catch (err) {
         console.warn('Supabase getBudgetHistory fallback to local:', err.message);
