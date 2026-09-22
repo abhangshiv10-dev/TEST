@@ -15,7 +15,13 @@ import {
   TrendingUp,
   Clock,
   ArrowUpRight,
-  RefreshCw
+  RefreshCw,
+  Receipt,
+  FileSpreadsheet,
+  Download,
+  Share2,
+  FileText,
+  Eye
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,12 +29,15 @@ import { useBudget } from '../contexts/BudgetContext';
 import { formatINR } from '../utils/marathiCurrency';
 import { formatMarathiDateTime } from '../utils/marathiDate';
 import { getCategoryIconMeta } from '../utils/categoryIcons';
+import { SingleExpenseReceiptModal } from '../components/receipts/SingleExpenseReceiptModal';
+import { ReportReceiptModal } from '../components/receipts/ReportReceiptModal';
 
 export default function Settings() {
   const { user } = useAuth();
   const {
     summary,
     categories,
+    expenses = [],
     budgetHistory = [],
     updateBudget,
     addCategory,
@@ -47,6 +56,13 @@ export default function Settings() {
   const [isAddingCat, setIsAddingCat] = useState(false);
   const [editingCatId, setEditingCatId] = useState(null);
   const [editingCatName, setEditingCatName] = useState('');
+
+  // Receipt export modals state
+  const [reportReceiptOpen, setReportReceiptOpen] = useState(false);
+  const [singleReceiptOpen, setSingleReceiptOpen] = useState(false);
+  const [selectedReceiptExpenseId, setSelectedReceiptExpenseId] = useState('');
+
+  const currentReceiptExpense = expenses.find(e => e.id === selectedReceiptExpenseId) || expenses[0] || null;
 
   // Handle Budget Save
   const handleSaveBudget = async (e) => {
@@ -185,8 +201,103 @@ export default function Settings() {
           सेटिंग्ज आणि व्यवस्थापन
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 font-normal mt-0.5">
-          बांधकाम बजेट, खर्चाचे प्रकार आणि वापरकर्ता प्रोफाइल
+          बांधकाम बजेट, खर्चाचे प्रकार, अहवाल पावती व वापरकर्ता प्रोफाइल
         </p>
+      </div>
+
+      {/* 🧾 पावती व अहवाल एक्सपोर्ट (PNG / JPG Receipt Export) Section */}
+      <div className="glass-card rounded-2xl p-5 border border-emerald-200/80 bg-linear-to-br from-emerald-50/50 via-white to-teal-50/40 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-emerald-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+              <Receipt className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <span>पावती व अहवाल एक्सपोर्ट (PNG, JPG & WhatsApp)</span>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  नवीन
+                </span>
+              </h3>
+              <p className="text-xs text-slate-500 font-normal mt-0.5">
+                खर्चाचा पावती अहवाल (जास्तीत जास्त 10 नोंदी) व वैयक्तिक खर्च पावती इमेज स्वरूपात डाऊनलोड करा
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 2 Export Options Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Option 1: 10 नोंदींचा अहवाल पावती (Template 1) */}
+          <div className="p-4 rounded-xl bg-white border border-slate-200 hover:border-blue-300 transition-all shadow-2xs flex flex-col justify-between space-y-3">
+            <div>
+              <div className="flex items-center gap-2 text-blue-700 font-bold text-xs mb-1">
+                <FileSpreadsheet className="w-4 h-4" />
+                <span>अहवाल पावती (Report Slip - 10 नोंदी)</span>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                तारीख, एकूण खर्च, नोंदींची संख्या आणि पहिल्या 10 नोंदींसह आकर्षक पावती तयार करा.
+              </p>
+              <div className="mt-2 text-[11px] text-slate-500">
+                उपलब्ध नोंदी: <strong>{expenses.length}</strong> • एकूण: <strong>{formatINR(summary.totalSpent)}</strong>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setReportReceiptOpen(true)}
+              className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all cursor-pointer"
+            >
+              <Eye className="w-4 h-4" />
+              <span>अहवाल पावती पाहा व एक्सपोर्ट करा</span>
+            </button>
+          </div>
+
+          {/* Option 2: वैयक्तिक खर्च पावती (Template 2) */}
+          <div className="p-4 rounded-xl bg-white border border-slate-200 hover:border-emerald-300 transition-all shadow-2xs flex flex-col justify-between space-y-3">
+            <div>
+              <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs mb-1">
+                <FileText className="w-4 h-4" />
+                <span>वैयक्तिक खर्च पावती (Single Expense Receipt)</span>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                कोणत्याही एका खर्चाची तपशीलवार डिजिटल पावती (प्रकार, रक्कम, तारीख, तपशील व फोटो) तयार करा.
+              </p>
+
+              {/* Expense Selector */}
+              {expenses.length > 0 ? (
+                <div className="mt-2.5">
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                    खर्च निवडा:
+                  </label>
+                  <select
+                    value={selectedReceiptExpenseId || expenses[0]?.id}
+                    onChange={(e) => setSelectedReceiptExpenseId(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-medium focus:outline-none focus:border-emerald-600"
+                  >
+                    {expenses.map((exp) => (
+                      <option key={exp.id} value={exp.id}>
+                        {exp.category_name} - {formatINR(exp.amount)} ({exp.expense_date})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <p className="mt-2 text-xs text-slate-400 italic">कोणताही खर्च उपलब्ध नाही</p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              disabled={expenses.length === 0}
+              onClick={() => setSingleReceiptOpen(true)}
+              className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Eye className="w-4 h-4" />
+              <span>खर्च पावती पाहा व एक्सपोर्ट करा</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Two-Column Responsive Grid on Desktop */}
@@ -591,6 +702,23 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      {/* Single Expense Receipt Modal (Template 2) */}
+      <SingleExpenseReceiptModal
+        isOpen={singleReceiptOpen}
+        expense={currentReceiptExpense}
+        onClose={() => setSingleReceiptOpen(false)}
+      />
+
+      {/* Report Receipt Modal (Template 1 - Max 10 entries) */}
+      <ReportReceiptModal
+        isOpen={reportReceiptOpen}
+        expenses={expenses.slice(0, 10)}
+        totalExpenses={summary.totalSpent}
+        totalEntries={expenses.length}
+        dateRangeText="01 Jan 2026 - 30 Sep 2026"
+        onClose={() => setReportReceiptOpen(false)}
+      />
     </div>
   );
 }

@@ -10,7 +10,9 @@ import {
   X,
   Layers,
   ArrowUpDown,
-  CircleDollarSign
+  CircleDollarSign,
+  FileSpreadsheet,
+  Receipt as ReceiptIcon
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useBudget } from '../contexts/BudgetContext';
@@ -19,6 +21,8 @@ import { formatMarathiDate } from '../utils/marathiDate';
 import ExpenseCard from '../components/common/ExpenseCard';
 import ExpenseModal from '../components/modals/ExpenseModal';
 import PhotoViewerModal from '../components/modals/PhotoViewerModal';
+import { SingleExpenseReceiptModal } from '../components/receipts/SingleExpenseReceiptModal';
+import { ReportReceiptModal } from '../components/receipts/ReportReceiptModal';
 import { matchesCategory } from '../utils/bilingualSearch';
 
 export default function Expenses() {
@@ -33,6 +37,10 @@ export default function Expenses() {
   // Modals state
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState(null);
+
+  // Receipt modals state
+  const [singleReceiptExpense, setSingleReceiptExpense] = useState(null);
+  const [reportReceiptOpen, setReportReceiptOpen] = useState(false);
 
   // Photo viewer state
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
@@ -148,17 +156,29 @@ export default function Expenses() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            setSelectedExpense(null);
-            setExpenseModalOpen(true);
-          }}
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:scale-95 shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>खर्च जोडा</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setReportReceiptOpen(true)}
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:scale-95 shrink-0 cursor-pointer"
+            title="जास्तीत जास्त 10 नोंदींसह पावती अहवाल PNG/JPG एक्सपोर्ट करा"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>अहवाल पावती (10 नोंदी)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedExpense(null);
+              setExpenseModalOpen(true);
+            }}
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:scale-95 shrink-0 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>खर्च जोडा</span>
+          </button>
+        </div>
       </div>
 
       {/* 3 Colorful Summary Stat Cards */}
@@ -317,6 +337,7 @@ export default function Expenses() {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onViewPhoto={handleOpenPhoto}
+              onViewReceipt={(expense) => setSingleReceiptExpense(expense)}
             />
           ))}
         </div>
@@ -351,6 +372,33 @@ export default function Expenses() {
           setPhotoModalOpen(false);
           setViewingPhotoUrl(null);
         }}
+      />
+
+      {/* Single Expense Receipt Modal (Template 2) */}
+      <SingleExpenseReceiptModal
+        isOpen={Boolean(singleReceiptExpense)}
+        expense={singleReceiptExpense}
+        onClose={() => setSingleReceiptExpense(null)}
+      />
+
+      {/* Report Receipt Modal (Template 1 - Max 10 entries) */}
+      <ReportReceiptModal
+        isOpen={reportReceiptOpen}
+        expenses={filteredExpenses.slice(0, 10)}
+        totalExpenses={filteredExpenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)}
+        totalEntries={filteredExpenses.length}
+        dateRangeText={
+          dateFilter === 'today'
+            ? 'आज (Today)'
+            : dateFilter === 'yesterday'
+            ? 'काल (Yesterday)'
+            : dateFilter === 'this_month'
+            ? 'या महिन्यात (This Month)'
+            : dateFilter === 'custom' && (customStartDate || customEndDate)
+            ? `${customStartDate || 'सुरुवात'} - ${customEndDate || 'आज'}`
+            : '01 Jan 2026 - 30 Sep 2026'
+        }
+        onClose={() => setReportReceiptOpen(false)}
       />
     </div>
   );

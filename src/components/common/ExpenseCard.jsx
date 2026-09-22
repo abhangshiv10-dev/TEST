@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, Edit2, Trash2, Calendar, Image as ImageIcon } from 'lucide-react';
+import { Camera, Edit2, Trash2, Calendar, FileText, Receipt as ReceiptIcon } from 'lucide-react';
 import { formatINR } from '../../utils/marathiCurrency';
 import { formatMarathiDate } from '../../utils/marathiDate';
 import { getCategoryIconMeta } from '../../utils/categoryIcons';
@@ -8,7 +8,8 @@ export default function ExpenseCard({
   expense,
   onEdit,
   onDelete,
-  onViewPhoto
+  onViewPhoto,
+  onViewReceipt
 }) {
   const hasPhoto = Boolean(expense.photo_url);
   const { icon: CategoryIcon, bg: iconBg } = getCategoryIconMeta(expense.category_name);
@@ -59,7 +60,7 @@ export default function ExpenseCard({
                 ) : (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <span>पूर्ण (Paid)</span>
+                    <span>पूर्ण (Completed)</span>
                   </span>
                 )}
                 {hasPhoto && (
@@ -110,8 +111,20 @@ export default function ExpenseCard({
             </div>
           </div>
 
-          {/* Action Buttons: Edit & Delete */}
+          {/* Action Buttons: Receipt, Edit & Delete */}
           <div className="flex items-center gap-1.5">
+            {onViewReceipt && (
+              <button
+                type="button"
+                onClick={() => onViewReceipt(expense)}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                title="खर्च पावती (Receipt PNG/JPG)"
+              >
+                <ReceiptIcon className="w-3.5 h-3.5" />
+                <span className="text-[11px]">पावती</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => onEdit(expense)}

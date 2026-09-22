@@ -42,6 +42,8 @@ import ExpenseCard from '../components/common/ExpenseCard';
 import ExpenseModal from '../components/modals/ExpenseModal';
 import BudgetModal from '../components/modals/BudgetModal';
 import PhotoViewerModal from '../components/modals/PhotoViewerModal';
+import { SingleExpenseReceiptModal } from '../components/receipts/SingleExpenseReceiptModal';
+import { ReportReceiptModal } from '../components/receipts/ReportReceiptModal';
 import { matchesCategory } from '../utils/bilingualSearch';
 
 const CATEGORY_COLORS = [
@@ -66,6 +68,10 @@ export default function Dashboard() {
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryName, setSelectedCategoryName] = useState('all');
+
+  // Receipt modals state
+  const [singleReceiptExpense, setSingleReceiptExpense] = useState(null);
+  const [reportReceiptOpen, setReportReceiptOpen] = useState(false);
 
   // Photo Lightbox state
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
@@ -294,18 +300,30 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Primary Action Button */}
-        <button
-          type="button"
-          onClick={() => {
-            setSelectedExpense(null);
-            setExpenseModalOpen(true);
-          }}
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shrink-0 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>खर्च जोडा</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setReportReceiptOpen(true)}
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:scale-95 shrink-0 cursor-pointer"
+            title="जास्तीत जास्त 10 नोंदींसह पावती अहवाल PNG/JPG एक्सपोर्ट करा"
+          >
+            <Receipt className="w-4 h-4" />
+            <span>पावती अहवाल (10 नोंदी)</span>
+          </button>
+
+          {/* Primary Action Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedExpense(null);
+              setExpenseModalOpen(true);
+            }}
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shrink-0 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>खर्च जोडा</span>
+          </button>
+        </div>
       </div>
 
       {/* 2. Over-Budget Alert Banner if applicable */}
@@ -663,6 +681,7 @@ export default function Dashboard() {
                   onEdit={handleEditExpense}
                   onDelete={handleDeleteExpense}
                   onViewPhoto={handleOpenPhoto}
+                  onViewReceipt={(expense) => setSingleReceiptExpense(expense)}
                 />
               ))}
             </div>
@@ -811,6 +830,23 @@ export default function Dashboard() {
           setPhotoModalOpen(false);
           setViewingPhotoUrl(null);
         }}
+      />
+
+      {/* Single Expense Receipt Modal (Template 2) */}
+      <SingleExpenseReceiptModal
+        isOpen={Boolean(singleReceiptExpense)}
+        expense={singleReceiptExpense}
+        onClose={() => setSingleReceiptExpense(null)}
+      />
+
+      {/* Report Receipt Modal (Template 1 - Max 10 entries) */}
+      <ReportReceiptModal
+        isOpen={reportReceiptOpen}
+        expenses={expenses.slice(0, 10)}
+        totalExpenses={summary.totalSpent}
+        totalEntries={expenses.length}
+        dateRangeText="01 Jan 2026 - 30 Sep 2026"
+        onClose={() => setReportReceiptOpen(false)}
       />
     </div>
   );
