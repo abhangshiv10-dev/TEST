@@ -31,6 +31,7 @@ export default function Settings() {
 
   // Budget editing state
   const [isEditingBudget, setIsEditingBudget] = useState(false);
+  const [budgetMode, setBudgetMode] = useState('add'); // 'add' or 'set'
   const [budgetInput, setBudgetInput] = useState('');
   const [budgetSaving, setBudgetSaving] = useState(false);
 
@@ -48,22 +49,28 @@ export default function Settings() {
       Swal.fire({
         icon: 'error',
         title: 'अवैध रक्कम',
-        text: 'कृपया योग्य बजेट रक्कम टाका.'
+        text: 'कृपया योग्य रक्कम टाका.'
       });
       return;
     }
 
+    const currentBudget = Number(summary.totalBudget) || 0;
+    const finalBudget = budgetMode === 'add' ? currentBudget + val : val;
+
     try {
       setBudgetSaving(true);
-      await updateBudget(val);
+      await updateBudget(finalBudget);
       setIsEditingBudget(false);
+      setBudgetInput('');
       Swal.fire({
         toast: true,
         position: 'top-end',
         icon: 'success',
-        title: 'बजेट यशस्वीरित्या अपडेट केले',
+        title: budgetMode === 'add' 
+          ? `बजेटमध्ये ${formatINR(val)} जोडले! (एकूण: ${formatINR(finalBudget)})` 
+          : 'बजेट यशस्वीरित्या बदलले',
         showConfirmButton: false,
-        timer: 2000
+        timer: 2200
       });
     } catch (err) {
       Swal.fire({
@@ -197,38 +204,123 @@ export default function Settings() {
               </div>
 
               {!isEditingBudget && (
-                <button
-                  onClick={() => {
-                    setBudgetInput(String(summary.totalBudget || ''));
-                    setIsEditingBudget(true);
-                  }}
-                  className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition-all shadow-2xs"
-                >
-                  बजेट बदला
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => {
+                      setBudgetMode('add');
+                      setBudgetInput('');
+                      setIsEditingBudget(true);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-2xs flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ वाढवा</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setBudgetMode('set');
+                      setBudgetInput(String(summary.totalBudget || ''));
+                      setIsEditingBudget(true);
+                    }}
+                    className="px-2.5 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition-all shadow-2xs"
+                  >
+                    बदला
+                  </button>
+                </div>
               )}
             </div>
 
             {isEditingBudget ? (
-              <form onSubmit={handleSaveBudget} className="pt-2 space-y-3 bg-slate-50/70 p-4 rounded-xl border border-slate-200">
+              <form onSubmit={handleSaveBudget} className="pt-2 space-y-3 bg-slate-50/80 p-4 rounded-xl border border-slate-200 animate-in fade-in duration-150">
+                {/* Mode Selector Tabs */}
+                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-200/60 rounded-xl text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBudgetMode('add');
+                      setBudgetInput('');
+                    }}
+                    className={`py-1.5 rounded-lg transition-all ${
+                      budgetMode === 'add'
+                        ? 'bg-white text-slate-900 shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    + बजेट वाढवा (Add)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBudgetMode('set');
+                      setBudgetInput(String(summary.totalBudget || ''));
+                    }}
+                    className={`py-1.5 rounded-lg transition-all ${
+                      budgetMode === 'set'
+                        ? 'bg-white text-slate-900 shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    थेट बदला (Set Total)
+                  </button>
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    नवीन एकूण बजेट (₹)
+                    {budgetMode === 'add' ? 'जोडायची / वाढवायची रक्कम (₹)' : 'नवीन एकूण बजेट (₹)'}
                   </label>
                   <div className="relative flex items-center">
-                    <span className="absolute left-3.5 text-slate-400 font-bold text-base">₹</span>
+                    <span className="absolute left-3.5 text-slate-400 font-bold text-base pointer-events-none">
+                      {budgetMode === 'add' ? '+₹' : '₹'}
+                    </span>
                     <input
                       type="number"
                       step="any"
                       autoFocus
                       value={budgetInput}
                       onChange={(e) => setBudgetInput(e.target.value)}
-                      className="w-full pl-8 pr-3 py-2 text-base font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-slate-900"
-                      placeholder="उदा. 2500000"
+                      className="w-full pl-9 pr-3 py-2 text-base font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-slate-900"
+                      placeholder={budgetMode === 'add' ? 'उदा. 100000' : 'उदा. 2500000'}
                     />
                   </div>
                 </div>
-                <div className="flex items-center gap-2 pt-1">
+
+                {/* Quick Add Buttons in Add mode */}
+                {budgetMode === 'add' && (
+                  <div className="grid grid-cols-4 gap-1">
+                    {[50000, 100000, 200000, 500000].map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => setBudgetInput(String(amt))}
+                        className={`py-1 px-1.5 rounded-lg text-[11px] font-semibold border transition-all ${
+                          Number(budgetInput) === amt
+                            ? 'bg-slate-900 text-white border-slate-900'
+                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        +{formatINR(amt)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Live Preview of resulting total */}
+                {Number(budgetInput) > 0 && (
+                  <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs flex items-center justify-between">
+                    <span className="text-emerald-900 font-medium">
+                      {budgetMode === 'add' ? 'एकूण नवीन बजेट होईल:' : 'नवीन निश्चित बजेट:'}
+                    </span>
+                    <span className="font-bold text-emerald-950 text-sm">
+                      {formatINR(
+                        budgetMode === 'add'
+                          ? (Number(summary.totalBudget) || 0) + Number(budgetInput)
+                          : Number(budgetInput)
+                      )}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-200">
                   <button
                     type="button"
                     onClick={() => setIsEditingBudget(false)}
@@ -239,10 +331,10 @@ export default function Settings() {
                   <button
                     type="submit"
                     disabled={budgetSaving}
-                    className="px-4 py-1.5 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-colors flex items-center gap-1 shadow-xs"
+                    className="px-4 py-1.5 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
                   >
                     {budgetSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                    <span>जतन करा</span>
+                    <span>{budgetMode === 'add' ? '+ बजेट वाढवा' : 'जतन करा'}</span>
                   </button>
                 </div>
               </form>
