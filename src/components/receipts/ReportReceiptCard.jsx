@@ -195,47 +195,15 @@ export const ReportReceiptCard = forwardRef(({
                   </span>
                   <div className="mt-1" style={{ overflow: 'visible', display: 'flex', justifyContent: 'flex-end' }}>
                     {isCompleted ? (
-                      <span 
-                        className="status-badge"
-                        style={{ 
-                          display: 'inline-block',
-                          textAlign: 'center',
-                          verticalAlign: 'middle',
-                          lineHeight: '16px',
-                          height: '16px',
-                          padding: '0 7px',
-                          fontSize: '8px',
-                          fontWeight: '700',
-                          borderRadius: '9999px',
-                          backgroundColor: '#E6F9EE',
-                          color: '#059669',
-                          border: '1px solid #A7F3D0',
-                          boxSizing: 'border-box'
-                        }}
-                      >
-                        Completed
-                      </span>
+                      <svg width="58" height="18" viewBox="0 0 58 18" className="status-badge shrink-0" style={{ display: 'block' }}>
+                        <rect x="0.5" y="0.5" width="57" height="17" rx="8.5" fill="#E6F9EE" stroke="#A7F3D0" strokeWidth="1" />
+                        <text x="29" y="9.5" dominantBaseline="central" textAnchor="middle" fill="#059669" fontSize="8.5" fontWeight="700" fontFamily="sans-serif">Completed</text>
+                      </svg>
                     ) : (
-                      <span 
-                        className="status-badge"
-                        style={{ 
-                          display: 'inline-block',
-                          textAlign: 'center',
-                          verticalAlign: 'middle',
-                          lineHeight: '16px',
-                          height: '16px',
-                          padding: '0 7px',
-                          fontSize: '8px',
-                          fontWeight: '700',
-                          borderRadius: '9999px',
-                          backgroundColor: '#FEF3C7',
-                          color: '#D97706',
-                          border: '1px solid #FDE68A',
-                          boxSizing: 'border-box'
-                        }}
-                      >
-                        Pending
-                      </span>
+                      <svg width="48" height="18" viewBox="0 0 48 18" className="status-badge shrink-0" style={{ display: 'block' }}>
+                        <rect x="0.5" y="0.5" width="47" height="17" rx="8.5" fill="#FEF3C7" stroke="#FDE68A" strokeWidth="1" />
+                        <text x="24" y="9.5" dominantBaseline="central" textAnchor="middle" fill="#D97706" fontSize="8.5" fontWeight="700" fontFamily="sans-serif">Pending</text>
+                      </svg>
                     )}
                   </div>
                 </div>

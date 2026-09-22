@@ -45,16 +45,13 @@ export async function exportElementAsImage(element, fileName = 'receipt', format
     node.style.overflow = 'visible';
     node.style.textOverflow = 'clip';
     
+    // Preserve SVG vector status badges without distortion
+    if (node.tagName === 'svg' || node.tagName === 'rect' || node.tagName === 'text' || node.tagName === 'path' || (node.classList && node.classList.contains('status-badge'))) {
+      return;
+    }
+    
     // Apply ample line-height for ascenders and descenders in Marathi & English
-    if (node.classList && node.classList.contains('status-badge')) {
-      node.style.display = 'inline-block';
-      node.style.textAlign = 'center';
-      node.style.verticalAlign = 'middle';
-      node.style.lineHeight = '16px';
-      node.style.height = '16px';
-      node.style.padding = '0 7px';
-      node.style.boxSizing = 'border-box';
-    } else if (node.tagName === 'SPAN' || node.tagName === 'P' || node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'H3' || node.tagName === 'H4') {
+    if (node.tagName === 'SPAN' || node.tagName === 'P' || node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'H3' || node.tagName === 'H4') {
       node.style.lineHeight = '1.6';
       node.style.letterSpacing = 'normal';
       node.style.paddingTop = '1px';
@@ -159,15 +156,10 @@ export async function shareToWhatsApp(element, captionText = '') {
   allNodes.forEach((node) => {
     node.style.overflow = 'visible';
     node.style.textOverflow = 'clip';
-    if (node.classList && node.classList.contains('status-badge')) {
-      node.style.display = 'inline-block';
-      node.style.textAlign = 'center';
-      node.style.verticalAlign = 'middle';
-      node.style.lineHeight = '16px';
-      node.style.height = '16px';
-      node.style.padding = '0 7px';
-      node.style.boxSizing = 'border-box';
-    } else if (node.tagName === 'SPAN' || node.tagName === 'P' || node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'H3' || node.tagName === 'H4') {
+    if (node.tagName === 'svg' || node.tagName === 'rect' || node.tagName === 'text' || node.tagName === 'path' || (node.classList && node.classList.contains('status-badge'))) {
+      return;
+    }
+    if (node.tagName === 'SPAN' || node.tagName === 'P' || node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'H3' || node.tagName === 'H4') {
       node.style.lineHeight = '1.6';
       node.style.letterSpacing = 'normal';
       node.style.paddingTop = '1px';
