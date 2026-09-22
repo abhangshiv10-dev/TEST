@@ -65,22 +65,10 @@ export default function Header({ onOpenAddExpense }) {
             })}
           </nav>
 
-          {/* Right: Primary Action & Profile */}
+          {/* Right: Profile & Actions */}
           <div className="flex items-center gap-2.5">
-            {/* Primary Add Expense CTA */}
-            {onOpenAddExpense && (
-              <button
-                type="button"
-                onClick={onOpenAddExpense}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold shadow-xs transition-all"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>खर्च जोडा</span>
-              </button>
-            )}
-
             {/* Profile Avatar & Logout */}
-            <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+            <div className="flex items-center gap-1.5 pl-2">
               <div
                 title={user?.email || 'वापरकर्ता'}
                 className="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 text-xs font-bold shadow-2xs"
