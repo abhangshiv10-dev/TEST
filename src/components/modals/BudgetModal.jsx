@@ -121,7 +121,7 @@ export default function BudgetModal({
               }`}
             >
               <Plus className="w-3.5 h-3.5 text-emerald-600" />
-              <span>+ बजेट वाढवा (Add)</span>
+              <span>बजेट वाढवा (Add)</span>
             </button>
             <button
               type="button"
@@ -281,7 +281,7 @@ export default function BudgetModal({
               ) : (
                 <span>
                   {mode === 'add' && currentNum > 0
-                    ? `+ ${addNum > 0 ? formatINR(addNum) : ''} बजेटमध्ये जोडा`
+                    ? (addNum > 0 ? `${formatINR(addNum)} बजेटमध्ये जोडा` : 'बजेट जोडा')
                     : 'बजेट जतन करा'}
                 </span>
               )}

@@ -211,10 +211,10 @@ export default function Settings() {
                       setBudgetInput('');
                       setIsEditingBudget(true);
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-2xs flex items-center gap-1"
+                    className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-2xs flex items-center gap-1.5"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>+ वाढवा</span>
+                    <span>बजेट वाढवा</span>
                   </button>
                   <button
                     onClick={() => {
@@ -246,7 +246,7 @@ export default function Settings() {
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    + बजेट वाढवा (Add)
+                    बजेट वाढवा (Add)
                   </button>
                   <button
                     type="button"
@@ -334,7 +334,7 @@ export default function Settings() {
                     className="px-4 py-1.5 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
                   >
                     {budgetSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                    <span>{budgetMode === 'add' ? '+ बजेट वाढवा' : 'जतन करा'}</span>
+                    <span>{budgetMode === 'add' ? 'बजेट वाढवा' : 'जतन करा'}</span>
                   </button>
                 </div>
               </form>
