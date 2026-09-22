@@ -14,8 +14,8 @@ import {
   Zap, 
   Wrench, 
   DoorClosed, 
-  Grid,
-  HardHat,
+  Grid, 
+  HardHat, 
   Image as ImageIcon,
   Download,
   Share2
@@ -27,36 +27,36 @@ import { getCategoryEnglishLabel } from '../../utils/bilingualSearch';
 function getCategoryTheme(name = '') {
   const cat = (name || '').toLowerCase();
   if (cat.includes('सिमेंट') || cat.includes('cement')) {
-    return { icon: Package, bg: 'bg-[#E0F2FE]', text: 'text-[#0284C7]', badge: 'Material' };
+    return { icon: Package, bg: 'bg-[#E0F2FE]', text: 'text-[#0284C7]', badge: 'Material', fill: '#E0F2FE', stroke: '#BAE6FD', textColor: '#0284C7' };
   }
   if (cat.includes('वाळू') || cat.includes('sand')) {
-    return { icon: Layers, bg: 'bg-[#FEF3C7]', text: 'text-[#D97706]', badge: 'Material' };
+    return { icon: Layers, bg: 'bg-[#FEF3C7]', text: 'text-[#D97706]', badge: 'Material', fill: '#FEF3C7', stroke: '#FDE68A', textColor: '#D97706' };
   }
   if (cat.includes('मजुरी') || cat.includes('कामगार') || cat.includes('labour') || cat.includes('labor')) {
-    return { icon: HardHat, bg: 'bg-[#FFE4E6]', text: 'text-[#E11D48]', badge: 'Labour' };
+    return { icon: HardHat, bg: 'bg-[#FFE4E6]', text: 'text-[#E11D48]', badge: 'Labour', fill: '#FFE4E6', stroke: '#FECDD3', textColor: '#E11D48' };
   }
   if (cat.includes('स्टील') || cat.includes('steel') || cat.includes('लोखंड')) {
-    return { icon: Layers, bg: 'bg-[#EDE9FE]', text: 'text-[#6366F1]', badge: 'Material' };
+    return { icon: Layers, bg: 'bg-[#EDE9FE]', text: 'text-[#6366F1]', badge: 'Material', fill: '#EDE9FE', stroke: '#DDD6FE', textColor: '#6366F1' };
   }
   if (cat.includes('विट') || cat.includes('brick') || cat.includes('ब्लॉक')) {
-    return { icon: Grid, bg: 'bg-[#FFEDD5]', text: 'text-[#EA580C]', badge: 'Material' };
+    return { icon: Grid, bg: 'bg-[#FFEDD5]', text: 'text-[#EA580C]', badge: 'Material', fill: '#FFEDD5', stroke: '#FED7AA', textColor: '#EA580C' };
   }
   if (cat.includes('वाहतूक') || cat.includes('transport') || cat.includes('jcb') || cat.includes('जेसीबी')) {
-    return { icon: Truck, bg: 'bg-[#CFFAFE]', text: 'text-[#0891B2]', badge: 'Transport' };
+    return { icon: Truck, bg: 'bg-[#CFFAFE]', text: 'text-[#0891B2]', badge: 'Transport', fill: '#CFFAFE', stroke: '#A5F3FC', textColor: '#0891B2' };
   }
   if (cat.includes('पेंट') || cat.includes('रंग') || cat.includes('paint')) {
-    return { icon: Palette, bg: 'bg-[#FCE7F3]', text: 'text-[#DB2777]', badge: 'Finishing' };
+    return { icon: Palette, bg: 'bg-[#FCE7F3]', text: 'text-[#DB2777]', badge: 'Finishing', fill: '#FCE7F3', stroke: '#FBCFE8', textColor: '#DB2777' };
   }
   if (cat.includes('वीज') || cat.includes('electric')) {
-    return { icon: Zap, bg: 'bg-[#FEF9C3]', text: 'text-[#CA8A04]', badge: 'Electrical' };
+    return { icon: Zap, bg: 'bg-[#FEF9C3]', text: 'text-[#CA8A04]', badge: 'Electrical', fill: '#FEF9C3', stroke: '#FEF08A', textColor: '#CA8A04' };
   }
   if (cat.includes('प्लंबिंग') || cat.includes('plumb')) {
-    return { icon: Wrench, bg: 'bg-[#DBEAFE]', text: 'text-[#2563EB]', badge: 'Plumbing' };
+    return { icon: Wrench, bg: 'bg-[#DBEAFE]', text: 'text-[#2563EB]', badge: 'Plumbing', fill: '#DBEAFE', stroke: '#BFDBFE', textColor: '#2563EB' };
   }
   if (cat.includes('दरवाजे') || cat.includes('door')) {
-    return { icon: DoorClosed, bg: 'bg-[#D1FAE5]', text: 'text-[#059669]', badge: 'Carpentry' };
+    return { icon: DoorClosed, bg: 'bg-[#D1FAE5]', text: 'text-[#059669]', badge: 'Carpentry', fill: '#D1FAE5', stroke: '#A7F3D0', textColor: '#059669' };
   }
-  return { icon: Layers, bg: 'bg-[#F1F5F9]', text: 'text-[#475569]', badge: 'General' };
+  return { icon: Layers, bg: 'bg-[#F1F5F9]', text: 'text-[#475569]', badge: 'General', fill: '#F1F5F9', stroke: '#E2E8F0', textColor: '#475569' };
 }
 
 // Format date into '22 Sep 2026'
@@ -177,9 +177,11 @@ export const SingleExpenseReceiptCard = forwardRef(({
               </span>
             </div>
           </div>
-          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md shrink-0 ${catTheme.bg} ${catTheme.text}`} style={{ lineHeight: '1.4' }}>
-            {catTheme.badge}
-          </span>
+          {/* Centered SVG Category Badge */}
+          <svg width="58" height="18" viewBox="0 0 58 18" className="status-badge shrink-0" style={{ display: 'block' }}>
+            <rect x="0.5" y="0.5" width="57" height="17" rx="8.5" fill={catTheme.fill} stroke={catTheme.stroke} strokeWidth="1" />
+            <text x="29" y="9.5" dominantBaseline="central" textAnchor="middle" fill={catTheme.textColor} fontSize="8.5" fontWeight="700" fontFamily="sans-serif">{catTheme.badge}</text>
+          </svg>
         </div>
 
         {/* Card 2: रक्कम (Amount) */}
@@ -200,9 +202,18 @@ export const SingleExpenseReceiptCard = forwardRef(({
               </span>
             </div>
           </div>
-          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md shrink-0 ${isCompleted ? 'bg-[#DEF7EC] text-[#03543F]' : 'bg-[#FEF08A] text-[#854D0E]'}`} style={{ lineHeight: '1.4' }}>
-            {isCompleted ? '✓ Paid' : '⏳ Pending'}
-          </span>
+          {/* Centered SVG Payment Status Badge */}
+          {isCompleted ? (
+            <svg width="50" height="18" viewBox="0 0 50 18" className="status-badge shrink-0" style={{ display: 'block' }}>
+              <rect x="0.5" y="0.5" width="49" height="17" rx="8.5" fill="#DEF7EC" stroke="#BCF0DA" strokeWidth="1" />
+              <text x="25" y="9.5" dominantBaseline="central" textAnchor="middle" fill="#03543F" fontSize="8.5" fontWeight="700" fontFamily="sans-serif">✓ Paid</text>
+            </svg>
+          ) : (
+            <svg width="56" height="18" viewBox="0 0 56 18" className="status-badge shrink-0" style={{ display: 'block' }}>
+              <rect x="0.5" y="0.5" width="55" height="17" rx="8.5" fill="#FEF08A" stroke="#FDE047" strokeWidth="1" />
+              <text x="28" y="9.5" dominantBaseline="central" textAnchor="middle" fill="#854D0E" fontSize="8.5" fontWeight="700" fontFamily="sans-serif">Pending</text>
+            </svg>
+          )}
         </div>
 
         {/* Card 3: दिनांक (Date) */}
