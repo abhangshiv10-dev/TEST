@@ -450,7 +450,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 5. Month-wise Expense Graph Card (महिनानिहाय खर्च आलेख) */}
+      {/* 5. Month-wise Expense Graph Card (मासिक खर्च आलेख) */}
       <div className="glass-card rounded-2xl p-4 sm:p-5 space-y-3.5 border border-slate-200/80">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pb-2 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
@@ -459,10 +459,10 @@ export default function Dashboard() {
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900">
-                महिनानिहाय खर्च आलेख (Monthly Expense Graph)
+                मासिक खर्च आलेख (Monthly Expenses)
               </h3>
               <p className="text-[11px] text-slate-500 font-normal">
-                प्रत्येक महिन्यातील बांधकाम खर्चाचा आलेख व कल (Trend)
+                दरमहा झालेल्या बांधकाम खर्चाचा तपशील व आलेख
               </p>
             </div>
           </div>
@@ -474,7 +474,7 @@ export default function Dashboard() {
             </div>
             {highestMonth && highestMonth.amount > 0 && (
               <div className="px-3 py-1 rounded-xl bg-indigo-50 border border-indigo-200/80 text-indigo-900 flex items-center gap-1.5">
-                <span className="text-indigo-600 font-medium text-[11px]">सर्वोच्च:</span>
+                <span className="text-indigo-600 font-medium text-[11px]">सर्वाधिक खर्च:</span>
                 <span className="font-bold">{highestMonth.label} ({formatINR(highestMonth.amount)})</span>
               </div>
             )}
@@ -520,7 +520,7 @@ export default function Dashboard() {
                       <div className="bg-slate-900 text-white p-2.5 rounded-xl shadow-xl border border-slate-700 text-xs space-y-1">
                         <div className="font-bold text-slate-200">{data.fullLabel}</div>
                         <div className="text-emerald-400 font-extrabold text-sm">{formatINR(data.amount)}</div>
-                        <div className="text-slate-400 text-[10px]">{data.count} व्यवहार नोंदवले</div>
+                        <div className="text-slate-400 text-[10px]">{data.count} व्यवहार</div>
                       </div>
                     );
                   }
