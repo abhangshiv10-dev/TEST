@@ -23,6 +23,26 @@ export function formatMarathiDate(dateInput, shortYear = false) {
 }
 
 /**
+ * Formats a date & time string into Marathi date with 12-hour time
+ * Example: '2026-09-22T10:15:00Z' -> '22 सप्टेंबर 2026, 03:45 PM'
+ */
+export function formatMarathiDateTime(dateInput) {
+  if (!dateInput) return '';
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return String(dateInput);
+
+  const datePart = formatMarathiDate(d);
+  let hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const timeStr = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+
+  return `${datePart}, ${timeStr}`;
+}
+
+/**
  * Returns a friendly relative label if today or yesterday, otherwise formatted date
  * @param {string|Date} dateInput
  * @returns {string}

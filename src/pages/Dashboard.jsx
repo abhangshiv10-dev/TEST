@@ -797,8 +797,8 @@ export default function Dashboard() {
         currentBudget={totalBudget}
         isFirstTime={false}
         onClose={() => setBudgetModalOpen(false)}
-        onSave={async (newBudget) => {
-          await updateBudget(newBudget);
+        onSave={async (newBudget, mode = 'set', addAmt = 0) => {
+          await updateBudget(newBudget, mode, addAmt);
           setBudgetModalOpen(false);
         }}
       />

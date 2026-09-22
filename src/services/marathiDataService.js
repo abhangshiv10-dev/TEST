@@ -99,15 +99,31 @@ export const marathiDataService = {
     }));
   },
 
-  async updateBudget(userId, totalBudget) {
+  async updateBudget(userId, totalBudget, changeType = 'set', amountChanged = 0, note = '') {
     const budgetNum = Math.max(0, Number(totalBudget) || 0);
+    const settings = await this.getSettings(userId);
+    const prevBudget = Number(settings?.total_budget) || 0;
+
+    let delta = Number(amountChanged) || 0;
+    if (delta === 0 && changeType === 'add') {
+      delta = budgetNum - prevBudget;
+    } else if (delta === 0 && prevBudget === 0) {
+      delta = budgetNum;
+      changeType = 'initial';
+    }
+
+    let finalChangeType = changeType;
+    if (prevBudget === 0) {
+      finalChangeType = 'initial';
+    }
+
+    let updatedData = null;
 
     if (isSupabaseConfigured() && userId) {
       try {
         // First check existing settings row
         const { data: existing } = await supabase.from('settings').select('id, user_id').limit(1).maybeSingle();
 
-        let updatedData = null;
         if (existing) {
           const { data, error } = await supabase
             .from('settings')
@@ -128,18 +144,97 @@ export const marathiDataService = {
         if (updatedData) {
           setLocalData('settings_shared', updatedData);
           if (userId) setLocalData(`settings_${userId}`, updatedData);
-          return updatedData;
         }
       } catch (err) {
         console.warn('Supabase updateBudget fallback to local:', err.message);
       }
     }
 
-    const current = getLocalData('settings_shared', getLocalData(`settings_${userId}`, { user_id: userId, project_name: 'माझ्या घराचे बांधकाम' }));
-    const updated = { ...current, total_budget: budgetNum, updated_at: new Date().toISOString() };
-    setLocalData('settings_shared', updated);
-    if (userId) setLocalData(`settings_${userId}`, updated);
-    return updated;
+    if (!updatedData) {
+      const current = getLocalData('settings_shared', getLocalData(`settings_${userId}`, { user_id: userId, project_name: 'माझ्या घराचे बांधकाम' }));
+      updatedData = { ...current, total_budget: budgetNum, updated_at: new Date().toISOString() };
+      setLocalData('settings_shared', updatedData);
+      if (userId) setLocalData(`settings_${userId}`, updatedData);
+    }
+
+    // Record Budget History Entry
+    const historyEntry = {
+      id: `bh-${Date.now()}`,
+      user_id: userId || 'user-shared',
+      change_type: finalChangeType,
+      amount_changed: delta > 0 ? delta : budgetNum,
+      previous_budget: prevBudget,
+      new_budget: budgetNum,
+      note: note || (finalChangeType === 'initial' ? 'सुरुवातीचे निश्चित केलेले बजेट' : finalChangeType === 'add' ? `बजेटमध्ये वाढ केली` : 'एकूण बजेट बदलले'),
+      created_at: new Date().toISOString()
+    };
+
+    // Save to local storage history array
+    const historyList = getLocalData('budget_history_shared', []);
+    setLocalData('budget_history_shared', [historyEntry, ...historyList]);
+    if (userId) setLocalData(`budget_history_${userId}`, [historyEntry, ...historyList]);
+
+    // Save to Supabase budget_history table if available
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase.from('budget_history').insert([{
+          user_id: userId || 'user-shared',
+          change_type: historyEntry.change_type,
+          amount_changed: historyEntry.amount_changed,
+          previous_budget: historyEntry.previous_budget,
+          new_budget: historyEntry.new_budget,
+          note: historyEntry.note,
+          created_at: historyEntry.created_at
+        }]);
+      } catch (err) {
+        console.warn('Supabase budget_history insert fallback:', err.message);
+      }
+    }
+
+    return updatedData;
+  },
+
+  async getBudgetHistory(userId) {
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('budget_history')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          setLocalData('budget_history_shared', data);
+          return data;
+        }
+      } catch (err) {
+        console.warn('Supabase getBudgetHistory fallback to local:', err.message);
+      }
+    }
+
+    const localList = getLocalData('budget_history_shared', getLocalData(`budget_history_${userId}`, []));
+    if (localList.length > 0) {
+      return localList;
+    }
+
+    // If history is currently empty but total_budget > 0, generate the initial record baseline
+    const settings = await this.getSettings(userId);
+    const budget = Number(settings?.total_budget) || 0;
+    if (budget > 0) {
+      const initialEntry = {
+        id: 'bh-initial-baseline',
+        user_id: userId || 'user-shared',
+        change_type: 'initial',
+        amount_changed: budget,
+        previous_budget: 0,
+        new_budget: budget,
+        note: 'सुरुवातीचे निश्चित केलेले बजेट',
+        created_at: settings.created_at || new Date().toISOString()
+      };
+      setLocalData('budget_history_shared', [initialEntry]);
+      return [initialEntry];
+    }
+
+    return [];
   },
 
   // ==========================================

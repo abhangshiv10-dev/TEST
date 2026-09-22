@@ -45,6 +45,18 @@ CREATE TABLE public.expenses (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- 4. BUDGET HISTORY TABLE (Tracks initial budget, additions and changes)
+CREATE TABLE IF NOT EXISTS public.budget_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id TEXT DEFAULT 'user-shared',
+    change_type TEXT NOT NULL DEFAULT 'add', -- 'initial', 'add', 'set'
+    amount_changed NUMERIC(15, 2) NOT NULL DEFAULT 0.00,
+    previous_budget NUMERIC(15, 2) NOT NULL DEFAULT 0.00,
+    new_budget NUMERIC(15, 2) NOT NULL DEFAULT 0.00,
+    note TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- Migration support if table already exists
 ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'Paid';
 
@@ -53,11 +65,14 @@ CREATE INDEX IF NOT EXISTS idx_settings_user ON public.settings(user_id);
 CREATE INDEX IF NOT EXISTS idx_categories_name ON public.categories(name);
 CREATE INDEX IF NOT EXISTS idx_expenses_date ON public.expenses(expense_date DESC);
 CREATE INDEX IF NOT EXISTS idx_expenses_category ON public.expenses(category_id);
+CREATE INDEX IF NOT EXISTS idx_budget_history_date ON public.budget_history(created_at DESC);
 
 -- Disable Row Level Security (RLS) so all authorized logins can read & write directly
 ALTER TABLE public.settings DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.categories DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.expenses DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.budget_history DISABLE ROW LEVEL SECURITY;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 
 -- Grant full table & schema permissions to anon & authenticated API roles
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;

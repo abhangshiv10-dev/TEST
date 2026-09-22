@@ -20,6 +20,7 @@ export const BudgetProvider = ({ children }) => {
   });
   const [categories, setCategories] = useState([]);
   const [expenses, setExpenses] = useState([]);
+  const [budgetHistory, setBudgetHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isFirstTime, setIsFirstTime] = useState(false);
 
@@ -28,15 +29,17 @@ export const BudgetProvider = ({ children }) => {
     if (!user) return;
     try {
       setLoading(true);
-      const [sum, cats, expList] = await Promise.all([
+      const [sum, cats, expList, bHistory] = await Promise.all([
         marathiDataService.getSummary(user.id),
         marathiDataService.getCategories(user.id),
-        marathiDataService.getExpenses(user.id)
+        marathiDataService.getExpenses(user.id),
+        marathiDataService.getBudgetHistory(user.id)
       ]);
 
       setSummary(sum);
       setCategories(cats);
       setExpenses(expList);
+      setBudgetHistory(bHistory || []);
 
       // Check if budget is not set yet and hasn't been dismissed by user
       const hasDismissed = localStorage.getItem(`budget_prompt_dismissed_${user.id}`);
@@ -68,14 +71,15 @@ export const BudgetProvider = ({ children }) => {
       });
       setCategories([]);
       setExpenses([]);
+      setBudgetHistory([]);
       setLoading(false);
     }
   }, [user, refreshData]);
 
   // Update budget
-  const updateBudget = async (newBudget) => {
+  const updateBudget = async (newBudget, changeType = 'set', amountChanged = 0, note = '') => {
     if (!user) return;
-    await marathiDataService.updateBudget(user.id, newBudget);
+    await marathiDataService.updateBudget(user.id, newBudget, changeType, amountChanged, note);
     await refreshData();
   };
 
@@ -129,6 +133,7 @@ export const BudgetProvider = ({ children }) => {
     summary,
     categories,
     expenses,
+    budgetHistory,
     loading,
     isFirstTime,
     setIsFirstTime,

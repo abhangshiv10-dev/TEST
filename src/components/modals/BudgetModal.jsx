@@ -64,7 +64,7 @@ export default function BudgetModal({
 
     try {
       setSaving(true);
-      await onSave(finalBudget);
+      await onSave(finalBudget, mode, addNum);
       onClose();
     } catch (err) {
       console.error('Save budget error:', err);
