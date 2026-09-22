@@ -22,30 +22,33 @@ const setLocalData = (key, data) => {
 };
 
 // Seed defaults if initial local storage is completely empty (clean live state, no dummy records)
-const initLocalStorageIfEmpty = (userId = 'user-1') => {
-  const currentSettings = getLocalData(`settings_${userId}`, null);
+const initLocalStorageIfEmpty = (userId = 'user-shared') => {
+  const currentSettings = getLocalData(`settings_shared`, getLocalData(`settings_${userId}`, null));
   if (!currentSettings) {
-    setLocalData(`settings_${userId}`, {
-      id: `setting-${userId}`,
+    const defaultSettings = {
+      id: `setting-shared`,
       user_id: userId,
       total_budget: 0,
       project_name: 'माझ्या घराचे बांधकाम'
-    });
+    };
+    setLocalData(`settings_shared`, defaultSettings);
+    setLocalData(`settings_${userId}`, defaultSettings);
   }
 
-  const currentCats = getLocalData(`categories_${userId}`, null);
+  const currentCats = getLocalData(`categories_shared`, getLocalData(`categories_${userId}`, null));
   if (!currentCats || currentCats.length === 0) {
     const defaultCatObjects = DEFAULT_MARATHI_CATEGORIES.map((name, idx) => ({
       id: `cat-${idx + 1}`,
-      user_id: userId,
       name,
       created_at: new Date().toISOString()
     }));
+    setLocalData(`categories_shared`, defaultCatObjects);
     setLocalData(`categories_${userId}`, defaultCatObjects);
   }
 
-  const currentExp = getLocalData(`expenses_${userId}`, null);
+  const currentExp = getLocalData(`expenses_shared`, getLocalData(`expenses_${userId}`, null));
   if (!currentExp) {
+    setLocalData(`expenses_shared`, []);
     setLocalData(`expenses_${userId}`, []);
   }
 };
@@ -55,62 +58,87 @@ export const marathiDataService = {
   // 1. SETTINGS & BUDGET
   // ==========================================
   async getSettings(userId) {
-    if (!userId) return { total_budget: 0, project_name: 'माझ्या घराचे बांधकाम' };
-
     if (isSupabaseConfigured()) {
       try {
+        // Query shared construction project settings
         const { data, error } = await supabase
           .from('settings')
           .select('*')
-          .eq('user_id', userId)
+          .limit(1)
           .maybeSingle();
 
-        if (error) throw error;
-        if (data) return data;
+        if (!error && data) {
+          setLocalData('settings_shared', data);
+          if (userId) setLocalData(`settings_${userId}`, data);
+          return data;
+        }
 
-        // If no row exists yet, create one
-        const { data: newRow, error: insertError } = await supabase
-          .from('settings')
-          .insert([{ user_id: userId, total_budget: 0, project_name: 'माझ्या घराचे बांधकाम' }])
-          .select()
-          .single();
+        if (userId && !data) {
+          const { data: newRow, error: insertError } = await supabase
+            .from('settings')
+            .insert([{ user_id: userId, total_budget: 0, project_name: 'माझ्या घराचे बांधकाम' }])
+            .select()
+            .single();
 
-        if (insertError) throw insertError;
-        return newRow;
+          if (!insertError && newRow) {
+            setLocalData('settings_shared', newRow);
+            setLocalData(`settings_${userId}`, newRow);
+            return newRow;
+          }
+        }
       } catch (err) {
         console.warn('Supabase getSettings fallback to local:', err.message);
       }
     }
 
     initLocalStorageIfEmpty(userId);
-    return getLocalData(`settings_${userId}`, {
+    return getLocalData('settings_shared', getLocalData(`settings_${userId}`, {
       user_id: userId,
       total_budget: 0,
       project_name: 'माझ्या घराचे बांधकाम'
-    });
+    }));
   },
 
   async updateBudget(userId, totalBudget) {
     const budgetNum = Math.max(0, Number(totalBudget) || 0);
 
-    if (isSupabaseConfigured() && userId && !userId.startsWith('demo-')) {
+    if (isSupabaseConfigured() && userId) {
       try {
-        const { data, error } = await supabase
-          .from('settings')
-          .upsert({ user_id: userId, total_budget: budgetNum, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-          .select()
-          .single();
+        // First check existing settings row
+        const { data: existing } = await supabase.from('settings').select('id, user_id').limit(1).maybeSingle();
 
-        if (error) throw error;
-        return data;
+        let updatedData = null;
+        if (existing) {
+          const { data, error } = await supabase
+            .from('settings')
+            .update({ total_budget: budgetNum, updated_at: new Date().toISOString() })
+            .eq('id', existing.id)
+            .select()
+            .single();
+          if (!error && data) updatedData = data;
+        } else {
+          const { data, error } = await supabase
+            .from('settings')
+            .insert([{ user_id: userId, total_budget: budgetNum, project_name: 'माझ्या घराचे बांधकाम' }])
+            .select()
+            .single();
+          if (!error && data) updatedData = data;
+        }
+
+        if (updatedData) {
+          setLocalData('settings_shared', updatedData);
+          if (userId) setLocalData(`settings_${userId}`, updatedData);
+          return updatedData;
+        }
       } catch (err) {
         console.warn('Supabase updateBudget fallback to local:', err.message);
       }
     }
 
-    const current = getLocalData(`settings_${userId}`, { user_id: userId, project_name: 'माझ्या घराचे बांधकाम' });
+    const current = getLocalData('settings_shared', getLocalData(`settings_${userId}`, { user_id: userId, project_name: 'माझ्या घराचे बांधकाम' }));
     const updated = { ...current, total_budget: budgetNum, updated_at: new Date().toISOString() };
-    setLocalData(`settings_${userId}`, updated);
+    setLocalData('settings_shared', updated);
+    if (userId) setLocalData(`settings_${userId}`, updated);
     return updated;
   },
 
@@ -118,20 +146,21 @@ export const marathiDataService = {
   // 2. CATEGORIES
   // ==========================================
   async getCategories(userId) {
-    if (!userId) return [];
-
-    if (isSupabaseConfigured() && !userId.startsWith('demo-')) {
+    if (isSupabaseConfigured()) {
       try {
         const { data, error } = await supabase
           .from('categories')
           .select('*')
-          .eq('user_id', userId)
           .order('name', { ascending: true });
 
-        if (error) throw error;
+        if (!error && data && data.length > 0) {
+          const sorted = data.sort((a, b) => a.name.localeCompare(b.name, 'mr'));
+          setLocalData('categories_shared', sorted);
+          return sorted;
+        }
 
-        // If categories empty, auto seed default categories
-        if (!data || data.length === 0) {
+        // If categories empty in DB, auto seed default categories
+        if (userId && (!data || data.length === 0)) {
           const seeds = DEFAULT_MARATHI_CATEGORIES.map(name => ({
             user_id: userId,
             name
@@ -141,17 +170,19 @@ export const marathiDataService = {
             .insert(seeds)
             .select();
 
-          if (!seedError && inserted) return inserted.sort((a, b) => a.name.localeCompare(b.name, 'mr'));
+          if (!seedError && inserted) {
+            const sorted = inserted.sort((a, b) => a.name.localeCompare(b.name, 'mr'));
+            setLocalData('categories_shared', sorted);
+            return sorted;
+          }
         }
-
-        return data.sort((a, b) => a.name.localeCompare(b.name, 'mr'));
       } catch (err) {
         console.warn('Supabase getCategories fallback to local:', err.message);
       }
     }
 
     initLocalStorageIfEmpty(userId);
-    const local = getLocalData(`categories_${userId}`, []);
+    const local = getLocalData('categories_shared', getLocalData(`categories_${userId}`, []));
     return local.sort((a, b) => a.name.localeCompare(b.name, 'mr'));
   },
 
@@ -295,9 +326,7 @@ export const marathiDataService = {
   // 4. EXPENSES (CRUD)
   // ==========================================
   async getExpenses(userId) {
-    if (!userId) return [];
-
-    if (isSupabaseConfigured() && !userId.startsWith('demo-')) {
+    if (isSupabaseConfigured()) {
       try {
         const { data, error } = await supabase
           .from('expenses')
@@ -308,36 +337,35 @@ export const marathiDataService = {
               name
             )
           `)
-          .eq('user_id', userId)
           .order('expense_date', { ascending: false })
           .order('created_at', { ascending: false });
 
-        if (error) throw error;
-
-        return (data || []).map(item => ({
-          ...item,
-          category_name: item.categories?.name || 'इतर'
-        }));
+        if (!error && data) {
+          const mapped = data.map(item => ({
+            ...item,
+            category_name: item.categories?.name || 'इतर'
+          }));
+          setLocalData('expenses_shared', mapped);
+          return mapped;
+        }
       } catch (err) {
         console.warn('Supabase getExpenses fallback to local:', err.message);
       }
     }
 
     initLocalStorageIfEmpty(userId);
-    const local = getLocalData(`expenses_${userId}`, []);
+    const local = getLocalData('expenses_shared', getLocalData(`expenses_${userId}`, []));
     return local.sort((a, b) => new Date(b.expense_date) - new Date(a.expense_date));
   },
 
   async addExpense(userId, expenseData, photoFile = null) {
-    if (!userId) throw new Error('User required');
-
     let photoResult = null;
     if (photoFile) {
       photoResult = await this.uploadPhoto(userId, photoFile);
     }
 
     const payload = {
-      user_id: userId,
+      user_id: userId || 'user-shared',
       category_id: expenseData.category_id || null,
       amount: Number(expenseData.amount) || 0,
       expense_date: expenseData.expense_date || new Date().toISOString().split('T')[0],
@@ -346,7 +374,7 @@ export const marathiDataService = {
       photo_url: photoResult?.photo_url || null
     };
 
-    if (isSupabaseConfigured() && !userId.startsWith('demo-')) {
+    if (isSupabaseConfigured() && userId) {
       try {
         const { data, error } = await supabase
           .from('expenses')
@@ -360,18 +388,22 @@ export const marathiDataService = {
           `)
           .single();
 
-        if (error) throw error;
-        return {
-          ...data,
-          category_name: data.categories?.name || 'इतर'
-        };
+        if (!error && data) {
+          const newExp = {
+            ...data,
+            category_name: data.categories?.name || 'इतर'
+          };
+          const expenses = getLocalData('expenses_shared', []);
+          setLocalData('expenses_shared', [newExp, ...expenses]);
+          return newExp;
+        }
       } catch (err) {
         console.warn('Supabase addExpense fallback to local:', err.message);
       }
     }
 
-    const expenses = getLocalData(`expenses_${userId}`, []);
-    const categories = getLocalData(`categories_${userId}`, []);
+    const expenses = getLocalData('expenses_shared', getLocalData(`expenses_${userId}`, []));
+    const categories = getLocalData('categories_shared', getLocalData(`categories_${userId}`, []));
     const matchedCat = categories.find(c => c.id === payload.category_id);
 
     const newExpense = {
@@ -382,7 +414,8 @@ export const marathiDataService = {
     };
 
     expenses.unshift(newExpense);
-    setLocalData(`expenses_${userId}`, expenses);
+    setLocalData('expenses_shared', expenses);
+    if (userId) setLocalData(`expenses_${userId}`, expenses);
     return newExpense;
   },
 
@@ -411,13 +444,12 @@ export const marathiDataService = {
       updated_at: new Date().toISOString()
     };
 
-    if (isSupabaseConfigured() && userId && !userId.startsWith('demo-')) {
+    if (isSupabaseConfigured()) {
       try {
         const { data, error } = await supabase
           .from('expenses')
           .update(payload)
           .eq('id', expenseId)
-          .eq('user_id', userId)
           .select(`
             *,
             categories (
@@ -427,18 +459,26 @@ export const marathiDataService = {
           `)
           .single();
 
-        if (error) throw error;
-        return {
-          ...data,
-          category_name: data.categories?.name || 'इतर'
-        };
+        if (!error && data) {
+          const updated = {
+            ...data,
+            category_name: data.categories?.name || 'इतर'
+          };
+          const expenses = getLocalData('expenses_shared', []);
+          const idx = expenses.findIndex(e => e.id === expenseId);
+          if (idx !== -1) {
+            expenses[idx] = updated;
+            setLocalData('expenses_shared', expenses);
+          }
+          return updated;
+        }
       } catch (err) {
         console.warn('Supabase updateExpense fallback to local:', err.message);
       }
     }
 
-    const expenses = getLocalData(`expenses_${userId}`, []);
-    const categories = getLocalData(`categories_${userId}`, []);
+    const expenses = getLocalData('expenses_shared', getLocalData(`expenses_${userId}`, []));
+    const categories = getLocalData('categories_shared', getLocalData(`categories_${userId}`, []));
     const idx = expenses.findIndex(e => e.id === expenseId);
     if (idx !== -1) {
       const matchedCat = categories.find(c => c.id === payload.category_id);
@@ -447,34 +487,36 @@ export const marathiDataService = {
         ...payload,
         category_name: matchedCat?.name || 'इतर'
       };
-      setLocalData(`expenses_${userId}`, expenses);
-      return expenses[idx];
+      setLocalData('expenses_shared', expenses);
+      if (userId) setLocalData(`expenses_${userId}`, expenses);
     }
-    return payload;
+    return expenses[idx];
   },
 
   async deleteExpense(userId, expenseId, photoPath = null) {
-    if (isSupabaseConfigured() && userId && !userId.startsWith('demo-')) {
+    if (photoPath && isSupabaseConfigured()) {
       try {
-        if (photoPath) {
-          await supabase.storage.from('expense-photos').remove([photoPath]);
-        }
-        const { error } = await supabase
+        await supabase.storage.from('expense-photos').remove([photoPath]);
+      } catch (err) {
+        console.warn('Storage delete warning:', err.message);
+      }
+    }
+
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase
           .from('expenses')
           .delete()
-          .eq('id', expenseId)
-          .eq('user_id', userId);
-
-        if (error) throw error;
-        return true;
+          .eq('id', expenseId);
       } catch (err) {
         console.warn('Supabase deleteExpense fallback to local:', err.message);
       }
     }
 
-    const expenses = getLocalData(`expenses_${userId}`, []);
+    const expenses = getLocalData('expenses_shared', getLocalData(`expenses_${userId}`, []));
     const filtered = expenses.filter(e => e.id !== expenseId);
-    setLocalData(`expenses_${userId}`, filtered);
+    setLocalData('expenses_shared', filtered);
+    if (userId) setLocalData(`expenses_${userId}`, filtered);
     return true;
   },
 

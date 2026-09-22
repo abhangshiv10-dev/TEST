@@ -594,22 +594,13 @@ export default function Dashboard() {
       />
 
       <BudgetModal
-        isOpen={budgetModalOpen || isFirstTime}
+        isOpen={budgetModalOpen}
         currentBudget={totalBudget}
-        isFirstTime={isFirstTime}
-        onClose={() => {
-          setBudgetModalOpen(false);
-          setIsFirstTime(false);
-          if (user?.id) {
-            localStorage.setItem(`budget_prompt_dismissed_${user.id}`, 'true');
-          }
-        }}
+        isFirstTime={false}
+        onClose={() => setBudgetModalOpen(false)}
         onSave={async (newBudget) => {
           await updateBudget(newBudget);
-          setIsFirstTime(false);
-          if (user?.id) {
-            localStorage.setItem(`budget_prompt_dismissed_${user.id}`, 'true');
-          }
+          setBudgetModalOpen(false);
         }}
       />
 
