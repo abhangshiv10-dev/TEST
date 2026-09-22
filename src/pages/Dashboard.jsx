@@ -42,6 +42,7 @@ import ExpenseCard from '../components/common/ExpenseCard';
 import ExpenseModal from '../components/modals/ExpenseModal';
 import BudgetModal from '../components/modals/BudgetModal';
 import PhotoViewerModal from '../components/modals/PhotoViewerModal';
+import { matchesCategory } from '../utils/bilingualSearch';
 
 const CATEGORY_COLORS = [
   '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', 
@@ -161,11 +162,10 @@ export default function Dashboard() {
 
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
-          return (
-            (e.category_name && e.category_name.toLowerCase().includes(q)) ||
-            (e.description && e.description.toLowerCase().includes(q)) ||
-            String(e.amount).includes(q)
-          );
+          const categoryMatch = e.category_name && (e.category_name.toLowerCase().includes(q) || matchesCategory(e.category_name, q));
+          const descMatch = e.description && e.description.toLowerCase().includes(q);
+          const amountMatch = String(e.amount).includes(q);
+          return categoryMatch || descMatch || amountMatch;
         }
         return true;
       })

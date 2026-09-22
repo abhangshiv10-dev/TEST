@@ -19,6 +19,7 @@ import { formatMarathiDate } from '../utils/marathiDate';
 import ExpenseCard from '../components/common/ExpenseCard';
 import ExpenseModal from '../components/modals/ExpenseModal';
 import PhotoViewerModal from '../components/modals/PhotoViewerModal';
+import { matchesCategory } from '../utils/bilingualSearch';
 
 export default function Expenses() {
   const { expenses, categories, deleteExpense } = useBudget();
@@ -95,13 +96,13 @@ export default function Expenses() {
     const currentYear = today.getFullYear();
 
     return expenses.filter(exp => {
-      // 1. Text Search
+      // 1. Text Search (Bilingual Marathi + English)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const matchesCategory = exp.category_name && exp.category_name.toLowerCase().includes(q);
+        const categoryMatch = exp.category_name && (exp.category_name.toLowerCase().includes(q) || matchesCategory(exp.category_name, q));
         const matchesDesc = exp.description && exp.description.toLowerCase().includes(q);
         const matchesAmount = String(exp.amount).includes(q);
-        if (!matchesCategory && !matchesDesc && !matchesAmount) return false;
+        if (!categoryMatch && !matchesDesc && !matchesAmount) return false;
       }
 
       // 2. Category Filter

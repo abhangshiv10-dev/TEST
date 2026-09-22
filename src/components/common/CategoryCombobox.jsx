@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Plus, ChevronDown, Check } from 'lucide-react';
+import { matchesCategory, getCategoryEnglishLabel } from '../../utils/bilingualSearch';
 
 export default function CategoryCombobox({
   categories = [],
@@ -36,13 +37,14 @@ export default function CategoryCombobox({
     }
   }, [isOpen]);
 
+  // Bilingual / English / Marathi search filter
   const filteredCategories = categories.filter(c =>
-    c.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+    matchesCategory(c.name, searchQuery)
   );
 
   const trimmedQuery = searchQuery.trim();
   const exactMatchExists = categories.some(
-    c => c.name.toLowerCase() === trimmedQuery.toLowerCase()
+    c => c.name.toLowerCase() === trimmedQuery.toLowerCase() || matchesCategory(c.name, trimmedQuery)
   );
 
   const handleSelect = (category) => {
@@ -115,19 +117,27 @@ export default function CategoryCombobox({
             {filteredCategories.length > 0 ? (
               filteredCategories.map((cat) => {
                 const isSelected = cat.id === selectedCategoryId;
+                const engLabel = getCategoryEnglishLabel(cat.name);
                 return (
                   <button
                     key={cat.id}
                     type="button"
                     onClick={() => handleSelect(cat)}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs sm:text-sm rounded-lg text-left transition-colors ${
+                    className={`w-full flex items-center justify-between px-3 py-2.5 text-xs sm:text-sm rounded-lg text-left transition-colors cursor-pointer ${
                       isSelected
-                        ? 'bg-slate-900 text-white font-medium'
+                        ? 'bg-slate-900 text-white font-medium shadow-xs'
                         : 'text-slate-700 hover:bg-slate-100'
                     }`}
                   >
-                    <span>{cat.name}</span>
-                    {isSelected && <Check className="w-4 h-4 text-white" />}
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className="font-semibold">{cat.name}</span>
+                      {engLabel && (
+                        <span className={`text-[11px] font-normal truncate ${isSelected ? 'text-slate-300' : 'text-slate-400'}`}>
+                          ({engLabel})
+                        </span>
+                      )}
+                    </div>
+                    {isSelected && <Check className="w-4 h-4 text-white shrink-0 ml-2" />}
                   </button>
                 );
               })
