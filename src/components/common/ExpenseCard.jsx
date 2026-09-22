@@ -44,12 +44,24 @@ export default function ExpenseCard({
 
           {/* Text Information */}
           <div className="min-w-0 flex-1 space-y-1.5">
-            {/* Header: Category + Photo Badge + (On mobile: Amount inline) */}
+            {/* Header: Category + Status Badge + Photo Badge + (On mobile: Amount inline) */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <h4 className="text-sm font-bold text-slate-900 leading-snug">
                   {expense.category_name || 'इतर'}
                 </h4>
+                {/* Payment Status Pill */}
+                {expense.payment_status === 'Pending' ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100/90 text-amber-900 text-[10px] font-bold border border-amber-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
+                    <span>बाकी (Pending)</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span>पूर्ण (Paid)</span>
+                  </span>
+                )}
                 {hasPhoto && (
                   <button
                     type="button"

@@ -343,6 +343,7 @@ export const marathiDataService = {
         if (!error && data) {
           const mapped = data.map(item => ({
             ...item,
+            payment_status: item.payment_status || 'Paid',
             category_name: item.categories?.name || 'इतर'
           }));
           setLocalData('expenses_shared', mapped);
@@ -355,7 +356,9 @@ export const marathiDataService = {
 
     initLocalStorageIfEmpty(userId);
     const local = getLocalData('expenses_shared', getLocalData(`expenses_${userId}`, []));
-    return local.sort((a, b) => new Date(b.expense_date) - new Date(a.expense_date));
+    return local
+      .map(item => ({ ...item, payment_status: item.payment_status || 'Paid' }))
+      .sort((a, b) => new Date(b.expense_date) - new Date(a.expense_date));
   },
 
   async addExpense(userId, expenseData, photoFile = null) {
@@ -369,6 +372,7 @@ export const marathiDataService = {
       category_id: expenseData.category_id || null,
       amount: Number(expenseData.amount) || 0,
       expense_date: expenseData.expense_date || new Date().toISOString().split('T')[0],
+      payment_status: expenseData.payment_status || 'Paid',
       description: (expenseData.description || '').trim(),
       photo_path: photoResult?.photo_path || null,
       photo_url: photoResult?.photo_url || null
@@ -376,7 +380,7 @@ export const marathiDataService = {
 
     if (isSupabaseConfigured() && userId) {
       try {
-        const { data, error } = await supabase
+        let insertRes = await supabase
           .from('expenses')
           .insert([payload])
           .select(`
@@ -388,10 +392,27 @@ export const marathiDataService = {
           `)
           .single();
 
-        if (!error && data) {
+        // If payment_status column doesn't exist yet on remote DB, retry without payment_status
+        if (insertRes.error && insertRes.error.code === '42703') {
+          const { payment_status, ...safePayload } = payload;
+          insertRes = await supabase
+            .from('expenses')
+            .insert([safePayload])
+            .select(`
+              *,
+              categories (
+                id,
+                name
+              )
+            `)
+            .single();
+        }
+
+        if (!insertRes.error && insertRes.data) {
           const newExp = {
-            ...data,
-            category_name: data.categories?.name || 'इतर'
+            ...insertRes.data,
+            payment_status: insertRes.data.payment_status || payload.payment_status || 'Paid',
+            category_name: insertRes.data.categories?.name || 'इतर'
           };
           const expenses = getLocalData('expenses_shared', []);
           setLocalData('expenses_shared', [newExp, ...expenses]);
@@ -438,6 +459,7 @@ export const marathiDataService = {
       category_id: expenseData.category_id || null,
       amount: Number(expenseData.amount) || 0,
       expense_date: expenseData.expense_date,
+      payment_status: expenseData.payment_status || 'Paid',
       description: (expenseData.description || '').trim(),
       photo_path: photoPath,
       photo_url: photoUrl,
@@ -446,7 +468,7 @@ export const marathiDataService = {
 
     if (isSupabaseConfigured()) {
       try {
-        const { data, error } = await supabase
+        let updateRes = await supabase
           .from('expenses')
           .update(payload)
           .eq('id', expenseId)
@@ -459,10 +481,27 @@ export const marathiDataService = {
           `)
           .single();
 
-        if (!error && data) {
+        if (updateRes.error && updateRes.error.code === '42703') {
+          const { payment_status, ...safePayload } = payload;
+          updateRes = await supabase
+            .from('expenses')
+            .update(safePayload)
+            .eq('id', expenseId)
+            .select(`
+              *,
+              categories (
+                id,
+                name
+              )
+            `)
+            .single();
+        }
+
+        if (!updateRes.error && updateRes.data) {
           const updated = {
-            ...data,
-            category_name: data.categories?.name || 'इतर'
+            ...updateRes.data,
+            payment_status: updateRes.data.payment_status || payload.payment_status || 'Paid',
+            category_name: updateRes.data.categories?.name || 'इतर'
           };
           const expenses = getLocalData('expenses_shared', []);
           const idx = expenses.findIndex(e => e.id === expenseId);
@@ -542,9 +581,21 @@ export const marathiDataService = {
 
     const categoryMap = {};
 
+    let totalPaid = 0;
+    let totalPending = 0;
+    let pendingCount = 0;
+
     expenses.forEach(exp => {
       const amt = Number(exp.amount) || 0;
       totalSpent += amt;
+
+      const isPending = exp.payment_status === 'Pending';
+      if (isPending) {
+        totalPending += amt;
+        pendingCount += 1;
+      } else {
+        totalPaid += amt;
+      }
 
       // Check today
       if (exp.expense_date === todayStr) {
@@ -577,6 +628,9 @@ export const marathiDataService = {
     return {
       totalBudget,
       totalSpent,
+      totalPaid,
+      totalPending,
+      pendingCount,
       remainingBalance,
       percentUsed,
       todaySpent,

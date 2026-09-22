@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Link, useOutletContext } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Plus,
   ArrowRight,
@@ -15,7 +15,11 @@ import {
   Sparkles,
   TrendingUp,
   ShieldCheck,
-  BarChart3
+  BarChart3,
+  PieChart as PieChartIcon,
+  Clock,
+  CheckCircle,
+  Percent
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -25,7 +29,9 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  Cell
+  Cell,
+  PieChart,
+  Pie
 } from 'recharts';
 import Swal from 'sweetalert2';
 import { useBudget } from '../contexts/BudgetContext';
@@ -37,15 +43,20 @@ import ExpenseModal from '../components/modals/ExpenseModal';
 import BudgetModal from '../components/modals/BudgetModal';
 import PhotoViewerModal from '../components/modals/PhotoViewerModal';
 
+const CATEGORY_COLORS = [
+  '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', 
+  '#ec4899', '#06b6d4', '#f97316', '#6366f1', 
+  '#14b8a6', '#64748b'
+];
+
 export default function Dashboard() {
   const { user } = useAuth();
   const {
     summary,
     expenses,
     loading,
-    isFirstTime,
-    setIsFirstTime,
     updateBudget,
+    updateExpense,
     deleteExpense
   } = useBudget();
 
@@ -69,6 +80,29 @@ export default function Dashboard() {
   const handleEditExpense = (expense) => {
     setSelectedExpense(expense);
     setExpenseModalOpen(true);
+  };
+
+  const handleMarkAsPaid = async (expense) => {
+    try {
+      await updateExpense(expense.id, {
+        ...expense,
+        payment_status: 'Paid'
+      });
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'पेमेंट पूर्ण (Paid) म्हणून चिन्हांकित केले!',
+        showConfirmButton: false,
+        timer: 1800
+      });
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'त्रुटी',
+        text: 'पेमेंट स्थिती बदलता आली नाही.'
+      });
+    }
   };
 
   const handleDeleteExpense = async (expense) => {
@@ -107,6 +141,9 @@ export default function Dashboard() {
   const {
     totalBudget,
     totalSpent,
+    totalPaid = 0,
+    totalPending = 0,
+    pendingCount = 0,
     remainingBalance,
     percentUsed,
     todaySpent,
@@ -115,25 +152,30 @@ export default function Dashboard() {
   } = summary;
 
   // Filter recent expenses based on query and selected category from left column
-  const filteredRecentExpenses = expenses
-    .filter(e => {
-      // 1. Category Filter from Left Column
-      if (selectedCategoryName && selectedCategoryName !== 'all') {
-        if (e.category_name !== selectedCategoryName) return false;
-      }
+  const filteredRecentExpenses = useMemo(() => {
+    return expenses
+      .filter(e => {
+        if (selectedCategoryName && selectedCategoryName !== 'all') {
+          if (e.category_name !== selectedCategoryName) return false;
+        }
 
-      // 2. Search Query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        return (
-          (e.category_name && e.category_name.toLowerCase().includes(q)) ||
-          (e.description && e.description.toLowerCase().includes(q)) ||
-          String(e.amount).includes(q)
-        );
-      }
-      return true;
-    })
-    .slice(0, selectedCategoryName !== 'all' ? 50 : 8); // Show all matching when category filtered, or latest 8 by default
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          return (
+            (e.category_name && e.category_name.toLowerCase().includes(q)) ||
+            (e.description && e.description.toLowerCase().includes(q)) ||
+            String(e.amount).includes(q)
+          );
+        }
+        return true;
+      })
+      .slice(0, selectedCategoryName !== 'all' ? 50 : 8);
+  }, [expenses, selectedCategoryName, searchQuery]);
+
+  // Pending Expenses List
+  const pendingExpensesList = useMemo(() => {
+    return expenses.filter(e => e.payment_status === 'Pending');
+  }, [expenses]);
 
   // Month-wise expense aggregation for the graph
   const monthlyExpenseData = useMemo(() => {
@@ -164,7 +206,6 @@ export default function Dashboard() {
       };
     }
 
-    // Populate all expense entries
     expenses.forEach((exp) => {
       if (!exp.expense_date) return;
       const d = new Date(exp.expense_date);
@@ -190,6 +231,17 @@ export default function Dashboard() {
 
     return Object.values(monthsMap).sort((a, b) => a.key.localeCompare(b.key));
   }, [expenses]);
+
+  // Category Pie Chart Data
+  const categoryPieData = useMemo(() => {
+    if (!categoryBreakdown || categoryBreakdown.length === 0) return [];
+    return categoryBreakdown.slice(0, 8).map((cat, idx) => ({
+      name: cat.name,
+      value: cat.amount,
+      percentage: cat.percentage,
+      color: CATEGORY_COLORS[idx % CATEGORY_COLORS.length]
+    }));
+  }, [categoryBreakdown]);
 
   const { monthlyAverage, highestMonth } = useMemo(() => {
     const activeMonths = monthlyExpenseData.filter(m => m.amount > 0);
@@ -249,7 +301,7 @@ export default function Dashboard() {
             setSelectedExpense(null);
             setExpenseModalOpen(true);
           }}
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shrink-0"
+          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>खर्च जोडा</span>
@@ -267,141 +319,116 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* 3. Three Core Financial Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Card 1: Total Budget (एकूण बजेट) */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500/10 via-blue-500/5 to-cyan-500/10 border border-indigo-200/80 p-4 sm:p-5 shadow-sm hover:shadow-md hover:shadow-indigo-100/50 hover:border-indigo-300 transition-all duration-300 hover:-translate-y-0.5 flex flex-col justify-between">
-          <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl pointer-events-none" />
-          
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-indigo-900 uppercase tracking-wider">
-                एकूण बजेट
-              </span>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setBudgetModalOpen(true)}
-                  className="px-2 py-1 text-[11px] font-semibold text-indigo-700 bg-white/90 hover:bg-white border border-indigo-200/80 rounded-lg shadow-2xs transition-all hover:scale-105 active:scale-95 flex items-center gap-1"
-                  title="बजेट बदला"
-                >
-                  <Edit3 className="w-3 h-3" />
-                  <span>बदला</span>
-                </button>
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center shadow-sm shadow-indigo-200 shrink-0">
-                  <Wallet className="w-4 h-4" />
-                </div>
-              </div>
-            </div>
-
-            <div className="text-2xl sm:text-3xl font-extrabold text-indigo-950 tracking-tight">
-              {formatINR(totalBudget)}
-            </div>
-          </div>
-
-          <div className="text-[11px] text-indigo-800/80 font-semibold mt-3 pt-2.5 border-t border-indigo-100/80 flex items-center justify-between">
-            <span>नियोजित बांधकाम बजेट</span>
-            <span className="px-2 py-0.5 rounded-md bg-indigo-100/70 text-indigo-800 text-[10px] font-bold">
-              लक्ष्य
+      {/* 3. Four Core Financial Summary Metrics (Total Budget | Total Expenses | Remaining Balance | Budget Used %) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Metric 1: Total Budget (एकूण बजेट) */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500/10 via-blue-500/5 to-cyan-500/10 border border-indigo-200/80 p-3.5 sm:p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-indigo-900 uppercase tracking-wider">
+              Total Budget
             </span>
+            <button
+              type="button"
+              onClick={() => setBudgetModalOpen(true)}
+              className="px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 bg-white hover:bg-indigo-50 border border-indigo-200 rounded-md shadow-2xs flex items-center gap-0.5"
+              title="बजेट बदला"
+            >
+              <Edit3 className="w-2.5 h-2.5" />
+              <span>बदला</span>
+            </button>
+          </div>
+          <div className="text-xl sm:text-2xl font-extrabold text-indigo-950 tracking-tight">
+            {formatINR(totalBudget)}
+          </div>
+          <div className="text-[10px] text-indigo-800/80 font-medium mt-2 pt-1.5 border-t border-indigo-100">
+            एकूण ठरवलेले बजेट
           </div>
         </div>
 
-        {/* Card 2: Total Spent (एकूण खर्च) */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-rose-500/10 border border-amber-200/80 p-4 sm:p-5 shadow-sm hover:shadow-md hover:shadow-amber-100/50 hover:border-amber-300 transition-all duration-300 hover:-translate-y-0.5 flex flex-col justify-between">
-          <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-amber-500/10 rounded-full blur-xl pointer-events-none" />
-          
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-amber-900 uppercase tracking-wider">
-                एकूण खर्च
-              </span>
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-sm shadow-amber-200 shrink-0">
-                <Receipt className="w-4 h-4" />
-              </div>
-            </div>
-
-            <div className="text-2xl sm:text-3xl font-extrabold text-amber-950 tracking-tight">
-              {formatINR(totalSpent)}
+        {/* Metric 2: Total Expenses (एकूण खर्च) */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-rose-500/10 border border-amber-200/80 p-3.5 sm:p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider">
+              Total Expenses
+            </span>
+            <div className="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center text-xs">
+              <Receipt className="w-3.5 h-3.5" />
             </div>
           </div>
-
-          <div className="text-[11px] text-amber-800/80 font-semibold mt-3 pt-2.5 border-t border-amber-100/80 flex items-center justify-between">
-            <span>आतापर्यंत झालेला खर्च</span>
-            <span className="px-2 py-0.5 rounded-md bg-amber-100/80 text-amber-900 text-[10px] font-bold">
-              {expenses.length} व्यवहार
-            </span>
+          <div className="text-xl sm:text-2xl font-extrabold text-amber-950 tracking-tight">
+            {formatINR(totalSpent)}
+          </div>
+          <div className="text-[10px] text-amber-800/80 font-medium mt-2 pt-1.5 border-t border-amber-100 flex items-center justify-between">
+            <span>{expenses.length} व्यवहार</span>
+            {totalPending > 0 && (
+              <span className="text-rose-600 font-bold">बाकी: {formatINR(totalPending)}</span>
+            )}
           </div>
         </div>
 
-        {/* Card 3: Remaining Balance (शिल्लक रक्कम) */}
-        <div className={`relative overflow-hidden rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 flex flex-col justify-between border ${
+        {/* Metric 3: Remaining Balance (शिल्लक रक्कम) */}
+        <div className={`relative overflow-hidden rounded-2xl p-3.5 sm:p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between border ${
           isOverBudget
-            ? 'bg-gradient-to-br from-rose-500/15 via-red-500/8 to-pink-500/5 border-rose-300 hover:shadow-rose-100/50 hover:border-rose-400'
-            : 'bg-gradient-to-br from-emerald-500/15 via-teal-500/8 to-emerald-500/5 border-emerald-300/90 hover:shadow-emerald-100/50 hover:border-emerald-400'
+            ? 'bg-gradient-to-br from-rose-500/15 via-red-500/8 to-pink-500/5 border-rose-300'
+            : 'bg-gradient-to-br from-emerald-500/15 via-teal-500/8 to-emerald-500/5 border-emerald-300/90'
         }`}>
-          <div className={`absolute -right-6 -bottom-6 w-24 h-24 rounded-full blur-xl pointer-events-none ${
-            isOverBudget ? 'bg-rose-500/10' : 'bg-emerald-500/10'
-          }`} />
-
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className={`text-xs font-bold uppercase tracking-wider ${
-                isOverBudget ? 'text-rose-900' : 'text-emerald-900'
-              }`}>
-                शिल्लक रक्कम
-              </span>
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-sm shrink-0 ${
-                isOverBudget
-                  ? 'bg-gradient-to-br from-rose-600 to-red-600 text-white shadow-rose-200'
-                  : 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-200'
-              }`}>
-                <PiggyBank className="w-4 h-4" />
-              </div>
-            </div>
-
-            <div className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
-              isOverBudget ? 'text-rose-950' : 'text-emerald-950'
+          <div className="flex items-center justify-between mb-2">
+            <span className={`text-[11px] font-bold uppercase tracking-wider ${
+              isOverBudget ? 'text-rose-900' : 'text-emerald-900'
             }`}>
-              {formatINR(remainingBalance)}
+              Remaining Balance
+            </span>
+            <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-white text-xs ${
+              isOverBudget ? 'bg-rose-600' : 'bg-emerald-600'
+            }`}>
+              <PiggyBank className="w-3.5 h-3.5" />
             </div>
           </div>
-
-          <div className={`text-[11px] font-semibold mt-3 pt-2.5 border-t flex items-center justify-between ${
-            isOverBudget
-              ? 'text-rose-800 border-rose-100'
-              : 'text-emerald-800 border-emerald-100/80'
+          <div className={`text-xl sm:text-2xl font-extrabold tracking-tight ${
+            isOverBudget ? 'text-rose-950' : 'text-emerald-950'
           }`}>
-            <span>{isOverBudget ? 'अतिरिक्त झालेला खर्च' : 'बांधकामासाठी उपलब्ध'}</span>
-            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-              isOverBudget
-                ? 'bg-rose-100 text-rose-800'
-                : 'bg-emerald-100 text-emerald-800'
-            }`}>
-              {isOverBudget ? 'ओव्हर बजेट' : 'सुरक्षित'}
+            {formatINR(remainingBalance)}
+          </div>
+          <div className={`text-[10px] font-medium mt-2 pt-1.5 border-t ${
+            isOverBudget ? 'text-rose-800 border-rose-100' : 'text-emerald-800 border-emerald-100'
+          }`}>
+            {isOverBudget ? 'ओव्हर बजेट रक्कम' : 'शिल्लक उपलब्ध निधी'}
+          </div>
+        </div>
+
+        {/* Metric 4: Budget Used % (बजेट वापर %) */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800/5 via-slate-900/5 to-slate-950/10 border border-slate-200/90 p-3.5 sm:p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">
+              Budget Used
             </span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${badgeColor}`}>
+              {statusBadgeText}
+            </span>
+          </div>
+          <div className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+            {percentUsed}%
+          </div>
+          <div className="text-[10px] text-slate-600 font-medium mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between">
+            <span>या महिन्याचा: {formatINR(thisMonthSpent)}</span>
           </div>
         </div>
       </div>
 
-      {/* 4. Budget Progress & Daily/Monthly Spend Colorful Cards */}
-      <div className="glass-card rounded-2xl p-4 sm:p-5 space-y-4 border border-slate-200/80">
+      {/* 4. Full-Width Budget Utilization Progress Bar */}
+      <div className="glass-card rounded-2xl p-4 sm:p-5 space-y-2.5 border border-slate-200/80">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs sm:text-sm font-bold text-slate-900">
-              बजेट वापर प्रमाण
-            </span>
-            <span className="text-xs sm:text-sm font-extrabold px-2 py-0.5 bg-slate-900 text-white rounded-lg shadow-2xs">
-              {percentUsed}%
+              Budget Utilization (बजेट वापर प्रमाण)
             </span>
           </div>
-          <span className={`text-[11px] px-3 py-1 rounded-full font-bold border shadow-2xs ${badgeColor}`}>
-            {statusBadgeText}
+          <span className="text-xs sm:text-sm font-extrabold text-slate-900">
+            {percentUsed}% खर्च
           </span>
         </div>
 
-        {/* Sleek progress bar */}
-        <div className="w-full bg-slate-100/80 rounded-full h-2.5 overflow-hidden p-0.5 border border-slate-200/60 shadow-inner">
+        <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden p-0.5 border border-slate-200/80 shadow-inner">
           <div
             className={`h-full transition-all duration-500 rounded-full ${
               percentUsed >= 90
@@ -413,302 +440,222 @@ export default function Dashboard() {
             style={{ width: `${Math.min(percentUsed, 100)}%` }}
           />
         </div>
-
-        {/* 2 Colorful Stat Mini Cards: Today & This Month */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-          {/* Mini Card 1: Today's Spend */}
-          <div className="bg-gradient-to-br from-cyan-50/90 via-sky-50/50 to-blue-50/80 border border-cyan-200/80 rounded-xl p-3 flex items-center justify-between shadow-2xs">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 text-white flex items-center justify-center shadow-xs">
-                <Calendar className="w-4 h-4" />
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-cyan-950 block">आजचा खर्च</span>
-                <span className="text-xs text-cyan-700 font-medium">Daily Spend</span>
-              </div>
-            </div>
-            <span className="text-sm sm:text-base font-extrabold text-cyan-950">
-              {formatINR(todaySpent)}
-            </span>
-          </div>
-
-          {/* Mini Card 2: This Month's Spend */}
-          <div className="bg-gradient-to-br from-purple-50/90 via-indigo-50/50 to-violet-50/80 border border-purple-200/80 rounded-xl p-3 flex items-center justify-between shadow-2xs">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 text-white flex items-center justify-center shadow-xs">
-                <TrendingUp className="w-4 h-4" />
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-purple-950 block">या महिन्याचा खर्च</span>
-                <span className="text-xs text-purple-700 font-medium">Monthly Total</span>
-              </div>
-            </div>
-            <span className="text-sm sm:text-base font-extrabold text-purple-950">
-              {formatINR(thisMonthSpent)}
-            </span>
-          </div>
-        </div>
       </div>
 
-      {/* 5. Month-wise Expense Graph Card (मासिक खर्च आलेख) */}
-      <div className="glass-card rounded-2xl p-4 sm:p-5 space-y-3.5 border border-slate-200/80">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pb-2 border-b border-slate-100">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center shadow-xs">
-              <BarChart3 className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">
-                मासिक खर्च आलेख (Monthly Expenses)
-              </h3>
-              <p className="text-[11px] text-slate-500 font-normal">
-                दरमहा झालेल्या बांधकाम खर्चाचा तपशील व आलेख
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-xs flex-wrap">
-            <div className="px-3 py-1 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-1.5">
-              <span className="text-slate-500 text-[11px]">मासिक सरासरी:</span>
-              <span className="font-bold text-slate-900">{formatINR(monthlyAverage)}</span>
-            </div>
-            {highestMonth && highestMonth.amount > 0 && (
-              <div className="px-3 py-1 rounded-xl bg-indigo-50 border border-indigo-200/80 text-indigo-900 flex items-center gap-1.5">
-                <span className="text-indigo-600 font-medium text-[11px]">सर्वाधिक खर्च:</span>
-                <span className="font-bold">{highestMonth.label} ({formatINR(highestMonth.amount)})</span>
+      {/* 5. Two Side-by-Side Charts (Left: Monthly Expense Trend | Right: Expense by Category) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Left Chart: Monthly Expense Trend */}
+        <div className="glass-card rounded-2xl p-4 sm:p-5 space-y-3.5 border border-slate-200/80 flex flex-col justify-between">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center shadow-xs">
+                <BarChart3 className="w-4 h-4" />
               </div>
-            )}
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Monthly Expense Trend (मासिक खर्च कल)
+                </h3>
+                <p className="text-[11px] text-slate-500 font-normal">
+                  दरमहा झालेल्या बांधकाम खर्चाचा आलेख
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] text-slate-400 block">मासिक सरासरी</span>
+              <span className="text-xs font-bold text-slate-900">{formatINR(monthlyAverage)}</span>
+            </div>
           </div>
-        </div>
 
-        {/* Recharts Bar Graph */}
-        <div className="h-60 sm:h-64 w-full pt-1">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart 
-              data={monthlyExpenseData} 
-              margin={{ top: 12, right: 10, left: -15, bottom: 0 }}
-            >
-              <defs>
-                <linearGradient id="monthBarActive" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
-                  <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.85} />
-                </linearGradient>
-                <linearGradient id="monthBarStandard" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9} />
-                  <stop offset="100%" stopColor="#4338ca" stopOpacity={0.7} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis 
-                dataKey="label" 
-                tick={{ fontSize: 11, fill: '#64748b' }} 
-                axisLine={{ stroke: '#e2e8f0' }}
-                tickLine={false}
-              />
-              <YAxis 
-                tick={{ fontSize: 10, fill: '#64748b' }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(val) => val >= 100000 ? `₹${(val / 100000).toFixed(1)}L` : val >= 1000 ? `₹${(val / 1000).toFixed(0)}k` : `₹${val}`}
-              />
-              <Tooltip 
-                cursor={{ fill: '#f8fafc' }}
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const data = payload[0].payload;
-                    return (
-                      <div className="bg-slate-900 text-white p-2.5 rounded-xl shadow-xl border border-slate-700 text-xs space-y-1">
-                        <div className="font-bold text-slate-200">{data.fullLabel}</div>
-                        <div className="text-emerald-400 font-extrabold text-sm">{formatINR(data.amount)}</div>
-                        <div className="text-slate-400 text-[10px]">{data.count} व्यवहार</div>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Bar 
-                dataKey="amount" 
-                radius={[6, 6, 0, 0]}
-                maxBarSize={44}
+          <div className="h-56 sm:h-64 w-full pt-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart 
+                data={monthlyExpenseData} 
+                margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
               >
-                {monthlyExpenseData.map((entry, index) => {
-                  const nowKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
-                  const isCurrent = entry.key === nowKey;
-                  return (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={isCurrent ? 'url(#monthBarActive)' : 'url(#monthBarStandard)'} 
-                    />
-                  );
-                })}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* 6. Two-Column Desktop Section (Left: खर्चाचे प्रकार | Right: अलीकडील खर्च) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Left Column: खर्चाचे प्रकार (Categories Breakdown) */}
-        <div className="lg:col-span-5 glass-card rounded-2xl p-4 sm:p-5 space-y-3.5">
-          <div className="flex items-center justify-between pb-1 border-b border-slate-100">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">
-                खर्चाचे प्रकार
-              </h3>
-              <p className="text-[11px] text-slate-500 font-normal">
-                फिल्टर करण्यासाठी प्रकारावर क्लिक करा
-              </p>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {selectedCategoryName !== 'all' && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategoryName('all')}
-                  className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-900 text-white font-semibold shadow-2xs transition-transform hover:scale-105"
-                  title="फिल्टर काढा"
+                <defs>
+                  <linearGradient id="monthBarActive" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.85} />
+                  </linearGradient>
+                  <linearGradient id="monthBarStandard" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="#4338ca" stopOpacity={0.7} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="label" 
+                  tick={{ fontSize: 11, fill: '#64748b' }} 
+                  axisLine={{ stroke: '#e2e8f0' }}
+                  tickLine={false}
+                />
+                <YAxis 
+                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(val) => val >= 100000 ? `₹${(val / 100000).toFixed(1)}L` : val >= 1000 ? `₹${(val / 1000).toFixed(0)}k` : `₹${val}`}
+                />
+                <Tooltip 
+                  cursor={{ fill: '#f8fafc' }}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className="bg-slate-900 text-white p-2.5 rounded-xl shadow-xl border border-slate-700 text-xs space-y-1">
+                          <div className="font-bold text-slate-200">{data.fullLabel}</div>
+                          <div className="text-emerald-400 font-extrabold text-sm">{formatINR(data.amount)}</div>
+                          <div className="text-slate-400 text-[10px]">{data.count} व्यवहार</div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar 
+                  dataKey="amount" 
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={40}
                 >
-                  सर्व दाखवा ✕
-                </button>
-              )}
-              <span className="text-xs font-bold px-2.5 py-0.5 bg-slate-100 text-slate-700 rounded-full border border-slate-200">
-                {categoryBreakdown.length} प्रकार
-              </span>
+                  {monthlyExpenseData.map((entry, index) => {
+                    const nowKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+                    const isCurrent = entry.key === nowKey;
+                    return (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={isCurrent ? 'url(#monthBarActive)' : 'url(#monthBarStandard)'} 
+                      />
+                    );
+                  })}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Right Chart: Expense by Category */}
+        <div className="glass-card rounded-2xl p-4 sm:p-5 space-y-3.5 border border-slate-200/80 flex flex-col justify-between">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-xs">
+                <PieChartIcon className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Expense by Category (प्रकारानुसार खर्च)
+                </h3>
+                <p className="text-[11px] text-slate-500 font-normal">
+                  प्रमुख साहित्यावर झालेला खर्च विभागणी
+                </p>
+              </div>
             </div>
+            <span className="text-xs font-bold px-2.5 py-0.5 bg-slate-100 text-slate-700 rounded-full">
+              {categoryBreakdown?.length || 0} प्रकार
+            </span>
           </div>
 
-          {categoryBreakdown.length > 0 ? (
-            <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
-              {categoryBreakdown.map((cat) => {
-                const {
-                  icon: CatIcon,
-                  iconGradient,
-                  barColor,
-                  borderAccent,
-                  cardBg,
-                  badgeBg
-                } = getCategoryIconMeta(cat.name);
-                const isSelected = selectedCategoryName === cat.name;
+          {categoryPieData.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+              {/* Donut Pie Chart */}
+              <div className="sm:col-span-5 h-48 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={categoryPieData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={70}
+                      paddingAngle={2}
+                    >
+                      {categoryPieData.map((entry, index) => (
+                        <Cell key={`pie-cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="bg-slate-900 text-white p-2 rounded-xl shadow-xl text-xs space-y-0.5">
+                              <div className="font-bold">{data.name}</div>
+                              <div className="text-emerald-400 font-bold">{formatINR(data.value)}</div>
+                              <div className="text-slate-400 text-[10px]">{data.percentage}% वाटा</div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
 
-                return (
-                  <button
-                    key={cat.name}
-                    type="button"
-                    onClick={() => setSelectedCategoryName((prev) => (prev === cat.name ? 'all' : cat.name))}
-                    className={`w-full text-left p-3 rounded-xl transition-all duration-150 space-y-2 border shadow-2xs ${
-                      isSelected
-                        ? 'bg-slate-900 text-white border-slate-900 ring-2 ring-slate-900/30 shadow-md scale-[1.01]'
-                        : `bg-white/90 border-slate-200/80 hover:border-slate-300 ${cardBg}`
-                    }`}
+              {/* Category Legend List */}
+              <div className="sm:col-span-7 space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                {categoryPieData.map((item) => (
+                  <div
+                    key={item.name}
+                    className="flex items-center justify-between text-xs p-1.5 rounded-lg bg-slate-50/80 border border-slate-100 hover:bg-slate-100/70 transition-colors"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-xs ${
-                          isSelected ? 'bg-white/20 text-white' : iconGradient
-                        }`}>
-                          <CatIcon className="w-4 h-4" />
-                        </div>
-                        <span className={`text-xs font-bold truncate ${
-                          isSelected ? 'text-white' : 'text-slate-900'
-                        }`}>
-                          {cat.name}
-                        </span>
-                        {isSelected && (
-                          <span className="px-1.5 py-0.2 rounded bg-white text-slate-900 text-[10px] font-extrabold shrink-0">
-                            निवडलेले ✓
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className={`text-xs font-bold ${
-                          isSelected ? 'text-white' : 'text-slate-950'
-                        }`}>
-                          {formatINR(cat.amount)}
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="font-semibold text-slate-800 truncate">{item.name}</span>
                     </div>
-
-                    {/* Progress indicator */}
-                    <div className="flex items-center gap-2">
-                      <div className={`flex-1 rounded-full h-2 overflow-hidden ${
-                        isSelected ? 'bg-white/20' : 'bg-slate-100'
-                      }`}>
-                        <div
-                          className={`h-full rounded-full ${isSelected ? 'bg-white' : barColor}`}
-                          style={{ width: `${Math.min(cat.percentage, 100)}%` }}
-                        />
-                      </div>
-                      <span className={`text-[11px] font-bold shrink-0 w-10 text-right ${
-                        isSelected ? 'text-white/90' : 'text-slate-600'
-                      }`}>
-                        {cat.percentage}%
-                      </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="font-bold text-slate-900">{formatINR(item.value)}</span>
+                      <span className="text-[10px] font-medium text-slate-500 w-8 text-right">({item.percentage}%)</span>
                     </div>
-                  </button>
-                );
-              })}
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
-            <div className="py-8 text-center text-slate-400 text-xs">
-              कोणताही खर्च प्रकार उपलब्ध नाही
+            <div className="py-12 text-center text-slate-400 text-xs">
+              कोणताही खर्च उपलब्ध नाही
             </div>
           )}
         </div>
+      </div>
 
-        {/* Right Column: अलीकडील खर्च (Recent Expenses with active category filter support) */}
-        <div className="lg:col-span-7 glass-card rounded-2xl p-4 sm:p-5 space-y-3.5">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pb-1 border-b border-slate-100">
+      {/* 6. Two Bottom Sections Side-by-Side (Left: Recent Expenses | Right: Pending Payments) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+        {/* Left Column: Recent Expenses (अलीकडील खर्च) */}
+        <div className="glass-card rounded-2xl p-4 sm:p-5 space-y-3.5 border border-slate-200/80">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm font-bold text-slate-900">
-                  {selectedCategoryName !== 'all' ? `"${selectedCategoryName}" चे व्यवहार` : 'अलीकडील खर्च'}
-                </h3>
-                {selectedCategoryName !== 'all' && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-900 text-white text-[11px] font-semibold">
-                    <span>{selectedCategoryName}</span>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCategoryName('all')}
-                      className="hover:text-rose-300 font-bold ml-0.5"
-                      title="फिल्टर काढा"
-                    >
-                      ✕
-                    </button>
-                  </span>
-                )}
-              </div>
+              <h3 className="text-sm font-bold text-slate-900">
+                Recent Expenses (अलीकडील खर्च)
+              </h3>
               <p className="text-[11px] text-slate-500 font-normal">
-                {selectedCategoryName !== 'all'
-                  ? `दाखवत आहे: ${filteredRecentExpenses.length} व्यवहार`
-                  : 'नुकतेच नोंदवलेले व्यवहार'}
+                नुकतेच नोंदवलेले सर्व बांधकाम खर्च
               </p>
             </div>
-
             <Link
               to="/expenses"
               className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:underline shrink-0"
             >
-              <span>सर्व खर्च पहा</span>
+              <span>सर्व पहा</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          {/* Clean Quick Search Field */}
+          {/* Quick Search */}
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="खर्च शोधा..."
+              placeholder="खर्च किंवा प्रकार शोधा..."
               className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:bg-white transition-colors"
             />
           </div>
 
           {/* Recent Expenses List */}
           {filteredRecentExpenses.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
               {filteredRecentExpenses.map((exp) => (
                 <ExpenseCard
                   key={exp.id}
@@ -720,33 +667,102 @@ export default function Dashboard() {
               ))}
             </div>
           ) : (
-            <div className="py-10 text-center text-slate-400 space-y-2">
+            <div className="py-12 text-center text-slate-400 space-y-2">
               <div className="text-2xl">📝</div>
-              <p className="text-xs font-medium text-slate-600">
-                {selectedCategoryName !== 'all'
-                  ? `"${selectedCategoryName}" प्रकारात कोणताही खर्च सापडला नाही`
-                  : 'कोणताही खर्च नोंदवलेला नाही'}
+              <p className="text-xs font-medium text-slate-600">कोणताही खर्च सापडला नाही</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedExpense(null);
+                  setExpenseModalOpen(true);
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold text-slate-900 underline hover:text-slate-700"
+              >
+                + खर्च जोडा
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: Pending Payments (थकीत / बाकी देयके) */}
+        <div className="glass-card rounded-2xl p-4 sm:p-5 space-y-3.5 border border-slate-200/80">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-xs">
+                <Clock className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Pending Payments (बाकी देयके)
+                </h3>
+                <p className="text-[11px] text-slate-500 font-normal">
+                  देणे बाकी असलेली बिले व मजुरी
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] text-amber-700 font-bold block">एकूण बाकी रक्कम</span>
+              <span className="text-sm font-extrabold text-amber-950">{formatINR(totalPending)}</span>
+            </div>
+          </div>
+
+          {/* Pending Bills List */}
+          {pendingExpensesList.length > 0 ? (
+            <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
+              {pendingExpensesList.map((exp) => {
+                const { icon: CatIcon, iconGradient } = getCategoryIconMeta(exp.category_name);
+                return (
+                  <div
+                    key={exp.id}
+                    className="p-3 bg-amber-50/60 border border-amber-200/80 rounded-xl flex items-start justify-between gap-3 shadow-2xs hover:border-amber-300 transition-colors"
+                  >
+                    <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-xs ${iconGradient}`}>
+                        <CatIcon className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900">{exp.category_name || 'इतर'}</span>
+                          <span className="px-1.5 py-0.2 rounded bg-amber-200/80 text-amber-900 text-[10px] font-extrabold">
+                            बाकी
+                          </span>
+                        </div>
+                        {exp.description && (
+                          <p className="text-[11px] text-slate-600 truncate">{exp.description}</p>
+                        )}
+                        <span className="text-[10px] text-slate-400 block">{exp.expense_date}</span>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0 space-y-1.5">
+                      <div className="text-sm font-extrabold text-slate-950">
+                        {formatINR(exp.amount)}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleMarkAsPaid(exp)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-semibold transition-all shadow-2xs cursor-pointer hover:scale-105 active:scale-95"
+                        title="पेमेंट पूर्ण झाले म्हणून नोंदवा"
+                      >
+                        <CheckCircle className="w-3 h-3" />
+                        <span>पूर्ण झाले</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="py-12 text-center text-slate-400 space-y-2">
+              <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto text-xl">
+                ✓
+              </div>
+              <p className="text-xs font-bold text-emerald-800">
+                सर्व देयके व खर्च पूर्ण भरले आहेत!
               </p>
-              {selectedCategoryName !== 'all' ? (
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategoryName('all')}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-slate-900 underline hover:text-slate-700"
-                >
-                  सर्व प्रकार दाखवा
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedExpense(null);
-                    setExpenseModalOpen(true);
-                  }}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-slate-900 underline hover:text-slate-700"
-                >
-                  + पहिला खर्च जोडा
-                </button>
-              )}
+              <p className="text-[11px] text-slate-400">
+                कोणतेही पेमेंट बाकी (Pending) नाही.
+              </p>
             </div>
           )}
         </div>
@@ -799,3 +815,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

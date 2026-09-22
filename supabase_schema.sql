@@ -37,12 +37,16 @@ CREATE TABLE public.expenses (
     category_id UUID REFERENCES public.categories(id) ON DELETE SET NULL,
     amount NUMERIC(15, 2) NOT NULL CHECK (amount > 0),
     expense_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    payment_status TEXT NOT NULL DEFAULT 'Paid',
     description TEXT,
     photo_path TEXT,
     photo_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Migration support if table already exists
+ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'Paid';
 
 -- Indexes for lightning fast queries
 CREATE INDEX IF NOT EXISTS idx_settings_user ON public.settings(user_id);

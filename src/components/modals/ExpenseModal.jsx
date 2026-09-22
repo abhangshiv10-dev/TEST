@@ -17,6 +17,7 @@ export default function ExpenseModal({
   const [categoryId, setCategoryId] = useState('');
   const [amount, setAmount] = useState('');
   const [expenseDate, setExpenseDate] = useState(toInputDate());
+  const [paymentStatus, setPaymentStatus] = useState('Paid');
   const [description, setDescription] = useState('');
   const [photoFile, setPhotoFile] = useState(null);
   const [existingPhotoUrl, setExistingPhotoUrl] = useState(null);
@@ -30,6 +31,7 @@ export default function ExpenseModal({
       setCategoryId(expenseToEdit.category_id || '');
       setAmount(expenseToEdit.amount || '');
       setExpenseDate(expenseToEdit.expense_date || toInputDate());
+      setPaymentStatus(expenseToEdit.payment_status || 'Paid');
       setDescription(expenseToEdit.description || '');
       setExistingPhotoUrl(expenseToEdit.photo_url || null);
       setPhotoFile(null);
@@ -38,6 +40,7 @@ export default function ExpenseModal({
       setCategoryId('');
       setAmount('');
       setExpenseDate(toInputDate());
+      setPaymentStatus('Paid');
       setDescription('');
       setExistingPhotoUrl(null);
       setPhotoFile(null);
@@ -79,6 +82,7 @@ export default function ExpenseModal({
         category_id: categoryId,
         amount: Number(amount),
         expense_date: expenseDate,
+        payment_status: paymentStatus,
         description: description.trim(),
         photo_url: removePhoto ? null : existingPhotoUrl,
         photo_path: removePhoto ? null : expenseToEdit?.photo_path
@@ -171,7 +175,40 @@ export default function ExpenseModal({
             )}
           </div>
 
-          {/* 3. Date Input */}
+          {/* 3. Payment Status (पूर्ण / बाकी) */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              पेमेंट स्थिती (Payment Status)
+            </label>
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => setPaymentStatus('Paid')}
+                className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  paymentStatus === 'Paid'
+                    ? 'bg-emerald-50 border-emerald-500 text-emerald-800 ring-2 ring-emerald-500/20 shadow-2xs'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span>पूर्ण (Completed)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentStatus('Pending')}
+                className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  paymentStatus === 'Pending'
+                    ? 'bg-amber-50 border-amber-500 text-amber-900 ring-2 ring-amber-500/20 shadow-2xs'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span>बाकी (Pending)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 4. Date Input */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               दिनांक <span className="text-rose-500">*</span>
