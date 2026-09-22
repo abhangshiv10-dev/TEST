@@ -196,14 +196,20 @@ export const ReportReceiptCard = forwardRef(({
                   <div className="mt-1" style={{ overflow: 'visible', display: 'flex', justifyContent: 'flex-end' }}>
                     {isCompleted ? (
                       <span 
-                        className="status-badge rounded-full text-[8px] font-bold bg-[#E6F9EE] text-[#059669] border border-[#A7F3D0]/70"
+                        className="status-badge"
                         style={{ 
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                          display: 'inline-block',
                           textAlign: 'center',
-                          lineHeight: '1',
-                          padding: '2px 7px',
+                          verticalAlign: 'middle',
+                          lineHeight: '16px',
+                          height: '16px',
+                          padding: '0 7px',
+                          fontSize: '8px',
+                          fontWeight: '700',
+                          borderRadius: '9999px',
+                          backgroundColor: '#E6F9EE',
+                          color: '#059669',
+                          border: '1px solid #A7F3D0',
                           boxSizing: 'border-box'
                         }}
                       >
@@ -211,14 +217,20 @@ export const ReportReceiptCard = forwardRef(({
                       </span>
                     ) : (
                       <span 
-                        className="status-badge rounded-full text-[8px] font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]/70"
+                        className="status-badge"
                         style={{ 
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                          display: 'inline-block',
                           textAlign: 'center',
-                          lineHeight: '1',
-                          padding: '2px 7px',
+                          verticalAlign: 'middle',
+                          lineHeight: '16px',
+                          height: '16px',
+                          padding: '0 7px',
+                          fontSize: '8px',
+                          fontWeight: '700',
+                          borderRadius: '9999px',
+                          backgroundColor: '#FEF3C7',
+                          color: '#D97706',
+                          border: '1px solid #FDE68A',
                           boxSizing: 'border-box'
                         }}
                       >
