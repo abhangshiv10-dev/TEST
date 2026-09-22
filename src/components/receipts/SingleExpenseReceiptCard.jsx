@@ -16,7 +16,9 @@ import {
   DoorClosed, 
   Grid,
   SquareAsterisk,
-  MoreHorizontal
+  HardHat,
+  Download,
+  Share2
 } from 'lucide-react';
 import { formatINR } from '../../utils/marathiCurrency';
 
@@ -25,8 +27,8 @@ function getCategoryIcon(name = '') {
   const cat = (name || '').toLowerCase();
   if (cat.includes('सिमेंट') || cat.includes('cement')) return Package;
   if (cat.includes('वाळू') || cat.includes('sand')) return Layers;
-  if (cat.includes('मजुरी') || cat.includes('कामगार') || cat.includes('labour') || cat.includes('labor')) return Users;
-  if (cat.includes('स्टील') || cat.includes('steel') || cat.includes('लोखंड')) return SquareAsterisk;
+  if (cat.includes('मजुरी') || cat.includes('कामगार') || cat.includes('labour') || cat.includes('labor')) return HardHat;
+  if (cat.includes('स्टील') || cat.includes('steel') || cat.includes('लोखंड')) return Layers;
   if (cat.includes('विट') || cat.includes('brick') || cat.includes('ब्लॉक')) return Grid;
   if (cat.includes('वाहतूक') || cat.includes('transport')) return Truck;
   if (cat.includes('पेंट') || cat.includes('रंग') || cat.includes('paint')) return Palette;
@@ -52,36 +54,44 @@ export const SingleExpenseReceiptCard = forwardRef(({
   expense = {},
   projectName = 'माझ्या घराचे बांधकाम',
   titleText = 'Expense Added Successfully!',
-  subtitleText = 'Your construction expense has been recorded.'
+  subtitleText = 'Your construction expense has been recorded.',
+  onExportClick,
+  onWhatsAppClick,
+  showActionButtons = false
 }, ref) => {
   const CatIcon = getCategoryIcon(expense.category_name);
   const formattedDate = formatReceiptDate(expense.expense_date || new Date().toISOString().split('T')[0]);
   const formattedAmount = formatINR(expense.amount || 0);
-  const descriptionText = expense.description || expense.unit || '10 pote';
+  const descriptionText = expense.description || expense.unit || '-';
   const photoUrl = expense.receipt_url || expense.photo_url || null;
 
   return (
     <div
       ref={ref}
-      className="w-full max-w-[340px] sm:max-w-[360px] mx-auto bg-white rounded-3xl overflow-hidden shadow-xl border border-slate-100 flex flex-col font-sans text-slate-800"
-      style={{ minWidth: '320px' }}
+      className="receipt-capture-root w-[350px] sm:w-[360px] mx-auto bg-[#EDFAF3] rounded-[32px] overflow-hidden shadow-xl border border-emerald-100/60 flex flex-col font-sans text-slate-800"
+      style={{
+        boxSizing: 'border-box',
+        width: '350px',
+        backgroundColor: '#EDFAF3',
+        fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif'
+      }}
     >
-      {/* Top Green Banner with Wave / Curve */}
+      {/* Top Green Banner with diagonal wave shape */}
       <div 
-        className="relative bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 pt-5 pb-9 px-5 text-white"
+        className="relative bg-[#10B981] pt-5 pb-9 px-5 text-white"
         style={{
-          borderBottomLeftRadius: '28px',
-          borderBottomRightRadius: '28px'
+          borderBottomLeftRadius: '0px',
+          borderBottomRightRadius: '64px'
         }}
       >
         <div className="flex items-start justify-between">
           {/* Top Left: Logo & App Title */}
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-xs">
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-xs">
               <Home className="w-4 h-4 text-white" />
             </div>
             <div className="leading-tight">
-              <h3 className="text-[11px] font-bold tracking-tight text-white">Construction</h3>
+              <h3 className="text-xs font-bold tracking-tight text-white">Construction</h3>
               <p className="text-[10px] text-emerald-100 font-medium">Expense Tracker</p>
             </div>
           </div>
@@ -98,78 +108,120 @@ export const SingleExpenseReceiptCard = forwardRef(({
         </div>
       </div>
 
-      {/* Checkmark Circle (Floating over top banner) */}
-      <div className="flex flex-col items-center -mt-6 px-5 text-center">
-        <div className="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md border-3 border-white ring-2 ring-emerald-100">
-          <Check className="w-6 h-6 stroke-[3]" />
+      {/* Floating Checkmark Badge */}
+      <div className="flex flex-col items-center -mt-7 px-5 text-center relative z-10" style={{ overflow: 'visible' }}>
+        <div className="w-14 h-14 rounded-full bg-[#10B981] text-white flex items-center justify-center shadow-md border-4 border-[#EDFAF3]">
+          <Check className="w-7 h-7 stroke-[3]" />
         </div>
 
         {/* Success / Title Header */}
-        <h2 className="mt-3 text-base sm:text-lg font-extrabold text-slate-900 tracking-tight">
+        <h2 
+          className="mt-2.5 text-base sm:text-lg font-extrabold text-[#0F172A] tracking-tight"
+          style={{ lineHeight: '1.4' }}
+        >
           {titleText}
         </h2>
-        <p className="text-xs text-slate-500 font-medium mt-0.5">
+        <p 
+          className="text-xs text-slate-500 font-medium mt-0.5"
+          style={{ lineHeight: '1.5' }}
+        >
           {subtitleText}
         </p>
       </div>
 
-      {/* Main 4 Info Cards */}
-      <div className="p-5 space-y-2.5">
+      {/* Main 4 Info Cards (White cards on soft green background) */}
+      <div className="p-4 pt-3 space-y-2.5" style={{ overflow: 'visible' }}>
         {/* Card 1: खर्चाचा प्रकार (Category) */}
-        <div className="bg-slate-50/80 border border-slate-100/80 rounded-2xl p-3 flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center shrink-0">
+        <div 
+          className="bg-white rounded-2xl p-3 flex items-center gap-3.5 shadow-2xs border border-white/60"
+          style={{ minHeight: '60px', boxSizing: 'border-box' }}
+        >
+          <div className="w-10 h-10 rounded-xl bg-[#E8F4FD] text-[#2980B9] flex items-center justify-center shrink-0">
             <CatIcon className="w-5 h-5" />
           </div>
-          <div className="min-w-0">
-            <span className="text-[11px] text-slate-400 font-medium block">
+          <div className="min-w-0" style={{ overflow: 'visible' }}>
+            <span 
+              className="text-[11px] text-[#94A3B8] font-medium block"
+              style={{ lineHeight: '1.4' }}
+            >
               खर्चाचा प्रकार
             </span>
-            <span className="text-xs sm:text-sm font-bold text-slate-900 block truncate">
-              {expense.category_name || 'सिमेंट (Cement)'}
+            <span 
+              className="text-xs sm:text-sm font-bold text-slate-900 block"
+              style={{ lineHeight: '1.4' }}
+            >
+              {expense.category_name || 'सिमेंट'}
             </span>
           </div>
         </div>
 
         {/* Card 2: रक्कम (Amount) */}
-        <div className="bg-emerald-50/60 border border-emerald-100/80 rounded-2xl p-3 flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 font-bold text-lg">
+        <div 
+          className="bg-white rounded-2xl p-3 flex items-center gap-3.5 shadow-2xs border border-white/60"
+          style={{ minHeight: '60px', boxSizing: 'border-box' }}
+        >
+          <div className="w-10 h-10 rounded-xl bg-[#E6F8ED] text-[#10B981] flex items-center justify-center shrink-0 font-bold text-lg">
             <IndianRupee className="w-5 h-5" />
           </div>
-          <div className="min-w-0">
-            <span className="text-[11px] text-emerald-700 font-medium block">
+          <div className="min-w-0" style={{ overflow: 'visible' }}>
+            <span 
+              className="text-[11px] text-[#94A3B8] font-medium block"
+              style={{ lineHeight: '1.4' }}
+            >
               रक्कम (₹)
             </span>
-            <span className="text-sm sm:text-base font-extrabold text-slate-900 block truncate">
+            <span 
+              className="text-sm sm:text-base font-extrabold text-slate-900 block"
+              style={{ lineHeight: '1.4' }}
+            >
               {formattedAmount}
             </span>
           </div>
         </div>
 
         {/* Card 3: दिनांक (Date) */}
-        <div className="bg-slate-50/80 border border-slate-100/80 rounded-2xl p-3 flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+        <div 
+          className="bg-white rounded-2xl p-3 flex items-center gap-3.5 shadow-2xs border border-white/60"
+          style={{ minHeight: '60px', boxSizing: 'border-box' }}
+        >
+          <div className="w-10 h-10 rounded-xl bg-[#EBF3FC] text-[#2F80ED] flex items-center justify-center shrink-0">
             <Calendar className="w-5 h-5" />
           </div>
-          <div className="min-w-0">
-            <span className="text-[11px] text-slate-400 font-medium block">
+          <div className="min-w-0" style={{ overflow: 'visible' }}>
+            <span 
+              className="text-[11px] text-[#94A3B8] font-medium block"
+              style={{ lineHeight: '1.4' }}
+            >
               दिनांक
             </span>
-            <span className="text-xs sm:text-sm font-bold text-slate-900 block">
+            <span 
+              className="text-xs sm:text-sm font-bold text-slate-900 block"
+              style={{ lineHeight: '1.4' }}
+            >
               {formattedDate}
             </span>
           </div>
         </div>
 
         {/* Card 4: तपशील (Description / Quantity) */}
-        <div className="bg-slate-50/80 border border-slate-100/80 rounded-2xl p-3 flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+        <div 
+          className="bg-white rounded-2xl p-3 flex items-center gap-3.5 shadow-2xs border border-white/60"
+          style={{ minHeight: '60px', boxSizing: 'border-box' }}
+        >
+          <div className="w-10 h-10 rounded-xl bg-[#EEF2FC] text-[#4F46E5] flex items-center justify-center shrink-0">
             <FileText className="w-5 h-5" />
           </div>
-          <div className="min-w-0">
-            <span className="text-[11px] text-slate-400 font-medium block">
+          <div className="min-w-0" style={{ overflow: 'visible' }}>
+            <span 
+              className="text-[11px] text-[#94A3B8] font-medium block"
+              style={{ lineHeight: '1.4' }}
+            >
               तपशील (संख्या/प्रमाण)
             </span>
-            <span className="text-xs sm:text-sm font-bold text-slate-900 block truncate">
+            <span 
+              className="text-xs sm:text-sm font-bold text-slate-900 block"
+              style={{ lineHeight: '1.4' }}
+            >
               {descriptionText}
             </span>
           </div>
@@ -180,7 +232,7 @@ export const SingleExpenseReceiptCard = forwardRef(({
           <h4 className="text-xs font-bold text-slate-800 mb-2">
             पावती / फोटो
           </h4>
-          <div className="w-full h-32 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center relative">
+          <div className="w-full h-32 rounded-2xl overflow-hidden bg-white border border-emerald-100 shadow-2xs flex items-center justify-center relative">
             {photoUrl ? (
               <img 
                 src={photoUrl} 
@@ -189,18 +241,36 @@ export const SingleExpenseReceiptCard = forwardRef(({
                 crossOrigin="anonymous"
               />
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 bg-linear-to-br from-slate-100 to-slate-200/60 p-4 text-center">
-                <FileText className="w-8 h-8 text-slate-300 mb-1" />
+              <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 bg-linear-to-br from-emerald-50/40 to-slate-100/60 p-4 text-center">
+                <FileText className="w-8 h-8 text-emerald-400 mb-1" />
                 <span className="text-[11px] font-medium text-slate-500">पावती / बिल फोटो उपलब्ध नाही</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Project and verification mark footer */}
-        <div className="pt-2 text-center text-[10px] text-slate-400 border-t border-slate-100 mt-3">
-          <span>🏛️ {projectName} • Verified Digital Expense Slip</span>
-        </div>
+        {/* Action Buttons if needed */}
+        {showActionButtons && (
+          <div className="pt-2 flex items-center gap-2.5" style={{ overflow: 'visible' }}>
+            <button
+              type="button"
+              onClick={onExportClick}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-[#2F80ED] text-xs font-bold transition-all border border-[#D0E8FF] shadow-2xs"
+            >
+              <Download className="w-4 h-4" />
+              <span>Export</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onWhatsAppClick}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#00B074] hover:bg-[#009B66] text-white text-xs font-bold transition-all shadow-xs"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>Share on WhatsApp</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

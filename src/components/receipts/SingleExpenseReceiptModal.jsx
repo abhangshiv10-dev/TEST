@@ -59,10 +59,6 @@ export function SingleExpenseReceiptModal({
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
       <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200">
@@ -91,6 +87,9 @@ export function SingleExpenseReceiptModal({
             ref={receiptRef}
             expense={expense}
             projectName={projectName}
+            onExportClick={() => handleExport('png')}
+            onWhatsAppClick={handleWhatsAppShare}
+            showActionButtons={false}
           />
         </div>
 
@@ -101,10 +100,10 @@ export function SingleExpenseReceiptModal({
             <button
               onClick={() => handleExport('png')}
               disabled={exporting}
-              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm hover:shadow transition-all disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#EBF5FE] hover:bg-[#D9EDFE] text-[#2F80ED] border border-[#D0E8FF] text-xs font-bold shadow-2xs hover:shadow transition-all disabled:opacity-50"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-              <span>PNG डाउनलोड</span>
+              <span>Export (PNG)</span>
             </button>
 
             <button
@@ -121,10 +120,10 @@ export function SingleExpenseReceiptModal({
           <button
             onClick={handleWhatsAppShare}
             disabled={exporting}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm hover:shadow transition-all disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#00B074] hover:bg-[#009B66] text-white text-xs font-bold shadow-sm hover:shadow transition-all disabled:opacity-50"
           >
             <Share2 className="w-4 h-4" />
-            <span>WhatsApp वर शेअर करा (Share on WhatsApp)</span>
+            <span>Share on WhatsApp</span>
           </button>
         </div>
       </div>

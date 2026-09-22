@@ -1,7 +1,7 @@
 import html2canvas from 'html2canvas';
 
 /**
- * Captures an HTML element and exports as PNG or JPG
+ * Captures an HTML element and exports as PNG or JPG with crystal-clear typography
  * @param {HTMLElement} element 
  * @param {string} fileName 
  * @param {'png'|'jpg'} format 
@@ -16,12 +16,29 @@ export async function exportElementAsImage(element, fileName = 'receipt', format
       allowTaint: true,
       backgroundColor: '#ffffff',
       logging: false,
-      windowWidth: element.scrollWidth,
-      windowHeight: element.scrollHeight
+      scrollX: 0,
+      scrollY: 0,
+      onclone: (clonedDoc) => {
+        // Find cloned element
+        const target = clonedDoc.querySelector('.receipt-capture-root') || clonedDoc.body;
+        if (target) {
+          target.style.transform = 'none';
+          target.style.boxSizing = 'border-box';
+          
+          // Ensure all text elements have ample line-height and no overflow clipping
+          const allText = target.querySelectorAll('*');
+          allText.forEach((node) => {
+            const computedStyle = window.getComputedStyle(node);
+            if (computedStyle.overflow === 'hidden') {
+              node.style.overflow = 'visible';
+            }
+          });
+        }
+      }
     });
 
     const mimeType = format === 'jpg' ? 'image/jpeg' : 'image/png';
-    const quality = format === 'jpg' ? 0.95 : 1.0;
+    const quality = format === 'jpg' ? 0.96 : 1.0;
     const dataUrl = canvas.toDataURL(mimeType, quality);
 
     const link = document.createElement('a');
@@ -53,7 +70,13 @@ export async function shareToWhatsApp(element, captionText = '') {
         scale: 2.5,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          const target = clonedDoc.querySelector('.receipt-capture-root') || clonedDoc.body;
+          if (target) {
+            target.style.transform = 'none';
+          }
+        }
       });
 
       canvas.toBlob(async (blob) => {

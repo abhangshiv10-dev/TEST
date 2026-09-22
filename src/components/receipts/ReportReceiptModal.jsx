@@ -93,6 +93,9 @@ export function ReportReceiptModal({
             totalEntries={totalEntries}
             dateRangeText={dateRangeText}
             projectName={projectName}
+            onExportClick={() => handleExport('png')}
+            onWhatsAppClick={handleWhatsAppShare}
+            showActionButtons={false}
           />
         </div>
 
@@ -103,10 +106,10 @@ export function ReportReceiptModal({
             <button
               onClick={() => handleExport('png')}
               disabled={exporting}
-              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm hover:shadow transition-all disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#EBF5FE] hover:bg-[#D9EDFE] text-[#2F80ED] border border-[#D0E8FF] text-xs font-bold shadow-2xs hover:shadow transition-all disabled:opacity-50"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-              <span>PNG डाउनलोड (Download PNG)</span>
+              <span>Export (PNG)</span>
             </button>
 
             <button
@@ -115,7 +118,7 @@ export function ReportReceiptModal({
               className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm hover:shadow transition-all disabled:opacity-50"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-              <span>JPG डाउनलोड (Download JPG)</span>
+              <span>JPG डाउनलोड</span>
             </button>
           </div>
 
@@ -123,10 +126,10 @@ export function ReportReceiptModal({
           <button
             onClick={handleWhatsAppShare}
             disabled={exporting}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm hover:shadow transition-all disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#00B074] hover:bg-[#009B66] text-white text-xs font-bold shadow-sm hover:shadow transition-all disabled:opacity-50"
           >
             <Share2 className="w-4 h-4" />
-            <span>WhatsApp वर शेअर करा (Share on WhatsApp)</span>
+            <span>Share on WhatsApp</span>
           </button>
         </div>
       </div>
