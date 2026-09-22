@@ -1,0 +1,17 @@
+import React from 'react';
+import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import { BudgetProvider } from './contexts/BudgetContext';
+import AppRoutes from './routes/AppRoutes';
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <BudgetProvider>
+          <AppRoutes />
+        </BudgetProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+}
