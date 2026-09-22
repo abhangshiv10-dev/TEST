@@ -1,14 +1,23 @@
 import html2canvas from 'html2canvas';
 
 /**
- * Captures an HTML element and exports as PNG or JPG using an isolated off-screen container
- * This completely prevents any modal scroll or viewport height clipping!
+ * Captures an HTML element and exports as PNG or JPG using an isolated off-screen container.
+ * Applies anti-clipping typography fixes to guarantee zero text truncation on any device.
  * @param {HTMLElement} element 
  * @param {string} fileName 
  * @param {'png'|'jpg'} format 
  */
 export async function exportElementAsImage(element, fileName = 'receipt', format = 'png') {
   if (!element) return;
+
+  // Ensure fonts are fully loaded
+  if (document.fonts && document.fonts.ready) {
+    try {
+      await document.fonts.ready;
+    } catch (e) {
+      console.warn('Font loading wait skipped:', e);
+    }
+  }
 
   // Clone the element into an isolated off-screen container
   const clone = element.cloneNode(true);
@@ -30,6 +39,21 @@ export async function exportElementAsImage(element, fileName = 'receipt', format
   clone.style.overflow = 'visible';
   clone.style.transform = 'none';
   
+  // Anti-clipping rule application on all cloned text nodes
+  const allNodes = clone.querySelectorAll('*');
+  allNodes.forEach((node) => {
+    node.style.overflow = 'visible';
+    node.style.textOverflow = 'clip';
+    
+    // Apply ample line-height for ascenders and descenders in Marathi & English
+    if (node.tagName === 'SPAN' || node.tagName === 'P' || node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'H3' || node.tagName === 'H4') {
+      node.style.lineHeight = '1.6';
+      node.style.letterSpacing = 'normal';
+      node.style.paddingTop = '1px';
+      node.style.paddingBottom = '2px';
+    }
+  });
+
   container.appendChild(clone);
   document.body.appendChild(container);
 
@@ -95,6 +119,15 @@ export async function shareToWhatsApp(element, captionText = '') {
     return;
   }
 
+  // Ensure fonts are ready
+  if (document.fonts && document.fonts.ready) {
+    try {
+      await document.fonts.ready;
+    } catch (e) {
+      console.warn('Font loading wait skipped:', e);
+    }
+  }
+
   // Clone into isolated off-screen container
   const clone = element.cloneNode(true);
   const container = document.createElement('div');
@@ -113,6 +146,18 @@ export async function shareToWhatsApp(element, captionText = '') {
   clone.style.height = 'auto';
   clone.style.overflow = 'visible';
   clone.style.transform = 'none';
+
+  const allNodes = clone.querySelectorAll('*');
+  allNodes.forEach((node) => {
+    node.style.overflow = 'visible';
+    node.style.textOverflow = 'clip';
+    if (node.tagName === 'SPAN' || node.tagName === 'P' || node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'H3' || node.tagName === 'H4') {
+      node.style.lineHeight = '1.6';
+      node.style.letterSpacing = 'normal';
+      node.style.paddingTop = '1px';
+      node.style.paddingBottom = '2px';
+    }
+  });
 
   container.appendChild(clone);
   document.body.appendChild(container);
