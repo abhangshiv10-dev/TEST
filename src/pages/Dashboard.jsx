@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import {
   Plus,
@@ -14,8 +14,19 @@ import {
   Search,
   Sparkles,
   TrendingUp,
-  ShieldCheck
+  ShieldCheck,
+  BarChart3
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Cell
+} from 'recharts';
 import Swal from 'sweetalert2';
 import { useBudget } from '../contexts/BudgetContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -123,6 +134,80 @@ export default function Dashboard() {
       return true;
     })
     .slice(0, selectedCategoryName !== 'all' ? 50 : 8); // Show all matching when category filtered, or latest 8 by default
+
+  // Month-wise expense aggregation for the graph
+  const monthlyExpenseData = useMemo(() => {
+    const marathiMonths = [
+      'जानेवारी', 'फेब्रुवारी', 'मार्च', 'एप्रिल', 'मे', 'जून',
+      'जुलै', 'ऑगस्ट', 'सप्टेंबर', 'ऑक्टोबर', 'नोव्हेंबर', 'डिसेंबर'
+    ];
+    const marathiShortMonths = [
+      'जाने', 'फेब्रु', 'मार्च', 'एप्रि', 'मे', 'जून',
+      'जुलै', 'ऑग', 'सप्टें', 'ऑक्टो', 'नोव्हें', 'डिसें'
+    ];
+
+    const monthsMap = {};
+    const now = new Date();
+
+    // Default to last 6 months in chronological order
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = `${marathiShortMonths[d.getMonth()]} '${String(d.getFullYear()).slice(-2)}`;
+      const fullLabel = `${marathiMonths[d.getMonth()]} ${d.getFullYear()}`;
+      monthsMap[key] = {
+        key,
+        label,
+        fullLabel,
+        amount: 0,
+        count: 0
+      };
+    }
+
+    // Populate all expense entries
+    expenses.forEach((exp) => {
+      if (!exp.expense_date) return;
+      const d = new Date(exp.expense_date);
+      if (isNaN(d.getTime())) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const amt = Number(exp.amount) || 0;
+
+      if (!monthsMap[key]) {
+        const label = `${marathiShortMonths[d.getMonth()]} '${String(d.getFullYear()).slice(-2)}`;
+        const fullLabel = `${marathiMonths[d.getMonth()]} ${d.getFullYear()}`;
+        monthsMap[key] = {
+          key,
+          label,
+          fullLabel,
+          amount: 0,
+          count: 0
+        };
+      }
+
+      monthsMap[key].amount += amt;
+      monthsMap[key].count += 1;
+    });
+
+    return Object.values(monthsMap).sort((a, b) => a.key.localeCompare(b.key));
+  }, [expenses]);
+
+  const { monthlyAverage, highestMonth } = useMemo(() => {
+    const activeMonths = monthlyExpenseData.filter(m => m.amount > 0);
+    const total = activeMonths.reduce((sum, m) => sum + m.amount, 0);
+    const avg = activeMonths.length > 0 ? Math.round(total / activeMonths.length) : 0;
+    
+    let highest = null;
+    monthlyExpenseData.forEach(m => {
+      if (!highest || m.amount > highest.amount) {
+        highest = m;
+      }
+    });
+
+    return {
+      monthlyAverage: avg,
+      highestMonth: highest
+    };
+  }, [monthlyExpenseData]);
 
   // Determine budget progress bar color & warning state
   let progressColor = 'bg-slate-900';
@@ -365,7 +450,105 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 5. Two-Column Desktop Section (Left: खर्चाचे प्रकार | Right: अलीकडील खर्च) */}
+      {/* 5. Month-wise Expense Graph Card (महिनानिहाय खर्च आलेख) */}
+      <div className="glass-card rounded-2xl p-4 sm:p-5 space-y-3.5 border border-slate-200/80">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pb-2 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center shadow-xs">
+              <BarChart3 className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">
+                महिनानिहाय खर्च आलेख (Monthly Expense Graph)
+              </h3>
+              <p className="text-[11px] text-slate-500 font-normal">
+                प्रत्येक महिन्यातील बांधकाम खर्चाचा आलेख व कल (Trend)
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs flex-wrap">
+            <div className="px-3 py-1 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-1.5">
+              <span className="text-slate-500 text-[11px]">मासिक सरासरी:</span>
+              <span className="font-bold text-slate-900">{formatINR(monthlyAverage)}</span>
+            </div>
+            {highestMonth && highestMonth.amount > 0 && (
+              <div className="px-3 py-1 rounded-xl bg-indigo-50 border border-indigo-200/80 text-indigo-900 flex items-center gap-1.5">
+                <span className="text-indigo-600 font-medium text-[11px]">सर्वोच्च:</span>
+                <span className="font-bold">{highestMonth.label} ({formatINR(highestMonth.amount)})</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recharts Bar Graph */}
+        <div className="h-60 sm:h-64 w-full pt-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart 
+              data={monthlyExpenseData} 
+              margin={{ top: 12, right: 10, left: -15, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="monthBarActive" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.85} />
+                </linearGradient>
+                <linearGradient id="monthBarStandard" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9} />
+                  <stop offset="100%" stopColor="#4338ca" stopOpacity={0.7} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis 
+                dataKey="label" 
+                tick={{ fontSize: 11, fill: '#64748b' }} 
+                axisLine={{ stroke: '#e2e8f0' }}
+                tickLine={false}
+              />
+              <YAxis 
+                tick={{ fontSize: 10, fill: '#64748b' }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(val) => val >= 100000 ? `₹${(val / 100000).toFixed(1)}L` : val >= 1000 ? `₹${(val / 1000).toFixed(0)}k` : `₹${val}`}
+              />
+              <Tooltip 
+                cursor={{ fill: '#f8fafc' }}
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const data = payload[0].payload;
+                    return (
+                      <div className="bg-slate-900 text-white p-2.5 rounded-xl shadow-xl border border-slate-700 text-xs space-y-1">
+                        <div className="font-bold text-slate-200">{data.fullLabel}</div>
+                        <div className="text-emerald-400 font-extrabold text-sm">{formatINR(data.amount)}</div>
+                        <div className="text-slate-400 text-[10px]">{data.count} व्यवहार नोंदवले</div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Bar 
+                dataKey="amount" 
+                radius={[6, 6, 0, 0]}
+                maxBarSize={44}
+              >
+                {monthlyExpenseData.map((entry, index) => {
+                  const nowKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+                  const isCurrent = entry.key === nowKey;
+                  return (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={isCurrent ? 'url(#monthBarActive)' : 'url(#monthBarStandard)'} 
+                    />
+                  );
+                })}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* 6. Two-Column Desktop Section (Left: खर्चाचे प्रकार | Right: अलीकडील खर्च) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* Left Column: खर्चाचे प्रकार (Categories Breakdown) */}
         <div className="lg:col-span-5 glass-card rounded-2xl p-4 sm:p-5 space-y-3.5">
