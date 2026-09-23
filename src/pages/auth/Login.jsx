@@ -75,7 +75,7 @@ export default function Login() {
             🏠
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-            माझ्या घराचे बांधकाम
+            Home | Expenses
           </h1>
           <p className="text-xs text-slate-500 font-medium">
             बांधकाम खर्चाचा सोपा, सुरक्षित आणि स्मार्ट हिशोब

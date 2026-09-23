@@ -129,6 +129,20 @@ export const BudgetProvider = ({ children }) => {
     await refreshData();
   };
 
+  // Quick Toggle expense payment status (Paid <-> Pending)
+  const toggleExpenseStatus = async (expense) => {
+    if (!user || !expense) return;
+    const currentStatus = (expense.payment_status || 'Paid').toLowerCase();
+    const newStatus = currentStatus === 'pending' || expense.payment_status === 'बाकी' ? 'Paid' : 'Pending';
+    
+    const updated = await marathiDataService.updateExpense(user.id, expense.id, {
+      ...expense,
+      payment_status: newStatus
+    });
+    await refreshData();
+    return newStatus;
+  };
+
   const value = {
     summary,
     categories,
@@ -144,7 +158,8 @@ export const BudgetProvider = ({ children }) => {
     deleteCategory,
     addExpense,
     updateExpense,
-    deleteExpense
+    deleteExpense,
+    toggleExpenseStatus
   };
 
   return <BudgetContext.Provider value={value}>{children}</BudgetContext.Provider>;

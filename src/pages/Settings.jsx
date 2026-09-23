@@ -718,7 +718,7 @@ export default function Settings() {
       {/* Report Receipt Modal (Template 1 - Max 10 entries) */}
       <ReportReceiptModal
         isOpen={reportReceiptOpen}
-        expenses={expenses.slice(0, 10)}
+        expenses={expenses}
         totalExpenses={summary.totalSpent}
         totalEntries={expenses.length}
         dateRangeText=""

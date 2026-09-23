@@ -1,5 +1,6 @@
-import React, { useRef, useState } from 'react';
-import { X, Download, Share2, Printer, CheckCircle, Loader2, Image as ImageIcon } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { X, Download, Share2, Loader2, Image as ImageIcon } from 'lucide-react';
 import { SingleExpenseReceiptCard } from './SingleExpenseReceiptCard';
 import { exportElementAsImage, shareToWhatsApp } from '../../utils/receiptExporter';
 import Swal from 'sweetalert2';
@@ -12,6 +13,17 @@ export function SingleExpenseReceiptModal({
 }) {
   const receiptRef = useRef(null);
   const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   if (!isOpen || !expense) return null;
 
@@ -59,11 +71,11 @@ export function SingleExpenseReceiptModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200">
+  const modalContent = (
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-150">
+      <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-auto animate-in zoom-in-95 duration-150 flex flex-col">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-white">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
               <ImageIcon className="w-4 h-4" />
@@ -75,14 +87,14 @@ export function SingleExpenseReceiptModal({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Modal Body: Receipt Card Container */}
-        <div className="p-4 sm:p-6 bg-slate-100/70 max-h-[70vh] overflow-y-auto flex justify-center">
+        <div className="p-4 sm:p-6 bg-slate-100/80 max-h-[65vh] overflow-y-auto flex justify-center items-start w-full">
           <SingleExpenseReceiptCard
             ref={receiptRef}
             expense={expense}
@@ -100,7 +112,7 @@ export function SingleExpenseReceiptModal({
             <button
               onClick={() => handleExport('png')}
               disabled={exporting}
-              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#EBF5FE] hover:bg-[#D9EDFE] text-[#2F80ED] border border-[#D0E8FF] text-xs font-bold shadow-2xs hover:shadow transition-all disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#EBF5FE] hover:bg-[#D9EDFE] text-[#2F80ED] border border-[#D0E8FF] text-xs font-bold shadow-2xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               <span>Export (PNG)</span>
@@ -109,7 +121,7 @@ export function SingleExpenseReceiptModal({
             <button
               onClick={() => handleExport('jpg')}
               disabled={exporting}
-              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm hover:shadow transition-all disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               <span>JPG डाउनलोड</span>
@@ -120,7 +132,7 @@ export function SingleExpenseReceiptModal({
           <button
             onClick={handleWhatsAppShare}
             disabled={exporting}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#00B074] hover:bg-[#009B66] text-white text-xs font-bold shadow-sm hover:shadow transition-all disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#00B074] hover:bg-[#009B66] text-white text-xs font-bold shadow-sm hover:shadow transition-all disabled:opacity-50 cursor-pointer"
           >
             <Share2 className="w-4 h-4" />
             <span>Share on WhatsApp</span>
@@ -129,4 +141,6 @@ export function SingleExpenseReceiptModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

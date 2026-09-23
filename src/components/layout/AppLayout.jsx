@@ -37,7 +37,7 @@ export default function AppLayout() {
       <footer className="border-t border-slate-200/70 bg-white/60 backdrop-blur-md py-4 text-center text-[12px] text-slate-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-800">माझ्या घराचे बांधकाम</span>
+            <span className="font-semibold text-slate-800">Home | Expenses</span>
             <span className="text-slate-300">•</span>
             <span>वैयक्तिक घर बांधकाम खर्च व्यवस्थापन</span>
           </div>

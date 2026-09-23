@@ -60,7 +60,8 @@ export default function Dashboard() {
     loading,
     updateBudget,
     updateExpense,
-    deleteExpense
+    deleteExpense,
+    toggleExpenseStatus
   } = useBudget();
 
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
@@ -180,7 +181,7 @@ export default function Dashboard() {
 
   // Pending Expenses List
   const pendingExpensesList = useMemo(() => {
-    return expenses.filter(e => e.payment_status === 'Pending');
+    return expenses.filter(e => (e.payment_status || '').toLowerCase() === 'pending' || e.payment_status === 'बाकी');
   }, [expenses]);
 
   // Month-wise expense aggregation for the graph
@@ -293,7 +294,7 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-            माझ्या घराचे बांधकाम
+            Home | Expenses
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 font-normal mt-0.5">
             आजपर्यंतच्या बांधकाम खर्चाचा संपूर्ण आढावा
@@ -680,6 +681,7 @@ export default function Dashboard() {
                   expense={exp}
                   onEdit={handleEditExpense}
                   onDelete={handleDeleteExpense}
+                  onToggleStatus={toggleExpenseStatus}
                   onViewPhoto={handleOpenPhoto}
                   onViewReceipt={(expense) => setSingleReceiptExpense(expense)}
                 />
@@ -842,7 +844,7 @@ export default function Dashboard() {
       {/* Report Receipt Modal (Template 1 - Max 10 entries) */}
       <ReportReceiptModal
         isOpen={reportReceiptOpen}
-        expenses={expenses.slice(0, 10)}
+        expenses={expenses}
         totalExpenses={summary.totalSpent}
         totalEntries={expenses.length}
         dateRangeText=""

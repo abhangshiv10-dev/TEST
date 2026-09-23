@@ -26,7 +26,7 @@ import { ReportReceiptModal } from '../components/receipts/ReportReceiptModal';
 import { matchesCategory } from '../utils/bilingualSearch';
 
 export default function Expenses() {
-  const { expenses, categories, deleteExpense } = useBudget();
+  const { expenses, categories, deleteExpense, toggleExpenseStatus } = useBudget();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState('all'); // all, today, yesterday, this_month, custom
@@ -336,6 +336,7 @@ export default function Expenses() {
               expense={exp}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onToggleStatus={toggleExpenseStatus}
               onViewPhoto={handleOpenPhoto}
               onViewReceipt={(expense) => setSingleReceiptExpense(expense)}
             />
@@ -384,7 +385,7 @@ export default function Expenses() {
       {/* Report Receipt Modal (Template 1 - Max 10 entries) */}
       <ReportReceiptModal
         isOpen={reportReceiptOpen}
-        expenses={filteredExpenses.slice(0, 10)}
+        expenses={filteredExpenses}
         totalExpenses={filteredExpenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)}
         totalEntries={filteredExpenses.length}
         dateRangeText={

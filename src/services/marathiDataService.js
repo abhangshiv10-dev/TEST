@@ -448,9 +448,12 @@ export const marathiDataService = {
           .order('created_at', { ascending: false });
 
         if (!error && data) {
+          const localStored = getLocalData('expenses_shared', []);
+          const localStatusMap = new Map(localStored.map(item => [item.id, item.payment_status]));
+
           const mapped = data.map(item => ({
             ...item,
-            payment_status: item.payment_status || 'Paid',
+            payment_status: item.payment_status || localStatusMap.get(item.id) || 'Paid',
             category_name: item.categories?.name || 'इतर'
           }));
           setLocalData('expenses_shared', mapped);
@@ -519,7 +522,7 @@ export const marathiDataService = {
         if (!insertRes.error && insertRes.data) {
           const newExp = {
             ...insertRes.data,
-            payment_status: insertRes.data.payment_status || payload.payment_status || 'Paid',
+            payment_status: payload.payment_status || insertRes.data.payment_status || 'Paid',
             category_name: insertRes.data.categories?.name || 'इतर'
           };
           const expenses = getLocalData('expenses_shared', []);
@@ -609,7 +612,7 @@ export const marathiDataService = {
         if (!updateRes.error && updateRes.data) {
           const updated = {
             ...updateRes.data,
-            payment_status: updateRes.data.payment_status || payload.payment_status || 'Paid',
+            payment_status: payload.payment_status || updateRes.data.payment_status || 'Paid',
             category_name: updateRes.data.categories?.name || 'इतर'
           };
           const expenses = getLocalData('expenses_shared', []);
@@ -698,7 +701,7 @@ export const marathiDataService = {
       const amt = Number(exp.amount) || 0;
       totalSpent += amt;
 
-      const isPending = exp.payment_status === 'Pending';
+      const isPending = (exp.payment_status || '').toLowerCase() === 'pending' || exp.payment_status === 'बाकी';
       if (isPending) {
         totalPending += amt;
         pendingCount += 1;

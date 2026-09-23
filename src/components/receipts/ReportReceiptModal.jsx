@@ -1,4 +1,5 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   Download, 
@@ -27,6 +28,17 @@ export function ReportReceiptModal({
   const [filterPreset, setFilterPreset] = useState('all'); // 'all', 'this_month', 'last_30', 'custom'
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   // Dynamically filter expenses based on chosen date range
   const filteredExpenses = useMemo(() => {
@@ -150,40 +162,40 @@ export function ReportReceiptModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200">
+  const modalContent = (
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-150">
+      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-auto animate-in zoom-in-95 duration-150 flex flex-col">
         
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-slate-50/70">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-white">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shadow-2xs">
               <FileSpreadsheet className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-800">पावती अहवाल (Report Slip)</h3>
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">पावती अहवाल (Report Slip)</h3>
               <p className="text-[11px] text-slate-500 font-medium">तारीख फिल्टर करा व PDF / JPG / PNG डाउनलोड करा</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Date Filter Bar */}
-        <div className="px-5 py-3 bg-white border-b border-slate-100 space-y-2.5">
+        <div className="px-5 py-3 bg-slate-50/70 border-b border-slate-100 space-y-2.5">
           {/* Preset Buttons */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <button
               type="button"
               onClick={() => { setFilterPreset('all'); setFromDate(''); setToDate(''); }}
-              className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 filterPreset === 'all'
-                  ? 'bg-[#059669] text-white shadow-xs'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
               }`}
             >
               सर्व नोंदी ({expenses.length})
@@ -192,10 +204,10 @@ export function ReportReceiptModal({
             <button
               type="button"
               onClick={() => setFilterPreset('this_month')}
-              className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 filterPreset === 'this_month'
-                  ? 'bg-[#059669] text-white shadow-xs'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
               }`}
             >
               या महिन्यात
@@ -204,10 +216,10 @@ export function ReportReceiptModal({
             <button
               type="button"
               onClick={() => setFilterPreset('last_30')}
-              className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 filterPreset === 'last_30'
-                  ? 'bg-[#059669] text-white shadow-xs'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
               }`}
             >
               मागील ३० दिवस
@@ -216,10 +228,10 @@ export function ReportReceiptModal({
             <button
               type="button"
               onClick={() => setFilterPreset('custom')}
-              className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 filterPreset === 'custom'
-                  ? 'bg-[#059669] text-white shadow-xs'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
               }`}
             >
               कस्टम तारीख
@@ -237,7 +249,7 @@ export function ReportReceiptModal({
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
               </div>
 
@@ -249,7 +261,7 @@ export function ReportReceiptModal({
                   type="date"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
               </div>
             </div>
@@ -257,7 +269,7 @@ export function ReportReceiptModal({
         </div>
 
         {/* Modal Body: Receipt Card Container */}
-        <div className="p-4 sm:p-5 bg-slate-100/70 max-h-[60vh] overflow-y-auto flex justify-center">
+        <div className="p-2 sm:p-3 bg-slate-100/70 max-h-[65vh] overflow-y-auto flex justify-center items-start w-full">
           <ReportReceiptCard
             ref={receiptRef}
             expenses={displayExpenses}
@@ -276,7 +288,7 @@ export function ReportReceiptModal({
             <button
               onClick={handleExportPDF}
               disabled={exporting}
-              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50"
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
               <span>PDF Export</span>
@@ -286,7 +298,7 @@ export function ReportReceiptModal({
             <button
               onClick={() => handleExportImage('jpg')}
               disabled={exporting}
-              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50"
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               <span>JPG डाऊनलोड</span>
@@ -296,7 +308,7 @@ export function ReportReceiptModal({
             <button
               onClick={() => handleExportImage('png')}
               disabled={exporting}
-              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50"
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               <span>PNG डाऊनलोड</span>
@@ -307,7 +319,7 @@ export function ReportReceiptModal({
           <button
             onClick={handleWhatsAppShare}
             disabled={exporting}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
           >
             <Share2 className="w-4 h-4" />
             <span>WhatsApp वर शेअर करा (Share on WhatsApp)</span>
@@ -316,4 +328,6 @@ export function ReportReceiptModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
