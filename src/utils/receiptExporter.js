@@ -2,9 +2,15 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
 /**
- * Ensures all fonts and images within element are completely loaded before capturing.
+ * Renders a receipt page element into a high-DPI canvas using an isolated,
+ * unconstrained 720px offscreen sandbox. This completely avoids mobile viewport
+ * clipping, text truncation, or horizontal scroll squishing.
+ * @param {HTMLElement} pageElement 
+ * @param {number} scale 
+ * @returns {Promise<HTMLCanvasElement>}
  */
-async function prepareElementForCapture(element) {
+async function renderPageToCanvas(pageElement, scale = 2.5) {
+  // Ensure fonts are ready
   if (document.fonts && document.fonts.ready) {
     try {
       await document.fonts.ready;
@@ -13,17 +19,77 @@ async function prepareElementForCapture(element) {
     }
   }
 
-  const images = Array.from(element.querySelectorAll('img'));
-  if (images.length > 0) {
-    await Promise.all(
-      images.map(img => {
-        if (img.complete) return Promise.resolve();
-        return new Promise(resolve => {
-          img.onload = resolve;
-          img.onerror = resolve;
-        });
-      })
-    );
+  // Create isolated offscreen wrapper with fixed desktop standard width (720px)
+  const wrapper = document.createElement('div');
+  wrapper.style.position = 'fixed';
+  wrapper.style.left = '-99999px';
+  wrapper.style.top = '0';
+  wrapper.style.width = '720px';
+  wrapper.style.minWidth = '720px';
+  wrapper.style.maxWidth = '720px';
+  wrapper.style.backgroundColor = '#ffffff';
+  wrapper.style.zIndex = '-99999';
+  wrapper.style.boxSizing = 'border-box';
+  wrapper.style.overflow = 'visible';
+  wrapper.style.opacity = '1';
+  wrapper.style.pointerEvents = 'none';
+
+  // Clone page element
+  const clone = pageElement.cloneNode(true);
+  clone.style.width = '720px';
+  clone.style.minWidth = '720px';
+  clone.style.maxWidth = '720px';
+  clone.style.boxSizing = 'border-box';
+  clone.style.overflow = 'visible';
+  clone.style.transform = 'none';
+  clone.style.margin = '0';
+
+  // Remove any mobile-specific truncation or scrollbars inside clone
+  clone.querySelectorAll('*').forEach(node => {
+    node.style.overflow = 'visible';
+    if (node.classList && node.classList.contains('truncate')) {
+      node.classList.remove('truncate');
+    }
+  });
+
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  try {
+    // Wait for any images inside clone
+    const images = Array.from(wrapper.querySelectorAll('img'));
+    if (images.length > 0) {
+      await Promise.all(
+        images.map(img => {
+          if (img.complete) return Promise.resolve();
+          return new Promise(res => {
+            img.onload = res;
+            img.onerror = res;
+          });
+        })
+      );
+    }
+
+    // Small delay to allow browser to calculate full layout
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    const canvas = await html2canvas(clone, {
+      scale: scale, // 2.5x to 3x for ultra-crisp text & Marathi fonts
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      width: 720,
+      windowWidth: 1200,
+      scrollX: 0,
+      scrollY: 0
+    });
+
+    return canvas;
+  } finally {
+    if (document.body.contains(wrapper)) {
+      document.body.removeChild(wrapper);
+    }
   }
 }
 
@@ -35,7 +101,6 @@ async function prepareElementForCapture(element) {
  */
 export async function exportElementAsImage(container, fileName = 'receipt', format = 'png') {
   if (!container) return;
-  await prepareElementForCapture(container);
 
   const pageElements = container.querySelectorAll('.receipt-page');
   const targets = pageElements.length > 0 ? Array.from(pageElements) : [container];
@@ -46,15 +111,7 @@ export async function exportElementAsImage(container, fileName = 'receipt', form
 
   for (let i = 0; i < targets.length; i++) {
     const el = targets[i];
-    const canvas = await html2canvas(el, {
-      scale: 3, // High DPI for crisp text & Marathi fonts
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-      scrollX: 0,
-      scrollY: 0
-    });
+    const canvas = await renderPageToCanvas(el, 3.0); // 3x scale for crystal clear HD images
 
     const dataUrl = canvas.toDataURL(mimeType, quality);
     const suffix = targets.length > 1 ? `_Page_${i + 1}` : '';
@@ -85,7 +142,6 @@ export async function exportElementAsImage(container, fileName = 'receipt', form
  */
 export async function exportElementAsPDF(container, fileName = 'receipt_report') {
   if (!container) return;
-  await prepareElementForCapture(container);
 
   const pageElements = container.querySelectorAll('.receipt-page');
   const targets = pageElements.length > 0 ? Array.from(pageElements) : [container];
@@ -104,15 +160,7 @@ export async function exportElementAsPDF(container, fileName = 'receipt_report')
 
   for (let i = 0; i < targets.length; i++) {
     const el = targets[i];
-    const canvas = await html2canvas(el, {
-      scale: 3, // High DPI for crystal clear text & icons
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-      scrollX: 0,
-      scrollY: 0
-    });
+    const canvas = await renderPageToCanvas(el, 3.0);
 
     const imgData = canvas.toDataURL('image/png');
     const printHeight = (canvas.height * printWidth) / canvas.width;
@@ -143,8 +191,6 @@ export async function shareToWhatsApp(container, captionText = '') {
     return;
   }
 
-  await prepareElementForCapture(container);
-
   const pageElements = container.querySelectorAll('.receipt-page');
   const targets = pageElements.length > 0 ? Array.from(pageElements) : [container];
 
@@ -153,15 +199,7 @@ export async function shareToWhatsApp(container, captionText = '') {
 
     for (let i = 0; i < targets.length; i++) {
       const el = targets[i];
-      const canvas = await html2canvas(el, {
-        scale: 2.5,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        scrollX: 0,
-        scrollY: 0
-      });
+      const canvas = await renderPageToCanvas(el, 2.5);
 
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
       if (blob) {
