@@ -220,7 +220,7 @@ export default function Settings() {
                 </span>
               </h3>
               <p className="text-xs text-slate-500 font-normal mt-0.5">
-                खर्चाचा पावती अहवाल (जास्तीत जास्त 10 नोंदी) व वैयक्तिक खर्च पावती इमेज स्वरूपात डाऊनलोड करा
+                खर्चाचा पावती अहवाल (सर्व नोंदी व पृष्ठे) व वैयक्तिक खर्च पावती PDF / इमेज स्वरूपात डाऊनलोड करा
               </p>
             </div>
           </div>
@@ -228,15 +228,15 @@ export default function Settings() {
 
         {/* 2 Export Options Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Option 1: 10 नोंदींचा अहवाल पावती (Template 1) */}
+          {/* Option 1: अहवाल पावती (Template 1) */}
           <div className="p-4 rounded-xl bg-white border border-slate-200 hover:border-blue-300 transition-all shadow-2xs flex flex-col justify-between space-y-3">
             <div>
               <div className="flex items-center gap-2 text-blue-700 font-bold text-xs mb-1">
                 <FileSpreadsheet className="w-4 h-4" />
-                <span>अहवाल पावती (Report Slip - 10 नोंदी)</span>
+                <span>अहवाल पावती (Report Slip)</span>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
-                तारीख, एकूण खर्च, नोंदींची संख्या आणि पहिल्या 10 नोंदींसह आकर्षक पावती तयार करा.
+                तारीख, एकूण खर्च, नोंदींची संख्या आणि प्रति पृष्ठ १० नोंदींसह संपूर्ण पावती अहवाल तयार करा.
               </p>
               <div className="mt-2 text-[11px] text-slate-500">
                 उपलब्ध नोंदी: <strong>{expenses.length}</strong> • एकूण: <strong>{formatINR(summary.totalSpent)}</strong>

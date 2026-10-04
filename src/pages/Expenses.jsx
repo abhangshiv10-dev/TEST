@@ -161,10 +161,10 @@ export default function Expenses() {
             type="button"
             onClick={() => setReportReceiptOpen(true)}
             className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
-            title="जास्तीत जास्त 10 नोंदींसह पावती अहवाल PNG/JPG एक्सपोर्ट करा"
+            title="खर्च अहवाल पावती PDF/JPG/PNG/WhatsApp एक्सपोर्ट करा"
           >
             <FileSpreadsheet className="w-4 h-4 shrink-0" />
-            <span>अहवाल पावती (10 नोंदी)</span>
+            <span>पावती अहवाल</span>
           </button>
 
           <button
