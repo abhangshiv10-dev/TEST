@@ -29,7 +29,7 @@ export function useShareImage(elementRef, { enabled, version, fileName = 'constr
     // small delay: let the popup finish rendering, and skip work while the user is still typing dates
     const timer = setTimeout(async () => {
       try {
-        const result = await renderElementToFile(elementRef.current, fileName, 2);
+        const result = await renderElementToFile(elementRef.current, fileName, 4);
         if (runId.current === id) setFile(result);
       } catch (err) {
         console.warn('Could not prepare the share image:', err);

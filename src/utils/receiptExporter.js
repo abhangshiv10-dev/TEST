@@ -193,7 +193,16 @@ async function captureElement(element, requestedScale) {
     const layout = measureLayout(clone, height);
     // Very long slips: lower the pixel ratio so the canvas stays within browser limits
     const MAX_CANVAS_HEIGHT = 14000;
-    const scale = Math.max(1, Math.min(requestedScale, MAX_CANVAS_HEIGHT / height));
+    // Phones (esp. iOS Safari) also limit the total canvas area (~16 million px)
+    const MAX_CANVAS_AREA = 16000000;
+    const scale = Math.max(
+      1,
+      Math.min(
+        requestedScale,
+        MAX_CANVAS_HEIGHT / height,
+        Math.sqrt(MAX_CANVAS_AREA / (EXPORT_WIDTH * height))
+      )
+    );
 
     try {
       const { toCanvas } = await import('html-to-image');
@@ -394,7 +403,7 @@ export async function exportElementAsPDF(element, fileName = 'receipt_report') {
  */
 
 /** Draws the element into a PNG File (used to pre-build the image for sharing). */
-export async function renderElementToFile(element, fileName = 'construction_receipt.png', scale = 2) {
+export async function renderElementToFile(element, fileName = 'construction_receipt.png', scale = 4) {
   if (!element) throw new Error('No element to capture');
 
   if (document.fonts && document.fonts.ready) {
@@ -472,7 +481,7 @@ export async function shareToWhatsApp(element, captionText = '') {
   }
 
   try {
-    const file = await renderElementToFile(element, 'construction_receipt.png', 2);
+    const file = await renderElementToFile(element, 'construction_receipt.png', 4);
     return await shareFileToWhatsApp(file, captionText);
   } catch (err) {
     console.warn('Share error fallback:', err);
