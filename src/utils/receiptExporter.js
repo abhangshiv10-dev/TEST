@@ -171,6 +171,8 @@ async function captureElement(element, requestedScale) {
     `position:fixed;left:-100000px;top:0;width:${EXPORT_WIDTH}px;pointer-events:none;background:#fff;z-index:-1;`;
 
   const clone = element.cloneNode(true);
+  // Exports always use the full desktop table, even when started from a phone
+  clone.setAttribute('data-export', 'true');
   Object.assign(clone.style, {
     width: `${EXPORT_WIDTH}px`,
     minWidth: `${EXPORT_WIDTH}px`,

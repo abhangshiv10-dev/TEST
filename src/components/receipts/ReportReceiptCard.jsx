@@ -149,11 +149,13 @@ export const ReportReceiptCard = forwardRef(({
         <table className="w-full text-left border-collapse" style={{ width: '100%', boxSizing: 'border-box' }}>
           <thead>
             <tr className="bg-slate-900 text-white text-[10px] font-bold uppercase tracking-wider">
-              <th className="py-2 px-3 w-8 text-center align-middle" style={{ verticalAlign: 'middle', textAlign: 'center' }}>#</th>
+              <th className="rr-desktop py-2 px-3 w-8 text-center align-middle" style={{ verticalAlign: 'middle', textAlign: 'center' }}>#</th>
               <th className="py-2 px-3 align-middle" style={{ verticalAlign: 'middle' }}>खर्चाचा तपशील (ITEM DETAILS)</th>
-              <th className="py-2 px-3 w-24 text-center align-middle" style={{ verticalAlign: 'middle', textAlign: 'center' }}>दिनांक</th>
-              <th className="py-2 px-3 w-28 text-right align-middle" style={{ verticalAlign: 'middle', textAlign: 'right' }}>रक्कम (AMOUNT)</th>
-              <th className="py-2 px-3 w-20 text-center align-middle" style={{ verticalAlign: 'middle', textAlign: 'center' }}>स्थिती</th>
+              {/* Phone only: price + date share one column */}
+              <th className="rr-mobile py-2 px-3 text-right align-middle" style={{ verticalAlign: 'middle', textAlign: 'right' }}>रक्कम / दिनांक</th>
+              <th className="rr-desktop py-2 px-3 w-24 text-center align-middle" style={{ verticalAlign: 'middle', textAlign: 'center' }}>दिनांक</th>
+              <th className="rr-desktop py-2 px-3 w-28 text-right align-middle" style={{ verticalAlign: 'middle', textAlign: 'right' }}>रक्कम (AMOUNT)</th>
+              <th className="rr-desktop py-2 px-3 w-20 text-center align-middle" style={{ verticalAlign: 'middle', textAlign: 'center' }}>स्थिती</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 text-xs text-slate-800">
@@ -170,12 +172,12 @@ export const ReportReceiptCard = forwardRef(({
                     className={`${isEven ? 'bg-white' : 'bg-slate-50/70'} hover:bg-slate-100/60 transition-colors`}
                   >
                     {/* Index */}
-                    <td className="py-2.5 px-3 text-center text-[11px] font-semibold text-slate-400 align-middle" style={{ verticalAlign: 'middle', textAlign: 'center' }}>
+                    <td className="rr-desktop py-2.5 px-3 text-center text-[11px] font-semibold text-slate-400 align-middle" style={{ verticalAlign: 'middle', textAlign: 'center' }}>
                       {idx + 1}
                     </td>
 
                     {/* Category & Description */}
-                    <td className="py-2.5 px-3 min-w-0 align-middle" style={{ verticalAlign: 'middle' }}>
+                    <td className="py-2.5 px-3 min-w-0 align-middle" style={{ verticalAlign: 'middle', wordBreak: 'break-word' }}>
                       <div className="font-bold text-slate-900 text-xs" style={{ lineHeight: '1.4' }}>
                         {item.category_name} {engLabel && !item.category_name.includes(engLabel) ? `(${engLabel})` : ''}
                       </div>
@@ -194,19 +196,29 @@ export const ReportReceiptCard = forwardRef(({
                       )}
                     </td>
 
+                    {/* Phone only: amount on top, date below */}
+                    <td className="rr-mobile py-2.5 px-3 text-right whitespace-nowrap align-middle" style={{ verticalAlign: 'middle', textAlign: 'right' }}>
+                      <div className="font-extrabold text-slate-900 text-xs" style={{ lineHeight: '1.4' }}>
+                        {formatINR(item.amount)}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-medium mt-0.5" style={{ lineHeight: '1.4' }}>
+                        {formatReceiptDate(item.expense_date)}
+                      </div>
+                    </td>
+
                     {/* Date */}
-                    <td className="py-2.5 px-3 text-center text-[11px] text-slate-600 font-medium whitespace-nowrap align-middle" style={{ verticalAlign: 'middle', textAlign: 'center' }}>
+                    <td className="rr-desktop py-2.5 px-3 text-center text-[11px] text-slate-600 font-medium whitespace-nowrap align-middle" style={{ verticalAlign: 'middle', textAlign: 'center' }}>
                       {formatReceiptDate(item.expense_date)}
                     </td>
 
                     {/* Amount */}
-                    <td className="py-2.5 px-3 text-right font-extrabold text-slate-900 text-xs sm:text-sm whitespace-nowrap align-middle" style={{ verticalAlign: 'middle', textAlign: 'right' }}>
+                    <td className="rr-desktop py-2.5 px-3 text-right font-extrabold text-slate-900 text-xs sm:text-sm whitespace-nowrap align-middle" style={{ verticalAlign: 'middle', textAlign: 'right' }}>
                       {formatINR(item.amount)}
                     </td>
 
                     {/* Payment Status */}
                     <td 
-                      className="py-2.5 px-3 whitespace-nowrap align-middle" 
+                      className="rr-desktop py-2.5 px-3 whitespace-nowrap align-middle" 
                       style={{ 
                         verticalAlign: 'middle',
                         textAlign: 'center'

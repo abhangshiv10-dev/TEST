@@ -90,3 +90,20 @@
   padding: 0.5rem 1.25rem !important;
   font-weight: 500 !important;
 }
+
+
+/* ---------- Report slip table: 2 columns on phones ----------
+   Phone preview : [details] | [amount over date]
+   Wider screens and every exported PDF/JPG/PNG (marked data-export) keep the full table. */
+.receipt-capture-root .rr-mobile {
+  display: none;
+}
+
+@media (max-width: 639px) {
+  .receipt-capture-root:not([data-export="true"]) .rr-desktop {
+    display: none;
+  }
+  .receipt-capture-root:not([data-export="true"]) .rr-mobile {
+    display: table-cell;
+  }
+}
