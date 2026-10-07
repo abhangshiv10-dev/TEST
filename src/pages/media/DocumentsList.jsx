@@ -63,7 +63,7 @@ export const DocumentsList = () => {
         actions={
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs sm:text-sm font-bold shadow-sm transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-[2px] bg-primary-600 hover:bg-primary-500 text-white text-xs sm:text-sm font-bold shadow-sm transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>Upload Document</span>
@@ -75,7 +75,7 @@ export const DocumentsList = () => {
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
         <button
           onClick={() => setSelectedCategory('all')}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+          className={`px-3.5 py-1.5 rounded-[2px] text-xs font-semibold whitespace-nowrap transition-all ${
             selectedCategory === 'all'
               ? 'bg-primary-600 text-white shadow-sm'
               : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
@@ -90,7 +90,7 @@ export const DocumentsList = () => {
             <button
               key={idx}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+              className={`px-3.5 py-1.5 rounded-[2px] text-xs font-semibold whitespace-nowrap transition-all ${
                 selectedCategory === cat
                   ? 'bg-primary-600 text-white shadow-sm'
                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
@@ -112,7 +112,7 @@ export const DocumentsList = () => {
           </p>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-primary-600 text-white text-xs font-bold"
+            className="px-4 py-2 rounded-[2px] bg-primary-600 text-white text-xs font-bold"
           >
             + Upload Document
           </button>
@@ -126,7 +126,7 @@ export const DocumentsList = () => {
                   <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-950/60 text-primary-600 flex items-center justify-center shrink-0">
                     <FileText className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 truncate max-w-[150px]">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-[2px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 truncate max-w-[150px]">
                     {doc.category}
                   </span>
                 </div>
@@ -154,7 +154,7 @@ export const DocumentsList = () => {
 
                 <button
                   onClick={() => handleDelete(doc)}
-                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-[2px] transition-colors"
                   title="Delete Document"
                 >
                   <Trash2 className="w-4 h-4" />

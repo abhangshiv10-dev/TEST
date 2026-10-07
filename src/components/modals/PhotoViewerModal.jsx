@@ -66,7 +66,7 @@ export default function PhotoViewerModal({ isOpen, photoUrl, photos = null, titl
             </a>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-[2px] transition-colors"
               title={t('common.close')}
             >
               <X className="w-5 h-5" />
@@ -86,7 +86,7 @@ export default function PhotoViewerModal({ isOpen, photoUrl, photos = null, titl
               <button
                 type="button"
                 onClick={prev}
-                className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white"
+                className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-[2px] bg-slate-900/70 hover:bg-slate-900 text-white"
                 title={t('photoViewer.prev')}
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -94,7 +94,7 @@ export default function PhotoViewerModal({ isOpen, photoUrl, photos = null, titl
               <button
                 type="button"
                 onClick={next}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-[2px] bg-slate-900/70 hover:bg-slate-900 text-white"
                 title={t('photoViewer.next')}
               >
                 <ChevronRight className="w-5 h-5" />
@@ -111,7 +111,7 @@ export default function PhotoViewerModal({ isOpen, photoUrl, photos = null, titl
                 key={`${u}-${i}`}
                 type="button"
                 onClick={() => setIndex(i)}
-                className={`w-12 h-12 shrink-0 rounded-lg overflow-hidden border-2 ${
+                className={`w-12 h-12 shrink-0 rounded-[2px] overflow-hidden border-2 ${
                   i === index ? 'border-white' : 'border-transparent opacity-60 hover:opacity-100'
                 }`}
               >

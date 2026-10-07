@@ -83,7 +83,7 @@ export const ReportReceiptCard = forwardRef(({
 
         <div className="text-right space-y-1 shrink-0">
           <svg width="134" height="24" viewBox="0 0 134 24" className="status-badge" style={{ display: 'block', marginLeft: 'auto' }}>
-            <rect x="0.5" y="0.5" width="133" height="23" rx="6" fill="#ECFDF5" stroke="#A7F3D0" strokeWidth="1" />
+            <rect x="0.5" y="0.5" width="133" height="23" rx="2" fill="#ECFDF5" stroke="#A7F3D0" strokeWidth="1" />
             <g transform="translate(8, 4.5)">
               <path d="M6 1L1 3.2V7.5C1 11.2 6 14.5 6 14.5C6 14.5 11 11.2 11 7.5V3.2L6 1Z" fill="#10B981" stroke="#059669" strokeWidth="0.8"/>
               <path d="M4 7.5L5.5 9L8.5 5" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
@@ -125,12 +125,12 @@ export const ReportReceiptCard = forwardRef(({
           </span>
           <div className="flex items-center justify-end gap-1.5 pt-0.5">
             <svg width={badgeWidth(paidBadgeText, 64)} height="20" viewBox={`0 0 ${badgeWidth(paidBadgeText, 64)} 20`} className="status-badge" style={{ display: 'block', margin: 0 }}>
-              <rect x="0.5" y="0.5" width={badgeWidth(paidBadgeText, 64) - 1} height="19" rx="5" fill="#D1FAE5" stroke="#A7F3D0" strokeWidth="1" />
+              <rect x="0.5" y="0.5" width={badgeWidth(paidBadgeText, 64) - 1} height="19" rx="2" fill="#D1FAE5" stroke="#A7F3D0" strokeWidth="1" />
               <text x={badgeWidth(paidBadgeText, 64) / 2} y="10" dominantBaseline="central" textAnchor="middle" fill="#065F46" fontSize="8.5" fontWeight="700" fontFamily="Inter, system-ui, -apple-system, sans-serif">{paidBadgeText}</text>
             </svg>
             {pendingCount > 0 && (
               <svg width={badgeWidth(pendingBadgeText, 64)} height="20" viewBox={`0 0 ${badgeWidth(pendingBadgeText, 64)} 20`} className="status-badge" style={{ display: 'block', margin: 0 }}>
-                <rect x="0.5" y="0.5" width={badgeWidth(pendingBadgeText, 64) - 1} height="19" rx="5" fill="#FEF3C7" stroke="#FDE68A" strokeWidth="1" />
+                <rect x="0.5" y="0.5" width={badgeWidth(pendingBadgeText, 64) - 1} height="19" rx="2" fill="#FEF3C7" stroke="#FDE68A" strokeWidth="1" />
                 <text x={badgeWidth(pendingBadgeText, 64) / 2} y="10" dominantBaseline="central" textAnchor="middle" fill="#92400E" fontSize="8.5" fontWeight="700" fontFamily="Inter, system-ui, -apple-system, sans-serif">{pendingBadgeText}</text>
               </svg>
             )}
@@ -229,12 +229,12 @@ export const ReportReceiptCard = forwardRef(({
                       >
                         {isCompleted ? (
                           <svg width={badgeWidth(doneText, 54)} height="20" viewBox={`0 0 ${badgeWidth(doneText, 54)} 20`} className="status-badge shrink-0" style={{ display: 'block', margin: 0 }}>
-                            <rect x="0.5" y="0.5" width={badgeWidth(doneText, 54) - 1} height="19" rx="5" fill="#D1FAE5" stroke="#A7F3D0" strokeWidth="1" />
+                            <rect x="0.5" y="0.5" width={badgeWidth(doneText, 54) - 1} height="19" rx="2" fill="#D1FAE5" stroke="#A7F3D0" strokeWidth="1" />
                             <text x={badgeWidth(doneText, 54) / 2} y="10" dominantBaseline="central" textAnchor="middle" fill="#065F46" fontSize="8.5" fontWeight="700" fontFamily="Inter, system-ui, -apple-system, sans-serif">{doneText}</text>
                           </svg>
                         ) : (
                           <svg width={badgeWidth(t('status.pending'), 54)} height="20" viewBox={`0 0 ${badgeWidth(t('status.pending'), 54)} 20`} className="status-badge shrink-0" style={{ display: 'block', margin: 0 }}>
-                            <rect x="0.5" y="0.5" width={badgeWidth(t('status.pending'), 54) - 1} height="19" rx="5" fill="#FEF3C7" stroke="#FDE68A" strokeWidth="1" />
+                            <rect x="0.5" y="0.5" width={badgeWidth(t('status.pending'), 54) - 1} height="19" rx="2" fill="#FEF3C7" stroke="#FDE68A" strokeWidth="1" />
                             <text x={badgeWidth(t('status.pending'), 54) / 2} y="10" dominantBaseline="central" textAnchor="middle" fill="#92400E" fontSize="8.5" fontWeight="700" fontFamily="Inter, system-ui, -apple-system, sans-serif">{t('status.pending')}</text>
                           </svg>
                         )}
@@ -342,7 +342,7 @@ export const ReportReceiptCard = forwardRef(({
           <button
             type="button"
             onClick={onExportClick}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#EBF5FE] hover:bg-[#D9EDFE] text-[#2F80ED] text-xs font-bold transition-all border border-[#D0E8FF]"
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-[2px] bg-[#EBF5FE] hover:bg-[#D9EDFE] text-[#2F80ED] text-xs font-bold transition-all border border-[#D0E8FF]"
           >
             <Download className="w-3.5 h-3.5" />
             <span>{t('receipt.exportBtn')}</span>
@@ -351,7 +351,7 @@ export const ReportReceiptCard = forwardRef(({
           <button
             type="button"
             onClick={onWhatsAppClick}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#00B074] hover:bg-[#009B66] text-white text-xs font-bold transition-all shadow-xs"
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-[2px] bg-[#00B074] hover:bg-[#009B66] text-white text-xs font-bold transition-all shadow-xs"
           >
             <Share2 className="w-3.5 h-3.5" />
             <span>{t('receipt.shareWhatsApp')}</span>

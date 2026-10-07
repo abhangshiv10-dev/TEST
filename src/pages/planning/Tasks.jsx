@@ -69,7 +69,7 @@ export const Tasks = () => {
         <div className="flex items-start justify-between gap-2">
           <button
             onClick={() => handleToggleComplete(task)}
-            className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 mt-0.5 ${
+            className={`w-5 h-5 rounded-[2px] border flex items-center justify-center transition-colors shrink-0 mt-0.5 ${
               task.status === 'Completed'
                 ? 'bg-emerald-600 border-emerald-600 text-white'
                 : 'border-slate-300 dark:border-slate-600 hover:border-primary-500'
@@ -139,7 +139,7 @@ export const Tasks = () => {
               setTaskToEdit(null);
               setIsModalOpen(true);
             }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs sm:text-sm font-bold shadow-sm transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-[2px] bg-primary-600 hover:bg-primary-500 text-white text-xs sm:text-sm font-bold shadow-sm transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>Create Task</span>

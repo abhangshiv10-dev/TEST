@@ -135,7 +135,7 @@ export const DocumentModal = ({
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, file_url: '', file_name: '' })}
-                className="p-1 rounded text-rose-500 hover:bg-rose-100"
+                className="p-1 rounded-[2px] text-rose-500 hover:bg-rose-100"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -160,14 +160,14 @@ export const DocumentModal = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 rounded-xl"
+            className="px-4 py-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 rounded-[2px]"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={uploading}
-            className="px-5 py-2 text-xs sm:text-sm font-bold bg-primary-600 hover:bg-primary-500 text-white rounded-xl shadow-sm disabled:opacity-50"
+            className="px-5 py-2 text-xs sm:text-sm font-bold bg-primary-600 hover:bg-primary-500 text-white rounded-[2px] shadow-sm disabled:opacity-50"
           >
             Save Document
           </button>

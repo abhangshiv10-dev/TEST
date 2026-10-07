@@ -38,7 +38,7 @@ function normalizeForCapture(doc, root) {
       flexShrink: '0',
       background: rect.getAttribute('fill') || '#fff',
       border: `1px solid ${rect.getAttribute('stroke') || 'transparent'}`,
-      borderRadius: `${rect.getAttribute('rx') || 5}px`,
+      borderRadius: `${rect.getAttribute('rx') || 2}px`,
       color: text.getAttribute('fill') || '#000',
       fontSize: `${text.getAttribute('font-size') || 9}px`,
       fontWeight: text.getAttribute('font-weight') || '700',

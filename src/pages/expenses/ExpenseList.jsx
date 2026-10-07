@@ -129,7 +129,7 @@ export const ExpenseList = () => {
       header: 'Payment Method',
       key: 'payment_method',
       render: (row) => (
-        <span className="text-xs px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+        <span className="text-xs px-2 py-0.5 rounded-[2px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
           {row.payment_method}
         </span>
       )
@@ -165,7 +165,7 @@ export const ExpenseList = () => {
         row.receipt_url ? (
           <button
             onClick={() => setReceiptPreviewUrl(row.receipt_url)}
-            className="p-1.5 rounded-lg text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/50"
+            className="p-1.5 rounded-[2px] text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/50"
             title="View Bill Receipt"
           >
             <Receipt className="w-4 h-4 inline" />
@@ -187,7 +187,7 @@ export const ExpenseList = () => {
                 setSelectedExpenseForPayment(row);
                 setIsPaymentModalOpen(true);
               }}
-              className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+              className="p-1.5 rounded-[2px] text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
               title="Pay Outstanding"
             >
               <CreditCard className="w-4 h-4" />
@@ -198,14 +198,14 @@ export const ExpenseList = () => {
               setExpenseToEdit(row);
               setIsExpenseModalOpen(true);
             }}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-primary-600 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="p-1.5 rounded-[2px] text-slate-500 hover:text-primary-600 hover:bg-slate-100 dark:hover:bg-slate-800"
             title="Edit Expense"
           >
             <Edit3 className="w-4 h-4" />
           </button>
           <button
             onClick={() => handleDelete(row)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+            className="p-1.5 rounded-[2px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
             title="Delete Expense"
           >
             <Trash2 className="w-4 h-4" />
@@ -224,7 +224,7 @@ export const ExpenseList = () => {
           <>
             <button
               onClick={() => exportExpensesToExcel(filteredExpenses, currentProject?.name)}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-colors"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-[2px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-colors"
             >
               <Download className="w-4 h-4 text-slate-500" />
               <span>Export to Excel</span>
@@ -234,7 +234,7 @@ export const ExpenseList = () => {
                 setExpenseToEdit(null);
                 setIsExpenseModalOpen(true);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs sm:text-sm font-bold shadow-sm transition-all active:scale-95"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-[2px] bg-primary-600 hover:bg-primary-500 text-white text-xs sm:text-sm font-bold shadow-sm transition-all active:scale-95"
             >
               <Plus className="w-4 h-4" />
               <span>+ Add Expense</span>
@@ -394,7 +394,7 @@ export const ExpenseList = () => {
               <h4 className="font-bold text-sm text-slate-800 dark:text-white">Receipt / Bill Image</h4>
               <button
                 onClick={() => setReceiptPreviewUrl(null)}
-                className="text-xs px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200"
+                className="text-xs px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-[2px] hover:bg-slate-200"
               >
                 Close
               </button>

@@ -131,14 +131,14 @@ export const FundingLoans = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsLoanModalOpen(true)}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 shadow-sm"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-[2px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 shadow-sm"
             >
               <Landmark className="w-4 h-4 text-primary-600" />
               <span>+ Add Bank Loan</span>
             </button>
             <button
               onClick={() => setIsFundingModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs sm:text-sm font-bold shadow-sm transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-[2px] bg-primary-600 hover:bg-primary-500 text-white text-xs sm:text-sm font-bold shadow-sm transition-all"
             >
               <Plus className="w-4 h-4" />
               <span>Record Funding Inflow</span>
@@ -222,7 +222,7 @@ export const FundingLoans = () => {
                   <td className="py-3 text-right">
                     <button
                       onClick={() => handleDeleteFunding(f)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50"
+                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-[2px] hover:bg-rose-50"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -356,13 +356,13 @@ export const FundingLoans = () => {
             <button
               type="button"
               onClick={() => setIsFundingModalOpen(false)}
-              className="px-4 py-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 rounded-xl"
+              className="px-4 py-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 rounded-[2px]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-xs sm:text-sm font-bold bg-primary-600 hover:bg-primary-500 text-white rounded-xl shadow-sm"
+              className="px-5 py-2 text-xs sm:text-sm font-bold bg-primary-600 hover:bg-primary-500 text-white rounded-[2px] shadow-sm"
             >
               Save Funding
             </button>
@@ -477,13 +477,13 @@ export const FundingLoans = () => {
             <button
               type="button"
               onClick={() => setIsLoanModalOpen(false)}
-              className="px-4 py-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 rounded-xl"
+              className="px-4 py-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 rounded-[2px]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-xs sm:text-sm font-bold bg-primary-600 hover:bg-primary-500 text-white rounded-xl shadow-sm"
+              className="px-5 py-2 text-xs sm:text-sm font-bold bg-primary-600 hover:bg-primary-500 text-white rounded-[2px] shadow-sm"
             >
               Save Loan Account
             </button>

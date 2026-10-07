@@ -117,7 +117,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
           <button
             onClick={onClose}
-            className="lg:hidden p-1 text-slate-400 hover:text-white rounded-lg"
+            className="lg:hidden p-1 text-slate-400 hover:text-white rounded-[2px]"
           >
             <X className="w-5 h-5" />
           </button>

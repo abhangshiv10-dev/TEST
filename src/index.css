@@ -85,14 +85,14 @@ html[lang='en'] .font-sans {
 
 .swal2-confirm {
   font-size: 0.875rem !important;
-  border-radius: 10px !important;
+  border-radius: 2px !important;
   padding: 0.5rem 1.25rem !important;
   font-weight: 600 !important;
 }
 
 .swal2-cancel {
   font-size: 0.875rem !important;
-  border-radius: 10px !important;
+  border-radius: 2px !important;
   padding: 0.5rem 1.25rem !important;
   font-weight: 500 !important;
 }

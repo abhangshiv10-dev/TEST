@@ -185,7 +185,7 @@ export function ReportReceiptModal({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-[2px] bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -198,7 +198,7 @@ export function ReportReceiptModal({
             <button
               type="button"
               onClick={() => { setFilterPreset('all'); setFromDate(''); setToDate(''); }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-[2px] text-xs font-semibold transition-all cursor-pointer ${
                 filterPreset === 'all'
                   ? 'bg-slate-900 text-white shadow-xs'
                   : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
@@ -210,7 +210,7 @@ export function ReportReceiptModal({
             <button
               type="button"
               onClick={() => setFilterPreset('this_month')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-[2px] text-xs font-semibold transition-all cursor-pointer ${
                 filterPreset === 'this_month'
                   ? 'bg-slate-900 text-white shadow-xs'
                   : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
@@ -222,7 +222,7 @@ export function ReportReceiptModal({
             <button
               type="button"
               onClick={() => setFilterPreset('last_30')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-[2px] text-xs font-semibold transition-all cursor-pointer ${
                 filterPreset === 'last_30'
                   ? 'bg-slate-900 text-white shadow-xs'
                   : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
@@ -234,7 +234,7 @@ export function ReportReceiptModal({
             <button
               type="button"
               onClick={() => setFilterPreset('custom')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-[2px] text-xs font-semibold transition-all cursor-pointer ${
                 filterPreset === 'custom'
                   ? 'bg-slate-900 text-white shadow-xs'
                   : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
@@ -295,7 +295,7 @@ export function ReportReceiptModal({
             <button
               onClick={handleExportPDF}
               disabled={exporting}
-              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[2px] bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
               <span>{t('receipt.report.exportPdf')}</span>
@@ -305,7 +305,7 @@ export function ReportReceiptModal({
             <button
               onClick={() => handleExportImage('jpg')}
               disabled={exporting}
-              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[2px] bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               <span>{t('receipt.report.downloadJpg')}</span>
@@ -315,7 +315,7 @@ export function ReportReceiptModal({
             <button
               onClick={() => handleExportImage('png')}
               disabled={exporting}
-              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[2px] bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               <span>{t('receipt.report.downloadPng')}</span>
@@ -326,7 +326,7 @@ export function ReportReceiptModal({
           <button
             onClick={handleWhatsAppShare}
             disabled={exporting || shareImage.preparing}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-60 cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-[2px] bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-60 cursor-pointer"
           >
             {exporting || shareImage.preparing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
             <span>{shareImage.preparing ? t('receipt.preparingShare') : t('receipt.shareWhatsApp')}</span>

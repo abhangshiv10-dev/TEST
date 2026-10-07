@@ -95,7 +95,7 @@ export default function Header({ onOpenAddExpense }) {
               <button
                 onClick={handleLogout}
                 title={t('nav.logout')}
-                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-[2px] transition-colors"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -103,7 +103,7 @@ export default function Header({ onOpenAddExpense }) {
               {/* Mobile hamburger menu */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-xl"
+                className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-[2px]"
                 aria-label={t('nav.menu')}
               >
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

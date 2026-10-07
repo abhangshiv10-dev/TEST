@@ -398,13 +398,13 @@ export const MaterialModal = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
+            className="px-4 py-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-[2px]"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-5 py-2 text-xs sm:text-sm font-bold bg-primary-600 hover:bg-primary-500 text-white rounded-xl shadow-sm transition-all"
+            className="px-5 py-2 text-xs sm:text-sm font-bold bg-primary-600 hover:bg-primary-500 text-white rounded-[2px] shadow-sm transition-all"
           >
             {mode === 'purchase' ? 'Confirm Purchase' : mode === 'adjust' ? 'Apply Adjustment' : 'Save Material'}
           </button>
