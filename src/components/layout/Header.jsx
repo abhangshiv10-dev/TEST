@@ -12,6 +12,7 @@ import {
   Hammer
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import AppLogo from '../common/AppLogo';
 
 export default function Header({ onOpenAddExpense }) {
   const { user, signOut } = useAuth();
@@ -38,9 +39,7 @@ export default function Header({ onOpenAddExpense }) {
         <div className="flex items-center justify-between h-16">
           {/* Left: Brand Icon Only */}
           <Link to="/" className="flex items-center group" title="Home | Expenses - मुख्यपृष्ठ">
-            <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-sm ring-1 ring-slate-900/10 transition-transform group-hover:scale-105">
-              <span className="text-lg">🏠</span>
-            </div>
+            <AppLogo className="w-10 h-10" rounded="rounded-xl" />
           </Link>
 
           {/* Center: Desktop Navigation (Pill Style) */}

@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Phone, Lock, Loader2, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAuth, ALLOWED_MOBILES } from '../../contexts/AuthContext';
-import loginBg from '../../assets/login-bg.png';
+import loginBg from '../../assets/login-bg.webp';
+import AppLogo from '../../components/common/AppLogo';
 
 export default function Login() {
   const [mobile, setMobile] = useState('');
@@ -71,9 +72,7 @@ export default function Login() {
       <div className="w-full max-w-md bg-white/85 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/60 space-y-6 relative z-10">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="w-14 h-14 rounded-2xl bg-slate-900 text-white mx-auto flex items-center justify-center text-2xl shadow-lg ring-4 ring-slate-900/5">
-            🏠
-          </div>
+          <AppLogo className="w-16 h-16 mx-auto shadow-lg ring-4 ring-slate-900/5" rounded="rounded-2xl" />
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
             Home | Expenses
           </h1>

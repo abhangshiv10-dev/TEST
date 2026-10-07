@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
   Search,
@@ -21,18 +21,22 @@ import { formatMarathiDate } from '../utils/marathiDate';
 import ExpenseCard from '../components/common/ExpenseCard';
 import ExpenseModal from '../components/modals/ExpenseModal';
 import PhotoViewerModal from '../components/modals/PhotoViewerModal';
-import { SingleExpenseReceiptModal } from '../components/receipts/SingleExpenseReceiptModal';
-import { ReportReceiptModal } from '../components/receipts/ReportReceiptModal';
+import { getExpensePhotos } from '../utils/expensePhotos';
+import { SingleExpenseReceiptModal, ReportReceiptModal } from '../components/receipts/lazyReceipts';
 import { matchesCategory } from '../utils/bilingualSearch';
 
 export default function Expenses() {
-  const { expenses, categories, deleteExpense, toggleExpenseStatus } = useBudget();
+  const { expenses, categories, summary, deleteExpense, toggleExpenseStatus } = useBudget();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState('all'); // all, today, yesterday, this_month, custom
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+
+  // Render the list in pages of 30 — rendering hundreds of cards (each with a photo) at once is slow on phones
+  const PAGE_SIZE = 30;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   // Modals state
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
@@ -46,9 +50,11 @@ export default function Expenses() {
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [viewingPhotoUrl, setViewingPhotoUrl] = useState(null);
   const [viewingPhotoTitle, setViewingPhotoTitle] = useState('');
+  const [viewingPhotoList, setViewingPhotoList] = useState(null);
 
-  const handleOpenPhoto = (url, title) => {
+  const handleOpenPhoto = (url, title, allUrls = null) => {
     setViewingPhotoUrl(url);
+    setViewingPhotoList(allUrls);
     setViewingPhotoTitle(title);
     setPhotoModalOpen(true);
   };
@@ -72,7 +78,7 @@ export default function Expenses() {
 
     if (result.isConfirmed) {
       try {
-        await deleteExpense(expense.id, expense.photo_path);
+        await deleteExpense(expense.id, getExpensePhotos(expense).map((ph) => ph.path));
         Swal.fire({
           toast: true,
           position: 'top-end',
@@ -91,6 +97,10 @@ export default function Expenses() {
     }
   };
 
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [searchQuery, dateFilter, selectedCategory, customStartDate, customEndDate]);
+
   // Filter logic
   const filteredExpenses = useMemo(() => {
     const today = new Date();
@@ -107,7 +117,7 @@ export default function Expenses() {
       // 1. Text Search (Bilingual Marathi + English)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const categoryMatch = exp.category_name && (exp.category_name.toLowerCase().includes(q) || matchesCategory(exp.category_name, q));
+        const categoryMatch = exp.category_name && (exp.category_name.toLowerCase().includes(q) || matchesCategory(exp.category_name, q, exp.category_name_en));
         const matchesDesc = exp.description && exp.description.toLowerCase().includes(q);
         const matchesAmount = String(exp.amount).includes(q);
         if (!categoryMatch && !matchesDesc && !matchesAmount) return false;
@@ -161,10 +171,10 @@ export default function Expenses() {
             type="button"
             onClick={() => setReportReceiptOpen(true)}
             className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
-            title="खर्च अहवाल पावती PDF/JPG/PNG/WhatsApp एक्सपोर्ट करा"
+            title="सर्व नोंदींसह पावती अहवाल PDF/PNG/JPG एक्सपोर्ट करा"
           >
             <FileSpreadsheet className="w-4 h-4 shrink-0" />
-            <span>पावती अहवाल</span>
+            <span>अहवाल पावती ({filteredExpenses.length} नोंदी)</span>
           </button>
 
           <button
@@ -272,7 +282,7 @@ export default function Expenses() {
               <option value="all">सर्व प्रकार (All Categories)</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}
+                  {c.name}{c.name_en ? ` (${c.name_en})` : ''}
                 </option>
               ))}
             </select>
@@ -330,7 +340,7 @@ export default function Expenses() {
       {/* Expenses List */}
       {filteredExpenses.length > 0 ? (
         <div className="space-y-2">
-          {filteredExpenses.map((exp) => (
+          {filteredExpenses.slice(0, visibleCount).map((exp) => (
             <ExpenseCard
               key={exp.id}
               expense={exp}
@@ -341,6 +351,15 @@ export default function Expenses() {
               onViewReceipt={(expense) => setSingleReceiptExpense(expense)}
             />
           ))}
+          {filteredExpenses.length > visibleCount && (
+            <button
+              type="button"
+              onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+              className="w-full py-2.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+            >
+              अधिक दाखवा ({filteredExpenses.length - visibleCount} बाकी)
+            </button>
+          )}
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center text-slate-400 space-y-2 shadow-card">
@@ -368,6 +387,7 @@ export default function Expenses() {
       <PhotoViewerModal
         isOpen={photoModalOpen}
         photoUrl={viewingPhotoUrl}
+        photos={viewingPhotoList}
         title={viewingPhotoTitle}
         onClose={() => {
           setPhotoModalOpen(false);
@@ -379,13 +399,15 @@ export default function Expenses() {
       <SingleExpenseReceiptModal
         isOpen={Boolean(singleReceiptExpense)}
         expense={singleReceiptExpense}
+        projectName={summary?.projectName || undefined}
         onClose={() => setSingleReceiptExpense(null)}
       />
 
-      {/* Report Receipt Modal (Template 1 - Max 10 entries) */}
+      {/* Report Receipt Modal (Template 1 - all entries) */}
       <ReportReceiptModal
         isOpen={reportReceiptOpen}
         expenses={filteredExpenses}
+        projectName={summary?.projectName || undefined}
         totalExpenses={filteredExpenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)}
         totalEntries={filteredExpenses.length}
         dateRangeText={

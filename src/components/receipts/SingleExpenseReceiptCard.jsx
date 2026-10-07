@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { formatINR } from '../../utils/marathiCurrency';
 import { getCategoryEnglishLabel } from '../../utils/bilingualSearch';
+import AppLogo from '../common/AppLogo';
 
 // Category icon & theme selector
 function getCategoryTheme(name = '') {
@@ -115,9 +116,7 @@ export const SingleExpenseReceiptCard = forwardRef(({
         <div className="flex items-start justify-between">
           {/* Logo & App Name */}
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-md shadow-xs">
-              <Home className="w-3.5 h-3.5 text-white" />
-            </div>
+            <AppLogo className="w-8 h-8" rounded="rounded-lg" />
             <div className="leading-tight">
               <h3 className="text-xs font-extrabold tracking-tight text-white drop-shadow-xs" style={{ lineHeight: '1.4' }}>Construction</h3>
               <p className="text-[9px] text-emerald-100 font-medium" style={{ lineHeight: '1.4' }}>Expense Tracker</p>

@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
-import { marathiDataService } from '../services/marathiDataService';
+import { marathiDataService, computeSummary } from '../services/marathiDataService';
 
 const BudgetContext = createContext({});
 
@@ -25,20 +25,36 @@ export const BudgetProvider = ({ children }) => {
   const [isFirstTime, setIsFirstTime] = useState(false);
 
   // Load all budget data
+  const hasLoadedOnce = useRef(false);
+
   const refreshData = useCallback(async () => {
     if (!user) return;
     try {
-      setLoading(true);
-      const [sum, cats, expList, bHistory] = await Promise.all([
-        marathiDataService.getSummary(user.id),
+      // Show the full-page loader only on the very first load.
+      // Later refreshes (after add/edit/delete) update silently in the background.
+      if (!hasLoadedOnce.current) setLoading(true);
+
+      // Each table is fetched exactly once, all in parallel.
+      // (Before: expenses + settings were fetched twice because getSummary re-fetched them.)
+      const [settings, cats, expList, bHistory] = await Promise.all([
+        marathiDataService.getSettings(user.id),
         marathiDataService.getCategories(user.id),
         marathiDataService.getExpenses(user.id),
         marathiDataService.getBudgetHistory(user.id)
       ]);
+      const sum = computeSummary(settings, expList);
+      hasLoadedOnce.current = true;
 
       setSummary(sum);
       setCategories(cats);
-      setExpenses(expList);
+      // Attach each expense's category English Name so Marathi/English search finds it
+      const catById = new Map(cats.map((c) => [c.id, c]));
+      setExpenses(
+        expList.map((e) => ({
+          ...e,
+          category_name_en: catById.get(e.category_id)?.name_en || ''
+        }))
+      );
       setBudgetHistory(bHistory || []);
 
       // Check if budget is not set yet and hasn't been dismissed by user
@@ -59,6 +75,7 @@ export const BudgetProvider = ({ children }) => {
     if (user) {
       refreshData();
     } else {
+      hasLoadedOnce.current = false;
       setSummary({
         totalBudget: 0,
         totalSpent: 0,
@@ -84,18 +101,18 @@ export const BudgetProvider = ({ children }) => {
   };
 
   // Add category
-  const addCategory = async (name) => {
+  const addCategory = async (name, nameEn) => {
     if (!user) return null;
-    const newCat = await marathiDataService.addCategory(user.id, name);
+    const newCat = await marathiDataService.addCategory(user.id, name, nameEn);
     const updatedCats = await marathiDataService.getCategories(user.id);
     setCategories(updatedCats);
     return newCat;
   };
 
   // Update category
-  const updateCategory = async (id, name) => {
+  const updateCategory = async (id, name, nameEn) => {
     if (!user) return;
-    await marathiDataService.updateCategory(user.id, id, name);
+    await marathiDataService.updateCategory(user.id, id, name, nameEn);
     await refreshData();
   };
 
@@ -107,25 +124,25 @@ export const BudgetProvider = ({ children }) => {
   };
 
   // Add expense
-  const addExpense = async (data, photo) => {
+  const addExpense = async (data, photoFiles = []) => {
     if (!user) return;
-    const added = await marathiDataService.addExpense(user.id, data, photo);
+    const added = await marathiDataService.addExpense(user.id, data, photoFiles);
     await refreshData();
     return added;
   };
 
   // Update expense
-  const updateExpense = async (id, data, photo, removePhoto) => {
+  const updateExpense = async (id, data, newFiles = [], removedPaths = []) => {
     if (!user) return;
-    const updated = await marathiDataService.updateExpense(user.id, id, data, photo, removePhoto);
+    const updated = await marathiDataService.updateExpense(user.id, id, data, newFiles, removedPaths);
     await refreshData();
     return updated;
   };
 
   // Delete expense
-  const deleteExpense = async (id, photoPath) => {
+  const deleteExpense = async (id, photoPaths) => {
     if (!user) return;
-    await marathiDataService.deleteExpense(user.id, id, photoPath);
+    await marathiDataService.deleteExpense(user.id, id, photoPaths);
     await refreshData();
   };
 

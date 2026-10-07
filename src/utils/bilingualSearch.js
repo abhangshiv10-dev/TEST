@@ -107,23 +107,31 @@ export function getCategoryEnglishLabel(categoryName = '') {
 }
 
 /**
- * Checks if a category matches the search query across Marathi, English, and transliterations.
- * @param {string} categoryName - e.g. "सिमेंट" or "स्टील"
- * @param {string} rawQuery - e.g. "cement" or "valu" or "स्टील"
+ * Checks if a category matches the search query across Marathi name, English name,
+ * the built-in keyword dictionary and transliterations.
+ * @param {string} categoryName - Marathi name, e.g. "लॅपटॉप"
+ * @param {string} rawQuery     - what the user typed, e.g. "laptop" or "लॅप"
+ * @param {string} englishName  - the category's English Name (name_en), e.g. "Laptop"
  * @returns {boolean}
  */
-export function matchesCategory(categoryName = '', rawQuery = '') {
+export function matchesCategory(categoryName = '', rawQuery = '', englishName = '') {
   const query = (rawQuery || '').toLowerCase().trim();
   if (!query) return true;
 
   const catName = (categoryName || '').toLowerCase().trim();
+  const engName = (englishName || '').toLowerCase().trim();
 
   // 1. Direct Marathi match
   if (catName.includes(query)) {
     return true;
   }
 
-  // 2. Keyword & English dictionary match
+  // 2. Direct English Name match (user-defined name_en, works for every custom category)
+  if (engName && engName.includes(query)) {
+    return true;
+  }
+
+  // 3. Keyword & English dictionary match (built-in categories: brands, slang, transliterations)
   for (const [keyCategory, keywords] of Object.entries(CATEGORY_KEYWORDS_MAP)) {
     const isMatchingCategory = 
       catName.includes(keyCategory.toLowerCase()) || 
@@ -147,4 +155,10 @@ export function matchesCategory(categoryName = '', rawQuery = '') {
   }
 
   return false;
+}
+
+/** Convenience wrapper: pass a whole category object ({ name, name_en }) */
+export function categoryMatches(category, rawQuery) {
+  if (!category) return false;
+  return matchesCategory(category.name, rawQuery, category.name_en);
 }

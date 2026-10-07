@@ -3,6 +3,7 @@ import { Camera, Edit2, Trash2, Calendar, Receipt as ReceiptIcon } from 'lucide-
 import { formatINR } from '../../utils/marathiCurrency';
 import { formatMarathiDate } from '../../utils/marathiDate';
 import { getCategoryIconMeta } from '../../utils/categoryIcons';
+import { getExpensePhotos } from '../../utils/expensePhotos';
 
 export default function ExpenseCard({
   expense,
@@ -12,7 +13,10 @@ export default function ExpenseCard({
   onViewReceipt,
   onToggleStatus
 }) {
-  const hasPhoto = Boolean(expense.photo_url);
+  const photos = getExpensePhotos(expense);
+  const photoUrls = photos.map((p) => p.url);
+  const hasPhoto = photos.length > 0;
+  const openPhotos = () => onViewPhoto(photoUrls[0], `${expense.category_name} - पावती`, photoUrls);
   const { icon: CategoryIcon, bg: iconBg } = getCategoryIconMeta(expense.category_name);
   const isPending = (expense.payment_status || '').toLowerCase() === 'pending' || expense.payment_status === 'बाकी';
   const cleanDescription = expense.description && expense.description.trim() !== '-' ? expense.description.trim() : null;
@@ -26,18 +30,25 @@ export default function ExpenseCard({
           {hasPhoto ? (
             <button
               type="button"
-              onClick={() => onViewPhoto(expense.photo_url, `${expense.category_name} - पावती`)}
+              onClick={openPhotos}
               className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden border border-slate-200 shrink-0 group/thumb transition-transform hover:scale-105 shadow-2xs cursor-pointer"
               title="फोटो / पावती पाहा"
             >
               <img
-                src={expense.photo_url}
+                src={photoUrls[0]}
                 alt="पावती"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center text-white">
                 <Camera className="w-3.5 h-3.5" />
               </div>
+              {photos.length > 1 && (
+                <span className="absolute bottom-0 right-0 px-1 min-w-4 h-4 rounded-tl-md bg-slate-900/80 text-white text-[9px] font-bold flex items-center justify-center">
+                  {photos.length}
+                </span>
+              )}
             </button>
           ) : (
             <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 border border-slate-200/60 shadow-2xs ${iconBg}`}>
@@ -86,11 +97,11 @@ export default function ExpenseCard({
               {hasPhoto && (
                 <button
                   type="button"
-                  onClick={() => onViewPhoto(expense.photo_url, `${expense.category_name} - पावती`)}
+                  onClick={openPhotos}
                   className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-medium border border-blue-200/60 transition-colors"
                 >
                   <Camera className="w-2.5 h-2.5" />
-                  <span>फोटो</span>
+                  <span>{photos.length > 1 ? `फोटो (${photos.length})` : 'फोटो'}</span>
                 </button>
               )}
             </div>

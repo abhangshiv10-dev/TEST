@@ -29,8 +29,7 @@ import { useBudget } from '../contexts/BudgetContext';
 import { formatINR } from '../utils/marathiCurrency';
 import { formatMarathiDateTime } from '../utils/marathiDate';
 import { getCategoryIconMeta } from '../utils/categoryIcons';
-import { SingleExpenseReceiptModal } from '../components/receipts/SingleExpenseReceiptModal';
-import { ReportReceiptModal } from '../components/receipts/ReportReceiptModal';
+import { SingleExpenseReceiptModal, ReportReceiptModal } from '../components/receipts/lazyReceipts';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -53,9 +52,11 @@ export default function Settings() {
 
   // Category inline add/edit state
   const [newCatName, setNewCatName] = useState('');
+  const [newCatNameEn, setNewCatNameEn] = useState('');
   const [isAddingCat, setIsAddingCat] = useState(false);
   const [editingCatId, setEditingCatId] = useState(null);
   const [editingCatName, setEditingCatName] = useState('');
+  const [editingCatNameEn, setEditingCatNameEn] = useState('');
 
   // Receipt export modals state
   const [reportReceiptOpen, setReportReceiptOpen] = useState(false);
@@ -110,17 +111,26 @@ export default function Settings() {
   const handleAddCategory = async (e) => {
     e.preventDefault();
     const trimmed = newCatName.trim();
-    if (!trimmed) return;
+    const trimmedEn = newCatNameEn.trim();
+    if (!trimmed || !trimmedEn) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'माहिती अपूर्ण आहे',
+        text: 'मराठी नाव (Marathi Name) आणि English Name दोन्ही टाका.'
+      });
+      return;
+    }
 
     try {
-      await addCategory(trimmed);
+      await addCategory(trimmed, trimmedEn);
       setNewCatName('');
+      setNewCatNameEn('');
       setIsAddingCat(false);
       Swal.fire({
         toast: true,
         position: 'top-end',
         icon: 'success',
-        title: `"${trimmed}" प्रकार जोडला`,
+        title: `"${trimmed} / ${trimmedEn}" प्रकार जोडला`,
         showConfirmButton: false,
         timer: 2000
       });
@@ -136,12 +146,21 @@ export default function Settings() {
   // Handle Update Category
   const handleUpdateCategory = async (catId) => {
     const trimmed = editingCatName.trim();
-    if (!trimmed) return;
+    const trimmedEn = editingCatNameEn.trim();
+    if (!trimmed || !trimmedEn) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'माहिती अपूर्ण आहे',
+        text: 'मराठी नाव (Marathi Name) आणि English Name दोन्ही टाका.'
+      });
+      return;
+    }
 
     try {
-      await updateCategory(catId, trimmed);
+      await updateCategory(catId, trimmed, trimmedEn);
       setEditingCatId(null);
       setEditingCatName('');
+      setEditingCatNameEn('');
       Swal.fire({
         toast: true,
         position: 'top-end',
@@ -220,7 +239,7 @@ export default function Settings() {
                 </span>
               </h3>
               <p className="text-xs text-slate-500 font-normal mt-0.5">
-                खर्चाचा पावती अहवाल (सर्व नोंदी व पृष्ठे) व वैयक्तिक खर्च पावती PDF / इमेज स्वरूपात डाऊनलोड करा
+                खर्चाचा पावती अहवाल (सर्व नोंदी) व वैयक्तिक खर्च पावती इमेज स्वरूपात डाऊनलोड करा
               </p>
             </div>
           </div>
@@ -228,15 +247,15 @@ export default function Settings() {
 
         {/* 2 Export Options Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Option 1: अहवाल पावती (Template 1) */}
+          {/* Option 1: सर्व नोंदींचा अहवाल पावती (Template 1) */}
           <div className="p-4 rounded-xl bg-white border border-slate-200 hover:border-blue-300 transition-all shadow-2xs flex flex-col justify-between space-y-3">
             <div>
               <div className="flex items-center gap-2 text-blue-700 font-bold text-xs mb-1">
                 <FileSpreadsheet className="w-4 h-4" />
-                <span>अहवाल पावती (Report Slip)</span>
+                <span>अहवाल पावती (Report Slip - {expenses.length} नोंदी)</span>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
-                तारीख, एकूण खर्च, नोंदींची संख्या आणि प्रति पृष्ठ १० नोंदींसह संपूर्ण पावती अहवाल तयार करा.
+                तारीख, एकूण खर्च, नोंदींची संख्या आणि सर्व नोंदींसह आकर्षक पावती तयार करा.
               </p>
               <div className="mt-2 text-[11px] text-slate-500">
                 उपलब्ध नोंदी: <strong>{expenses.length}</strong> • एकूण: <strong>{formatINR(summary.totalSpent)}</strong>
@@ -580,7 +599,7 @@ export default function Settings() {
                     खर्चाचे प्रकार (Categories)
                   </h3>
                   <p className="text-[11px] text-slate-500 font-normal">
-                    नवीन प्रकार जोडा किंवा अस्तित्वात असलेले नाव बदला
+                    नवीन प्रकार (मराठी + English नाव) जोडा किंवा नाव बदला
                   </p>
                 </div>
               </div>
@@ -596,30 +615,49 @@ export default function Settings() {
               )}
             </div>
 
-            {/* Inline Add Category Form */}
+            {/* Inline Add Category Form (Marathi Name + English Name) */}
             {isAddingCat && (
-              <form onSubmit={handleAddCategory} className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2 animate-in fade-in duration-150">
-                <label className="block text-xs font-semibold text-slate-700">
-                  नवीन प्रकाराचे नाव
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    autoFocus
-                    value={newCatName}
-                    onChange={(e) => setNewCatName(e.target.value)}
-                    placeholder="उदा. इंटिरिअर डेकोरेशन"
-                    className="flex-1 px-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
-                  />
+              <form onSubmit={handleAddCategory} className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3 animate-in fade-in duration-150">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      मराठी नाव (Marathi Name) <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      autoFocus
+                      value={newCatName}
+                      onChange={(e) => setNewCatName(e.target.value)}
+                      placeholder="उदा. लॅपटॉप"
+                      className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
+                    />
+                    <p className="mt-1 text-[10px] text-slate-400">वेबसाइटवर हेच नाव दिसेल.</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      English Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newCatNameEn}
+                      onChange={(e) => setNewCatNameEn(e.target.value)}
+                      placeholder="e.g. Laptop"
+                      className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
+                    />
+                    <p className="mt-1 text-[10px] text-slate-400">इंग्रजीत शोधण्यासाठी वापरले जाईल.</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => {
                       setIsAddingCat(false);
                       setNewCatName('');
+                      setNewCatNameEn('');
                     }}
-                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+                    className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200/70 rounded-lg"
                   >
-                    <X className="w-4 h-4" />
+                    रद्द करा
                   </button>
                   <button
                     type="submit"
@@ -643,30 +681,40 @@ export default function Settings() {
                     className="p-3 flex items-center justify-between hover:bg-slate-50/80 transition-colors text-xs sm:text-sm"
                   >
                     {isEditing ? (
-                      <div className="flex items-center gap-2 w-full">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
                         <input
                           type="text"
                           autoFocus
                           value={editingCatName}
                           onChange={(e) => setEditingCatName(e.target.value)}
+                          placeholder="मराठी नाव"
                           className="flex-1 px-2.5 py-1 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-slate-900"
                         />
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateCategory(cat.id)}
-                          className="p-1.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800"
-                          title="जतन करा"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingCatId(null)}
-                          className="p-1.5 text-slate-400 hover:bg-slate-200 rounded-lg"
-                          title="रद्द करा"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
+                        <input
+                          type="text"
+                          value={editingCatNameEn}
+                          onChange={(e) => setEditingCatNameEn(e.target.value)}
+                          placeholder="English Name"
+                          className="flex-1 px-2.5 py-1 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-slate-900"
+                        />
+                        <div className="flex items-center gap-2 self-end sm:self-auto">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateCategory(cat.id)}
+                            className="p-1.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800"
+                            title="जतन करा"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingCatId(null)}
+                            className="p-1.5 text-slate-400 hover:bg-slate-200 rounded-lg"
+                            title="रद्द करा"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <>
@@ -674,7 +722,12 @@ export default function Settings() {
                           <div className={`w-7 h-7 rounded-lg flex items-center justify-center border ${iconBg}`}>
                             <CatIcon className="w-3.5 h-3.5" />
                           </div>
-                          <span className="font-semibold text-slate-800">{cat.name}</span>
+                          <div className="min-w-0">
+                            <span className="font-semibold text-slate-800 block leading-tight">{cat.name}</span>
+                            {cat.name_en && (
+                              <span className="text-[11px] text-slate-400 block leading-tight">{cat.name_en}</span>
+                            )}
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-1">
@@ -683,6 +736,7 @@ export default function Settings() {
                             onClick={() => {
                               setEditingCatId(cat.id);
                               setEditingCatName(cat.name);
+                              setEditingCatNameEn(cat.name_en || '');
                             }}
                             className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
                             title="नाव बदला"
@@ -712,6 +766,7 @@ export default function Settings() {
       <SingleExpenseReceiptModal
         isOpen={singleReceiptOpen}
         expense={currentReceiptExpense}
+        projectName={summary?.projectName || undefined}
         onClose={() => setSingleReceiptOpen(false)}
       />
 
@@ -719,6 +774,7 @@ export default function Settings() {
       <ReportReceiptModal
         isOpen={reportReceiptOpen}
         expenses={expenses}
+        projectName={summary?.projectName || undefined}
         totalExpenses={summary.totalSpent}
         totalEntries={expenses.length}
         dateRangeText=""

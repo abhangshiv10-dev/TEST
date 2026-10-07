@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
+import AppLogo from '../common/AppLogo';
   Home, 
   Layers, 
   TrendingUp, 
@@ -103,9 +104,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
         {/* Logo Brand Header */}
         <div className="h-16 px-6 flex items-center justify-between border-b border-slate-800/80 bg-slate-950/40">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 text-white flex items-center justify-center shadow-glow">
-              <HardHat className="w-5 h-5" />
-            </div>
+            <AppLogo className="w-9 h-9" rounded="rounded-xl" />
             <div>
               <h1 className="font-extrabold text-white text-base tracking-tight leading-tight">
                 HomeBuild

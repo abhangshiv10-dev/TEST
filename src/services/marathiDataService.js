@@ -1,5 +1,7 @@
 import { supabase, isSupabaseConfigured } from './supabaseClient';
-import { DEFAULT_MARATHI_CATEGORIES } from '../constants/defaultCategories';
+import { DEFAULT_MARATHI_CATEGORIES, DEFAULT_CATEGORY_ENGLISH } from '../constants/defaultCategories';
+import { compressImage } from '../utils/imageCompress';
+import { getExpensePhotos, buildPhotoColumns } from '../utils/expensePhotos';
 
 const STORAGE_KEY_PREFIX = 'homebuild_marathi_';
 
@@ -21,6 +23,28 @@ const setLocalData = (key, data) => {
   }
 };
 
+
+// True when the remote DB does not have a column yet (migration not run) — lets us degrade gracefully
+const isMissingColumnError = (err, column) =>
+  Boolean(err) && (err.code === '42703' || err.code === 'PGRST204' || (err.message && err.message.includes(column)));
+
+// English Name for a category: saved name_en -> locally cached one -> built-in default -> ''
+const resolveEnglishName = (cat, localEnMap) =>
+  (cat.name_en || '').trim() || localEnMap?.get(cat.id) || DEFAULT_CATEGORY_ENGLISH[cat.name] || '';
+
+// Patch one category inside both local caches (shared + per user)
+const patchLocalCategory = (userId, categoryId, patch) => {
+  const keys = ['categories_shared', userId ? `categories_${userId}` : null].filter(Boolean);
+  keys.forEach((key) => {
+    const list = getLocalData(key, []);
+    const idx = list.findIndex((c) => c.id === categoryId);
+    if (idx !== -1) {
+      list[idx] = { ...list[idx], ...patch };
+      setLocalData(key, list);
+    }
+  });
+};
+
 // Seed defaults if initial local storage is completely empty (clean live state, no dummy records)
 const initLocalStorageIfEmpty = (userId = 'user-shared') => {
   const currentSettings = getLocalData(`settings_shared`, getLocalData(`settings_${userId}`, null));
@@ -40,6 +64,7 @@ const initLocalStorageIfEmpty = (userId = 'user-shared') => {
     const defaultCatObjects = DEFAULT_MARATHI_CATEGORIES.map((name, idx) => ({
       id: `cat-${idx + 1}`,
       name,
+      name_en: DEFAULT_CATEGORY_ENGLISH[name] || '',
       created_at: new Date().toISOString()
     }));
     setLocalData(`categories_shared`, defaultCatObjects);
@@ -52,6 +77,16 @@ const initLocalStorageIfEmpty = (userId = 'user-shared') => {
     setLocalData(`expenses_${userId}`, []);
   }
 };
+
+// True when Supabase complains that photo_urls / photo_paths columns do not exist yet
+function isMissingPhotoColumnError(error) {
+  if (!error) return false;
+  const msg = error.message || '';
+  return (
+    (error.code === '42703' || error.code === 'PGRST204') &&
+    (msg.includes('photo_urls') || msg.includes('photo_paths'))
+  );
+}
 
 export const marathiDataService = {
   // ==========================================
@@ -253,6 +288,13 @@ export const marathiDataService = {
   // 2. CATEGORIES
   // ==========================================
   async getCategories(userId) {
+    const cached = getLocalData('categories_shared', []);
+    const localEnMap = new Map(cached.filter((c) => c.name_en).map((c) => [c.id, c.name_en]));
+    const normalize = (list) =>
+      list
+        .map((c) => ({ ...c, name_en: resolveEnglishName(c, localEnMap) }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'mr'));
+
     if (isSupabaseConfigured()) {
       try {
         const { data, error } = await supabase
@@ -261,24 +303,28 @@ export const marathiDataService = {
           .order('name', { ascending: true });
 
         if (!error && data && data.length > 0) {
-          const sorted = data.sort((a, b) => a.name.localeCompare(b.name, 'mr'));
+          const sorted = normalize(data);
           setLocalData('categories_shared', sorted);
           return sorted;
         }
 
-        // If categories empty in DB, auto seed default categories
+        // If categories empty in DB, auto seed default categories (with English names)
         if (userId && (!data || data.length === 0)) {
-          const seeds = DEFAULT_MARATHI_CATEGORIES.map(name => ({
+          const seeds = DEFAULT_MARATHI_CATEGORIES.map((name) => ({
             user_id: userId,
-            name
+            name,
+            name_en: DEFAULT_CATEGORY_ENGLISH[name] || null
           }));
-          const { data: inserted, error: seedError } = await supabase
-            .from('categories')
-            .insert(seeds)
-            .select();
+          let seedRes = await supabase.from('categories').insert(seeds).select();
+          if (seedRes.error && isMissingColumnError(seedRes.error, 'name_en')) {
+            seedRes = await supabase
+              .from('categories')
+              .insert(seeds.map(({ name_en, ...rest }) => rest))
+              .select();
+          }
 
-          if (!seedError && inserted) {
-            const sorted = inserted.sort((a, b) => a.name.localeCompare(b.name, 'mr'));
+          if (!seedRes.error && seedRes.data) {
+            const sorted = normalize(seedRes.data);
             setLocalData('categories_shared', sorted);
             return sorted;
           }
@@ -290,71 +336,117 @@ export const marathiDataService = {
 
     initLocalStorageIfEmpty(userId);
     const local = getLocalData('categories_shared', getLocalData(`categories_${userId}`, []));
-    return local.sort((a, b) => a.name.localeCompare(b.name, 'mr'));
+    return normalize(local);
   },
 
-  async addCategory(userId, name) {
+  // name   = Marathi Name  (shown to the user everywhere)
+  // nameEn = English Name  (used so the category can also be found by searching in English)
+  async addCategory(userId, name, nameEn = '') {
     const trimmed = (name || '').trim();
-    if (!trimmed) throw new Error('प्रकाराचे नाव आवश्यक आहे.');
+    const trimmedEn = (nameEn || '').trim();
+    if (!trimmed) throw new Error('प्रकाराचे मराठी नाव (Marathi Name) आवश्यक आहे.');
+    if (!trimmedEn) throw new Error('प्रकाराचे इंग्रजी नाव (English Name) आवश्यक आहे.');
+
+    const known = getLocalData('categories_shared', []);
+    const duplicate = known.find(
+      (c) =>
+        (c.name || '').toLowerCase() === trimmed.toLowerCase() ||
+        (c.name_en || '').toLowerCase() === trimmedEn.toLowerCase()
+    );
+    if (duplicate) {
+      throw new Error(`"${duplicate.name}${duplicate.name_en ? ` / ${duplicate.name_en}` : ''}" हा प्रकार आधीच अस्तित्वात आहे.`);
+    }
 
     if (isSupabaseConfigured() && userId && !userId.startsWith('demo-')) {
       try {
-        const { data, error } = await supabase
+        let res = await supabase
           .from('categories')
-          .insert([{ user_id: userId, name: trimmed }])
+          .insert([{ user_id: userId, name: trimmed, name_en: trimmedEn }])
           .select()
           .single();
 
-        if (error) throw error;
-        return data;
+        // name_en column not created yet on the remote DB -> save without it (kept in local cache)
+        if (res.error && isMissingColumnError(res.error, 'name_en')) {
+          console.warn('Column name_en missing in DB — run supabase_migration_category_english_name.sql');
+          res = await supabase
+            .from('categories')
+            .insert([{ user_id: userId, name: trimmed }])
+            .select()
+            .single();
+        }
+
+        if (res.error) throw res.error;
+
+        const created = { ...res.data, name_en: trimmedEn };
+        setLocalData('categories_shared', [...getLocalData('categories_shared', []), created]);
+        return created;
       } catch (err) {
         console.warn('Supabase addCategory fallback to local:', err.message);
       }
     }
 
-    const categories = getLocalData(`categories_${userId}`, []);
-    const exists = categories.find(c => c.name.toLowerCase() === trimmed.toLowerCase());
-    if (exists) return exists;
-
     const newCat = {
       id: `cat-${Date.now()}`,
       user_id: userId,
       name: trimmed,
+      name_en: trimmedEn,
       created_at: new Date().toISOString()
     };
-    categories.push(newCat);
-    setLocalData(`categories_${userId}`, categories);
+    const shared = getLocalData('categories_shared', getLocalData(`categories_${userId}`, []));
+    setLocalData('categories_shared', [...shared, newCat]);
+    if (userId) setLocalData(`categories_${userId}`, [...shared, newCat]);
     return newCat;
   },
 
-  async updateCategory(userId, categoryId, newName) {
+  async updateCategory(userId, categoryId, newName, newNameEn = '') {
     const trimmed = (newName || '').trim();
-    if (!trimmed) throw new Error('प्रकाराचे नाव आवश्यक आहे.');
+    const trimmedEn = (newNameEn || '').trim();
+    if (!trimmed) throw new Error('प्रकाराचे मराठी नाव (Marathi Name) आवश्यक आहे.');
+    if (!trimmedEn) throw new Error('प्रकाराचे इंग्रजी नाव (English Name) आवश्यक आहे.');
+
+    const known = getLocalData('categories_shared', []);
+    const duplicate = known.find(
+      (c) =>
+        c.id !== categoryId &&
+        ((c.name || '').toLowerCase() === trimmed.toLowerCase() ||
+          (c.name_en || '').toLowerCase() === trimmedEn.toLowerCase())
+    );
+    if (duplicate) {
+      throw new Error(`"${duplicate.name}${duplicate.name_en ? ` / ${duplicate.name_en}` : ''}" हा प्रकार आधीच अस्तित्वात आहे.`);
+    }
 
     if (isSupabaseConfigured()) {
       try {
-        const { data, error } = await supabase
+        const now = new Date().toISOString();
+        let res = await supabase
           .from('categories')
-          .update({ name: trimmed, updated_at: new Date().toISOString() })
+          .update({ name: trimmed, name_en: trimmedEn, updated_at: now })
           .eq('id', categoryId)
           .select()
           .single();
 
-        if (error) throw error;
-        return data;
+        if (res.error && isMissingColumnError(res.error, 'name_en')) {
+          console.warn('Column name_en missing in DB — run supabase_migration_category_english_name.sql');
+          res = await supabase
+            .from('categories')
+            .update({ name: trimmed, updated_at: now })
+            .eq('id', categoryId)
+            .select()
+            .single();
+        }
+
+        if (res.error) throw res.error;
+
+        const updated = { ...res.data, name_en: trimmedEn };
+        patchLocalCategory(userId, categoryId, { name: trimmed, name_en: trimmedEn });
+        return updated;
       } catch (err) {
         console.warn('Supabase updateCategory fallback to local:', err.message);
       }
     }
 
-    const categories = getLocalData(`categories_shared`, getLocalData(`categories_${userId}`, []));
-    const idx = categories.findIndex(c => c.id === categoryId);
-    if (idx !== -1) {
-      categories[idx].name = trimmed;
-      setLocalData(`categories_shared`, categories);
-      if (userId) setLocalData(`categories_${userId}`, categories);
-    }
-    return { id: categoryId, name: trimmed };
+    patchLocalCategory(userId, categoryId, { name: trimmed, name_en: trimmedEn });
+    return { id: categoryId, name: trimmed, name_en: trimmedEn };
   },
 
   async deleteCategory(userId, categoryId) {
@@ -389,8 +481,26 @@ export const marathiDataService = {
   // ==========================================
   // 3. PHOTO UPLOAD (Supabase Storage)
   // ==========================================
-  async uploadPhoto(userId, file) {
-    if (!file) return null;
+  // Uploads many files (one after another, so a slow phone connection is not overloaded).
+  // Returns [{ url, path }] - files that failed to upload are skipped.
+  async uploadPhotos(userId, files = []) {
+    const list = Array.from(files || []).filter(Boolean);
+    const results = [];
+    for (const file of list) {
+      try {
+        const res = await this.uploadPhoto(userId, file);
+        if (res?.photo_url) results.push({ url: res.photo_url, path: res.photo_path || null });
+      } catch (err) {
+        console.warn('Photo upload failed:', err.message);
+      }
+    }
+    return results;
+  },
+
+  async uploadPhoto(userId, originalFile) {
+    if (!originalFile) return null;
+    // Compress first: much faster upload + much faster loading of the list afterwards
+    const file = await compressImage(originalFile);
 
     if (isSupabaseConfigured() && userId && !userId.startsWith('demo-')) {
       try {
@@ -400,7 +510,7 @@ export const marathiDataService = {
         const { error: uploadError } = await supabase.storage
           .from('expense-photos')
           .upload(fileName, file, {
-            cacheControl: '3600',
+            cacheControl: '31536000', // file names are unique, so it is safe to cache for a year
             upsert: false
           });
 
@@ -471,11 +581,9 @@ export const marathiDataService = {
       .sort((a, b) => new Date(b.expense_date) - new Date(a.expense_date));
   },
 
-  async addExpense(userId, expenseData, photoFile = null) {
-    let photoResult = null;
-    if (photoFile) {
-      photoResult = await this.uploadPhoto(userId, photoFile);
-    }
+  async addExpense(userId, expenseData, photoFiles = []) {
+    const files = Array.isArray(photoFiles) ? photoFiles : (photoFiles ? [photoFiles] : []);
+    const uploaded = await this.uploadPhotos(userId, files);
 
     const payload = {
       user_id: userId || 'user-shared',
@@ -484,8 +592,7 @@ export const marathiDataService = {
       expense_date: expenseData.expense_date || new Date().toISOString().split('T')[0],
       payment_status: expenseData.payment_status || 'Paid',
       description: (expenseData.description || '').trim(),
-      photo_path: photoResult?.photo_path || null,
-      photo_url: photoResult?.photo_url || null
+      ...buildPhotoColumns(uploaded)
     };
 
     if (isSupabaseConfigured() && userId) {
@@ -516,6 +623,17 @@ export const marathiDataService = {
                 name
               )
             `)
+            .single();
+        }
+
+        // photo_urls / photo_paths columns not created yet (migration not run) -> save first photo only
+        if (insertRes.error && isMissingPhotoColumnError(insertRes.error)) {
+          console.warn('photo_urls column missing in DB. Run supabase_migration_expense_multiple_photos.sql');
+          const { photo_urls, photo_paths, ...safePayload } = payload;
+          insertRes = await supabase
+            .from('expenses')
+            .insert([safePayload])
+            .select(`*, categories ( id, name )`)
             .single();
         }
 
@@ -551,18 +669,22 @@ export const marathiDataService = {
     return newExpense;
   },
 
-  async updateExpense(userId, expenseId, expenseData, photoFile = null, removePhoto = false) {
-    let photoPath = expenseData.photo_path || null;
-    let photoUrl = expenseData.photo_url || null;
+  // expenseData already contains the photos that are KEPT (photo_url/photo_urls/...).
+  // newFiles are uploaded and appended; removedPaths are deleted from storage.
+  async updateExpense(userId, expenseId, expenseData, newFiles = [], removedPaths = []) {
+    const files = Array.isArray(newFiles) ? newFiles : (newFiles ? [newFiles] : []);
 
-    if (removePhoto) {
-      photoPath = null;
-      photoUrl = null;
-    } else if (photoFile) {
-      const uploadRes = await this.uploadPhoto(userId, photoFile);
-      if (uploadRes) {
-        photoPath = uploadRes.photo_path;
-        photoUrl = uploadRes.photo_url;
+    // Keep what the caller sent; if it sent nothing about photos (e.g. status toggle) keep the old ones
+    const hasPhotoInfo = 'photo_urls' in expenseData || 'photo_url' in expenseData;
+    const keptPhotos = hasPhotoInfo ? getExpensePhotos(expenseData) : [];
+    const uploaded = await this.uploadPhotos(userId, files);
+    const finalPhotos = [...keptPhotos, ...uploaded];
+
+    if (removedPaths?.length && isSupabaseConfigured()) {
+      try {
+        await supabase.storage.from('expense-photos').remove(removedPaths.filter((x) => x && !x.startsWith('local_')));
+      } catch (err) {
+        console.warn('Storage delete warning:', err.message);
       }
     }
 
@@ -572,10 +694,12 @@ export const marathiDataService = {
       expense_date: expenseData.expense_date,
       payment_status: expenseData.payment_status || 'Paid',
       description: (expenseData.description || '').trim(),
-      photo_path: photoPath,
-      photo_url: photoUrl,
       updated_at: new Date().toISOString()
     };
+    // only touch photo columns when the caller is actually editing photos
+    if (hasPhotoInfo || uploaded.length > 0 || removedPaths?.length) {
+      Object.assign(payload, buildPhotoColumns(finalPhotos));
+    }
 
     if (isSupabaseConfigured()) {
       try {
@@ -606,6 +730,17 @@ export const marathiDataService = {
                 name
               )
             `)
+            .single();
+        }
+
+        if (updateRes.error && isMissingPhotoColumnError(updateRes.error)) {
+          console.warn('photo_urls column missing in DB. Run supabase_migration_expense_multiple_photos.sql');
+          const { photo_urls, photo_paths, ...safePayload } = payload;
+          updateRes = await supabase
+            .from('expenses')
+            .update(safePayload)
+            .eq('id', expenseId)
+            .select(`*, categories ( id, name )`)
             .single();
         }
 
@@ -644,10 +779,12 @@ export const marathiDataService = {
     return expenses[idx];
   },
 
-  async deleteExpense(userId, expenseId, photoPath = null) {
-    if (photoPath && isSupabaseConfigured()) {
+  async deleteExpense(userId, expenseId, photoPaths = null) {
+    const paths = (Array.isArray(photoPaths) ? photoPaths : [photoPaths])
+      .filter((x) => x && !String(x).startsWith('local_'));
+    if (paths.length > 0 && isSupabaseConfigured()) {
       try {
-        await supabase.storage.from('expense-photos').remove([photoPath]);
+        await supabase.storage.from('expense-photos').remove(paths);
       } catch (err) {
         console.warn('Storage delete warning:', err.message);
       }
@@ -674,12 +811,18 @@ export const marathiDataService = {
   // ==========================================
   // 5. FINANCIAL & CATEGORY SUMMARIES
   // ==========================================
-  async getSummary(userId) {
+  // Fetches again only if the caller did not already load settings/expenses.
+  async getSummary(userId, preloaded = {}) {
     const [settings, expenses] = await Promise.all([
-      this.getSettings(userId),
-      this.getExpenses(userId)
+      preloaded.settings ?? this.getSettings(userId),
+      preloaded.expenses ?? this.getExpenses(userId)
     ]);
+    return computeSummary(settings, expenses);
+  }
+};
 
+// Pure function: builds dashboard totals from already-loaded data (no network).
+export function computeSummary(settings, expenses) {
     const totalBudget = Number(settings?.total_budget) || 0;
     
     // Calculate total spent
@@ -738,6 +881,7 @@ export const marathiDataService = {
       .sort((a, b) => b.amount - a.amount);
 
     return {
+      projectName: settings?.project_name || '',
       totalBudget,
       totalSpent,
       totalPaid,
@@ -750,5 +894,4 @@ export const marathiDataService = {
       expenseCount: expenses.length,
       categoryBreakdown
     };
-  }
-};
+}

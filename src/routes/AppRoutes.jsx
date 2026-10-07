@@ -1,13 +1,20 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import AppLayout from '../components/layout/AppLayout';
-import Dashboard from '../pages/Dashboard';
-import Expenses from '../pages/Expenses';
-import Settings from '../pages/Settings';
-import Login from '../pages/auth/Login';
-import Register from '../pages/auth/Register';
-import ForgotPassword from '../pages/auth/ForgotPassword';
+
+const Dashboard = lazy(() => import('../pages/Dashboard'));
+const Expenses = lazy(() => import('../pages/Expenses'));
+const Settings = lazy(() => import('../pages/Settings'));
+const Login = lazy(() => import('../pages/auth/Login'));
+const Register = lazy(() => import('../pages/auth/Register'));
+const ForgotPassword = lazy(() => import('../pages/auth/ForgotPassword'));
+
+const PageFallback = () => (
+  <div className="min-h-[40vh] flex items-center justify-center">
+    <div className="w-6 h-6 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -45,6 +52,7 @@ const PublicRoute = ({ children }) => {
 
 export default function AppRoutes() {
   return (
+    <Suspense fallback={<PageFallback />}>
     <Routes>
       {/* Public Auth Routes */}
       <Route
@@ -88,5 +96,6 @@ export default function AppRoutes() {
       {/* Catch-all redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   );
 }

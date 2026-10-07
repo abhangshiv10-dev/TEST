@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, Loader2 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAuth } from '../../contexts/AuthContext';
+import AppLogo from '../../components/common/AppLogo';
 
 export default function Register() {
   const [fullName, setFullName] = useState('');
@@ -59,9 +60,7 @@ export default function Register() {
       <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-card space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white mx-auto flex items-center justify-center text-xl shadow-md">
-            🏠
-          </div>
+          <AppLogo className="w-14 h-14 mx-auto shadow-md" rounded="rounded-2xl" />
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
             नवीन खाते तयार करा
           </h1>

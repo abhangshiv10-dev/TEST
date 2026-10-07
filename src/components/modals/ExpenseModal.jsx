@@ -5,6 +5,7 @@ import CategoryCombobox from '../common/CategoryCombobox';
 import PhotoUploader from '../common/PhotoUploader';
 import { toInputDate } from '../../utils/marathiDate';
 import { useBudget } from '../../contexts/BudgetContext';
+import { getExpensePhotos, buildPhotoColumns } from '../../utils/expensePhotos';
 
 export default function ExpenseModal({
   isOpen,
@@ -19,9 +20,9 @@ export default function ExpenseModal({
   const [expenseDate, setExpenseDate] = useState(toInputDate());
   const [paymentStatus, setPaymentStatus] = useState('Paid');
   const [description, setDescription] = useState('');
-  const [photoFile, setPhotoFile] = useState(null);
-  const [existingPhotoUrl, setExistingPhotoUrl] = useState(null);
-  const [removePhoto, setRemovePhoto] = useState(false);
+  const [newFiles, setNewFiles] = useState([]);          // photos picked now (File[])
+  const [existingPhotos, setExistingPhotos] = useState([]); // already saved [{url, path}]
+  const [removedPaths, setRemovedPaths] = useState([]);   // saved photos to delete from storage
   
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -33,18 +34,18 @@ export default function ExpenseModal({
       setExpenseDate(expenseToEdit.expense_date || toInputDate());
       setPaymentStatus(expenseToEdit.payment_status || 'Paid');
       setDescription(expenseToEdit.description || '');
-      setExistingPhotoUrl(expenseToEdit.photo_url || null);
-      setPhotoFile(null);
-      setRemovePhoto(false);
+      setExistingPhotos(getExpensePhotos(expenseToEdit));
+      setNewFiles([]);
+      setRemovedPaths([]);
     } else {
       setCategoryId('');
       setAmount('');
       setExpenseDate(toInputDate());
       setPaymentStatus('Paid');
       setDescription('');
-      setExistingPhotoUrl(null);
-      setPhotoFile(null);
-      setRemovePhoto(false);
+      setExistingPhotos([]);
+      setNewFiles([]);
+      setRemovedPaths([]);
     }
     setErrors({});
   }, [expenseToEdit, isOpen]);
@@ -84,14 +85,14 @@ export default function ExpenseModal({
         expense_date: expenseDate,
         payment_status: paymentStatus,
         description: description.trim(),
-        photo_url: removePhoto ? null : existingPhotoUrl,
-        photo_path: removePhoto ? null : expenseToEdit?.photo_path
+        // photos that are kept (new ones are uploaded by the service and appended)
+        ...buildPhotoColumns(existingPhotos)
       };
 
       if (expenseToEdit) {
-        await updateExpense(expenseToEdit.id, data, photoFile, removePhoto);
+        await updateExpense(expenseToEdit.id, data, newFiles, removedPaths);
       } else {
-        await addExpense(data, photoFile);
+        await addExpense(data, newFiles);
       }
 
       onClose();
@@ -138,8 +139,8 @@ export default function ExpenseModal({
                 setCategoryId(id);
                 setErrors((prev) => ({ ...prev, category: null }));
               }}
-              onAddNewCategory={async (name) => {
-                const newCat = await addCategory(name);
+              onAddNewCategory={async (name, nameEn) => {
+                const newCat = await addCategory(name, nameEn);
                 return newCat;
               }}
               error={errors.category}
@@ -250,20 +251,18 @@ export default function ExpenseModal({
           {/* 6. Photo Upload */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              पावती / फोटो (वैकल्पिक)
+              पावती / फोटो - एक किंवा अनेक (वैकल्पिक)
             </label>
             <PhotoUploader
-              photoUrl={removePhoto ? null : existingPhotoUrl}
-              selectedFile={photoFile}
-              onFileSelect={(file) => {
-                setPhotoFile(file);
-                setRemovePhoto(false);
+              existingPhotos={existingPhotos}
+              newFiles={newFiles}
+              onAddFiles={(files) => setNewFiles((prev) => [...prev, ...files])}
+              onRemoveExisting={(index) => {
+                const removed = existingPhotos[index];
+                if (removed?.path) setRemovedPaths((prev) => [...prev, removed.path]);
+                setExistingPhotos((prev) => prev.filter((_, i) => i !== index));
               }}
-              onRemovePhoto={() => {
-                setPhotoFile(null);
-                setExistingPhotoUrl(null);
-                setRemovePhoto(true);
-              }}
+              onRemoveNew={(index) => setNewFiles((prev) => prev.filter((_, i) => i !== index))}
               onViewPhoto={onViewPhoto}
             />
           </div>

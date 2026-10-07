@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, Suspense, lazy } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Plus,
@@ -19,20 +19,9 @@ import {
   PieChart as PieChartIcon,
   Clock,
   CheckCircle,
-  Percent
+  Percent,
+  X
 } from 'lucide-react';
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Cell,
-  PieChart,
-  Pie
-} from 'recharts';
 import Swal from 'sweetalert2';
 import { useBudget } from '../contexts/BudgetContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -42,9 +31,16 @@ import ExpenseCard from '../components/common/ExpenseCard';
 import ExpenseModal from '../components/modals/ExpenseModal';
 import BudgetModal from '../components/modals/BudgetModal';
 import PhotoViewerModal from '../components/modals/PhotoViewerModal';
-import { SingleExpenseReceiptModal } from '../components/receipts/SingleExpenseReceiptModal';
-import { ReportReceiptModal } from '../components/receipts/ReportReceiptModal';
+import { getExpensePhotos } from '../utils/expensePhotos';
+import { SingleExpenseReceiptModal, ReportReceiptModal } from '../components/receipts/lazyReceipts';
 import { matchesCategory } from '../utils/bilingualSearch';
+
+const MonthlyBarChart = lazy(() =>
+  import('../components/common/DashboardCharts').then((m) => ({ default: m.MonthlyBarChart }))
+);
+const CategoryDonut = lazy(() =>
+  import('../components/common/DashboardCharts').then((m) => ({ default: m.CategoryDonut }))
+);
 
 const CATEGORY_COLORS = [
   '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', 
@@ -69,6 +65,23 @@ export default function Dashboard() {
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryName, setSelectedCategoryName] = useState('all');
+  // Trend chart period: 'weekly' | 'monthly' | 'yearly'
+  const [trendPeriod, setTrendPeriod] = useState('monthly');
+  const recentExpensesRef = useRef(null);
+
+  // Chart/legend var click kelyavar tya category che sarva expenses khali dakhva (parat click kelyavar clear)
+  const handleCategoryClick = (name) => {
+    if (!name) return;
+    if (selectedCategoryName === name) {
+      setSelectedCategoryName('all');
+      return;
+    }
+    setSelectedCategoryName(name);
+    setSearchQuery('');
+    setTimeout(() => {
+      recentExpensesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
 
   // Receipt modals state
   const [singleReceiptExpense, setSingleReceiptExpense] = useState(null);
@@ -78,9 +91,11 @@ export default function Dashboard() {
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [viewingPhotoUrl, setViewingPhotoUrl] = useState(null);
   const [viewingPhotoTitle, setViewingPhotoTitle] = useState('');
+  const [viewingPhotoList, setViewingPhotoList] = useState(null);
 
-  const handleOpenPhoto = (url, title) => {
+  const handleOpenPhoto = (url, title, allUrls = null) => {
     setViewingPhotoUrl(url);
+    setViewingPhotoList(allUrls);
     setViewingPhotoTitle(title);
     setPhotoModalOpen(true);
   };
@@ -127,7 +142,7 @@ export default function Dashboard() {
 
     if (result.isConfirmed) {
       try {
-        await deleteExpense(expense.id, expense.photo_path);
+        await deleteExpense(expense.id, getExpensePhotos(expense).map((ph) => ph.path));
         Swal.fire({
           toast: true,
           position: 'top-end',
@@ -164,27 +179,37 @@ export default function Dashboard() {
     return expenses
       .filter(e => {
         if (selectedCategoryName && selectedCategoryName !== 'all') {
-          if (e.category_name !== selectedCategoryName) return false;
+          if ((e.category_name || 'इतर') !== selectedCategoryName) return false;
         }
 
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
-          const categoryMatch = e.category_name && (e.category_name.toLowerCase().includes(q) || matchesCategory(e.category_name, q));
+          const categoryMatch = e.category_name && (e.category_name.toLowerCase().includes(q) || matchesCategory(e.category_name, q, e.category_name_en));
           const descMatch = e.description && e.description.toLowerCase().includes(q);
           const amountMatch = String(e.amount).includes(q);
           return categoryMatch || descMatch || amountMatch;
         }
         return true;
       })
-      .slice(0, selectedCategoryName !== 'all' ? 50 : 8);
+      .slice(0, selectedCategoryName !== 'all' ? undefined : 8);
   }, [expenses, selectedCategoryName, searchQuery]);
+
+  // Selected category cha total (count + amount)
+  const selectedCategoryStats = useMemo(() => {
+    if (selectedCategoryName === 'all') return { count: 0, total: 0 };
+    const list = expenses.filter(e => (e.category_name || 'इतर') === selectedCategoryName);
+    return {
+      count: list.length,
+      total: list.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
+    };
+  }, [expenses, selectedCategoryName]);
 
   // Pending Expenses List
   const pendingExpensesList = useMemo(() => {
     return expenses.filter(e => (e.payment_status || '').toLowerCase() === 'pending' || e.payment_status === 'बाकी');
   }, [expenses]);
 
-  // Month-wise expense aggregation for the graph
+  // Expense trend aggregation for the graph (weekly / monthly / yearly)
   const monthlyExpenseData = useMemo(() => {
     const marathiMonths = [
       'जानेवारी', 'फेब्रुवारी', 'मार्च', 'एप्रिल', 'मे', 'जून',
@@ -195,49 +220,117 @@ export default function Dashboard() {
       'जुलै', 'ऑग', 'सप्टें', 'ऑक्टो', 'नोव्हें', 'डिसें'
     ];
 
-    const monthsMap = {};
+    const pad = (n) => String(n).padStart(2, '0');
+    const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    // Parse 'YYYY-MM-DD' as a LOCAL date (avoids timezone day-shift)
+    const parseDate = (value) => {
+      if (!value) return null;
+      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value));
+      const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(value);
+      return isNaN(d.getTime()) ? null : d;
+    };
+
     const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const map = {};
 
-    // Default to last 6 months in chronological order
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const label = `${marathiShortMonths[d.getMonth()]} '${String(d.getFullYear()).slice(-2)}`;
-      const fullLabel = `${marathiMonths[d.getMonth()]} ${d.getFullYear()}`;
-      monthsMap[key] = {
-        key,
-        label,
-        fullLabel,
-        amount: 0,
-        count: 0
+    // ---------- WEEKLY: last 8 weeks (Monday - Sunday) ----------
+    if (trendPeriod === 'weekly') {
+      const weekStart = (d) => {
+        const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        const diff = (x.getDay() + 6) % 7; // Monday = 0
+        x.setDate(x.getDate() - diff);
+        return x;
       };
-    }
+      const currentWeek = weekStart(today);
+      const fmt = (d) => `${pad(d.getDate())} ${marathiShortMonths[d.getMonth()]}`;
 
-    expenses.forEach((exp) => {
-      if (!exp.expense_date) return;
-      const d = new Date(exp.expense_date);
-      if (isNaN(d.getTime())) return;
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const amt = Number(exp.amount) || 0;
-
-      if (!monthsMap[key]) {
-        const label = `${marathiShortMonths[d.getMonth()]} '${String(d.getFullYear()).slice(-2)}`;
-        const fullLabel = `${marathiMonths[d.getMonth()]} ${d.getFullYear()}`;
-        monthsMap[key] = {
+      for (let i = 7; i >= 0; i--) {
+        const start = new Date(currentWeek);
+        start.setDate(start.getDate() - i * 7);
+        const end = new Date(start);
+        end.setDate(end.getDate() + 6);
+        const key = ymd(start);
+        map[key] = {
           key,
-          label,
-          fullLabel,
+          label: fmt(start),
+          fullLabel: `${fmt(start)} - ${fmt(end)} ${end.getFullYear()}`,
           amount: 0,
-          count: 0
+          count: 0,
+          isCurrent: i === 0
         };
       }
 
-      monthsMap[key].amount += amt;
-      monthsMap[key].count += 1;
-    });
+      expenses.forEach((exp) => {
+        const d = parseDate(exp.expense_date);
+        if (!d) return;
+        const key = ymd(weekStart(d));
+        if (!map[key]) return; // outside the 8-week window
+        map[key].amount += Number(exp.amount) || 0;
+        map[key].count += 1;
+      });
 
-    return Object.values(monthsMap).sort((a, b) => a.key.localeCompare(b.key));
-  }, [expenses]);
+    // ---------- YEARLY: last 5 years (plus any older year that has data) ----------
+    } else if (trendPeriod === 'yearly') {
+      const thisYear = now.getFullYear();
+      for (let y = thisYear - 4; y <= thisYear; y++) {
+        map[String(y)] = {
+          key: String(y),
+          label: String(y),
+          fullLabel: `वर्ष ${y}`,
+          amount: 0,
+          count: 0,
+          isCurrent: y === thisYear
+        };
+      }
+      expenses.forEach((exp) => {
+        const d = parseDate(exp.expense_date);
+        if (!d) return;
+        const key = String(d.getFullYear());
+        if (!map[key]) {
+          map[key] = { key, label: key, fullLabel: `वर्ष ${key}`, amount: 0, count: 0, isCurrent: false };
+        }
+        map[key].amount += Number(exp.amount) || 0;
+        map[key].count += 1;
+      });
+
+    // ---------- MONTHLY: last 6 months (plus any other month that has data) ----------
+    } else {
+      const nowKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+      const makeMonth = (d) => {
+        const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+        return {
+          key,
+          label: `${marathiShortMonths[d.getMonth()]} '${String(d.getFullYear()).slice(-2)}`,
+          fullLabel: `${marathiMonths[d.getMonth()]} ${d.getFullYear()}`,
+          amount: 0,
+          count: 0,
+          isCurrent: key === nowKey
+        };
+      };
+      for (let i = 5; i >= 0; i--) {
+        const m = makeMonth(new Date(now.getFullYear(), now.getMonth() - i, 1));
+        map[m.key] = m;
+      }
+      expenses.forEach((exp) => {
+        const d = parseDate(exp.expense_date);
+        if (!d) return;
+        const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+        if (!map[key]) map[key] = makeMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+        map[key].amount += Number(exp.amount) || 0;
+        map[key].count += 1;
+      });
+    }
+
+    return Object.values(map).sort((a, b) => a.key.localeCompare(b.key));
+  }, [expenses, trendPeriod]);
+
+  // Titles / labels that change with the selected period
+  const trendMeta = {
+    weekly:  { title: 'Weekly Expense Trend (साप्ताहिक खर्च कल)', sub: 'गेल्या ८ आठवड्यांचा बांधकाम खर्च', avg: 'साप्ताहिक सरासरी' },
+    monthly: { title: 'Monthly Expense Trend (मासिक खर्च कल)',   sub: 'दरमहा झालेल्या बांधकाम खर्चाचा आलेख', avg: 'मासिक सरासरी' },
+    yearly:  { title: 'Yearly Expense Trend (वार्षिक खर्च कल)',   sub: 'दरवर्षी झालेल्या बांधकाम खर्चाचा आलेख', avg: 'वार्षिक सरासरी' }
+  }[trendPeriod];
 
   // Category Pie Chart Data
   const categoryPieData = useMemo(() => {
@@ -306,10 +399,10 @@ export default function Dashboard() {
             type="button"
             onClick={() => setReportReceiptOpen(true)}
             className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
-            title="खर्च अहवाल पावती PDF/JPG/PNG/WhatsApp एक्सपोर्ट करा"
+            title="सर्व नोंदींसह पावती अहवाल PDF/PNG/JPG एक्सपोर्ट करा"
           >
             <Receipt className="w-4 h-4 shrink-0" />
-            <span>पावती अहवाल</span>
+            <span>पावती अहवाल ({expenses.length} नोंदी)</span>
           </button>
 
           {/* Primary Action Button */}
@@ -472,82 +565,45 @@ export default function Dashboard() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
-                  Monthly Expense Trend (मासिक खर्च कल)
+                  {trendMeta.title}
                 </h3>
                 <p className="text-[11px] text-slate-500 font-normal">
-                  दरमहा झालेल्या बांधकाम खर्चाचा आलेख
+                  {trendMeta.sub}
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <span className="text-[10px] text-slate-400 block">मासिक सरासरी</span>
+              <span className="text-[10px] text-slate-400 block">{trendMeta.avg}</span>
               <span className="text-xs font-bold text-slate-900">{formatINR(monthlyAverage)}</span>
             </div>
           </div>
 
-          <div className="h-56 sm:h-64 w-full pt-1">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
-                data={monthlyExpenseData} 
-                margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
+          {/* Period filter: Weekly / Monthly / Yearly */}
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 w-fit">
+            {[
+              { id: 'weekly', label: 'आठवडा (Weekly)' },
+              { id: 'monthly', label: 'महिना (Monthly)' },
+              { id: 'yearly', label: 'वर्ष (Yearly)' }
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setTrendPeriod(opt.id)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  trendPeriod === opt.id
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
               >
-                <defs>
-                  <linearGradient id="monthBarActive" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
-                    <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.85} />
-                  </linearGradient>
-                  <linearGradient id="monthBarStandard" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9} />
-                    <stop offset="100%" stopColor="#4338ca" stopOpacity={0.7} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis 
-                  dataKey="label" 
-                  tick={{ fontSize: 11, fill: '#64748b' }} 
-                  axisLine={{ stroke: '#e2e8f0' }}
-                  tickLine={false}
-                />
-                <YAxis 
-                  tick={{ fontSize: 10, fill: '#64748b' }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(val) => val >= 100000 ? `₹${(val / 100000).toFixed(1)}L` : val >= 1000 ? `₹${(val / 1000).toFixed(0)}k` : `₹${val}`}
-                />
-                <Tooltip 
-                  cursor={{ fill: '#f8fafc' }}
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload;
-                      return (
-                        <div className="bg-slate-900 text-white p-2.5 rounded-xl shadow-xl border border-slate-700 text-xs space-y-1">
-                          <div className="font-bold text-slate-200">{data.fullLabel}</div>
-                          <div className="text-emerald-400 font-extrabold text-sm">{formatINR(data.amount)}</div>
-                          <div className="text-slate-400 text-[10px]">{data.count} व्यवहार</div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Bar 
-                  dataKey="amount" 
-                  radius={[6, 6, 0, 0]}
-                  maxBarSize={40}
-                >
-                  {monthlyExpenseData.map((entry, index) => {
-                    const nowKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
-                    const isCurrent = entry.key === nowKey;
-                    return (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={isCurrent ? 'url(#monthBarActive)' : 'url(#monthBarStandard)'} 
-                      />
-                    );
-                  })}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="h-56 sm:h-64 w-full pt-1">
+            <Suspense fallback={<div className="w-full h-full animate-pulse bg-slate-100 rounded-xl" />}>
+              <MonthlyBarChart monthlyExpenseData={monthlyExpenseData} />
+            </Suspense>
           </div>
         </div>
 
@@ -576,57 +632,38 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
               {/* Donut Pie Chart */}
               <div className="sm:col-span-5 h-48 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryPieData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={45}
-                      outerRadius={70}
-                      paddingAngle={2}
-                    >
-                      {categoryPieData.map((entry, index) => (
-                        <Cell key={`pie-cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          const data = payload[0].payload;
-                          return (
-                            <div className="bg-slate-900 text-white p-2 rounded-xl shadow-xl text-xs space-y-0.5">
-                              <div className="font-bold">{data.name}</div>
-                              <div className="text-emerald-400 font-bold">{formatINR(data.value)}</div>
-                              <div className="text-slate-400 text-[10px]">{data.percentage}% वाटा</div>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                <Suspense fallback={<div className="w-full h-full animate-pulse bg-slate-100 rounded-xl" />}>
+                  <CategoryDonut
+                    categoryPieData={categoryPieData}
+                    selectedCategoryName={selectedCategoryName}
+                    handleCategoryClick={handleCategoryClick}
+                  />
+                </Suspense>
               </div>
 
               {/* Category Legend List */}
               <div className="sm:col-span-7 space-y-1.5 max-h-48 overflow-y-auto pr-1">
                 {categoryPieData.map((item) => (
-                  <div
+                  <button
+                    type="button"
                     key={item.name}
-                    className="flex items-center justify-between text-xs p-1.5 rounded-lg bg-slate-50/80 border border-slate-100 hover:bg-slate-100/70 transition-colors"
+                    onClick={() => handleCategoryClick(item.name)}
+                    title="या प्रकारचे सर्व खर्च पहा"
+                    className={`w-full text-left flex items-center justify-between text-xs p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                      selectedCategoryName === item.name
+                        ? 'bg-slate-900 border-slate-900 text-white'
+                        : 'bg-slate-50/80 border-slate-100 hover:bg-slate-100/70'
+                    }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                      <span className="font-semibold text-slate-800 truncate">{item.name}</span>
+                      <span className={`font-semibold truncate ${selectedCategoryName === item.name ? 'text-white' : 'text-slate-800'}`}>{item.name}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="font-bold text-slate-900">{formatINR(item.value)}</span>
-                      <span className="text-[10px] font-medium text-slate-500 w-8 text-right">({item.percentage}%)</span>
+                      <span className={`font-bold ${selectedCategoryName === item.name ? 'text-white' : 'text-slate-900'}`}>{formatINR(item.value)}</span>
+                      <span className={`text-[10px] font-medium w-8 text-right ${selectedCategoryName === item.name ? 'text-slate-300' : 'text-slate-500'}`}>({item.percentage}%)</span>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -641,7 +678,7 @@ export default function Dashboard() {
       {/* 6. Two Bottom Sections Side-by-Side (Left: Recent Expenses | Right: Pending Payments) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
         {/* Left Column: Recent Expenses (अलीकडील खर्च) */}
-        <div className="glass-card rounded-2xl p-4 sm:p-5 space-y-3.5 border border-slate-200/80">
+        <div ref={recentExpensesRef} className="glass-card rounded-2xl p-4 sm:p-5 space-y-3.5 border border-slate-200/80 scroll-mt-20">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
               <h3 className="text-sm font-bold text-slate-900">
@@ -659,6 +696,26 @@ export default function Dashboard() {
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
+
+          {/* Selected category banner */}
+          {selectedCategoryName !== 'all' && (
+            <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200">
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-emerald-900 truncate">{selectedCategoryName}</p>
+                <p className="text-[11px] text-emerald-700">
+                  {selectedCategoryStats.count} नोंदी • {formatINR(selectedCategoryStats.total)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedCategoryName('all')}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 hover:text-emerald-950 shrink-0"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>फिल्टर काढा</span>
+              </button>
+            </div>
+          )}
 
           {/* Quick Search */}
           <div className="relative">
@@ -827,6 +884,7 @@ export default function Dashboard() {
       <PhotoViewerModal
         isOpen={photoModalOpen}
         photoUrl={viewingPhotoUrl}
+        photos={viewingPhotoList}
         title={viewingPhotoTitle}
         onClose={() => {
           setPhotoModalOpen(false);
@@ -838,13 +896,15 @@ export default function Dashboard() {
       <SingleExpenseReceiptModal
         isOpen={Boolean(singleReceiptExpense)}
         expense={singleReceiptExpense}
+        projectName={summary?.projectName || undefined}
         onClose={() => setSingleReceiptExpense(null)}
       />
 
-      {/* Report Receipt Modal (Template 1 - Max 10 entries) */}
+      {/* Report Receipt Modal (Template 1 - all entries) */}
       <ReportReceiptModal
         isOpen={reportReceiptOpen}
         expenses={expenses}
+        projectName={summary?.projectName || undefined}
         totalExpenses={summary.totalSpent}
         totalEntries={expenses.length}
         dateRangeText=""

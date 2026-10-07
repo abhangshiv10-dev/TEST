@@ -9,9 +9,11 @@ export default function AppLayout() {
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [viewingPhotoUrl, setViewingPhotoUrl] = useState(null);
   const [viewingPhotoTitle, setViewingPhotoTitle] = useState('');
+  const [viewingPhotoList, setViewingPhotoList] = useState(null);
 
-  const handleOpenPhoto = (url, title) => {
+  const handleOpenPhoto = (url, title, allUrls = null) => {
     setViewingPhotoUrl(url);
+    setViewingPhotoList(allUrls);
     setViewingPhotoTitle(title);
     setPhotoModalOpen(true);
   };
@@ -58,6 +60,7 @@ export default function AppLayout() {
       <PhotoViewerModal
         isOpen={photoModalOpen}
         photoUrl={viewingPhotoUrl}
+        photos={viewingPhotoList}
         title={viewingPhotoTitle}
         onClose={() => {
           setPhotoModalOpen(false);
