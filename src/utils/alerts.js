@@ -13,10 +13,11 @@ const base = () => ({
 export function toast(icon, title, timer = 2000) {
   return Swal.fire({
     toast: true,
-    position: 'top-end',
+    position: 'center',
     icon,
     title,
     showConfirmButton: false,
+    customClass: { popup: 'center-toast' },
     timer
   });
 }

@@ -38,8 +38,8 @@ export default function ExpenseDetailModal({ isOpen, expense, onClose, onEdit })
 
   const Row = ({ label, children }) => (
     <div className="flex items-start justify-between gap-4 py-2.5 border-b border-slate-100 last:border-0">
-      <span className="text-xs text-slate-500 shrink-0">{label}</span>
-      <span className="text-sm font-semibold text-slate-900 text-right break-words min-w-0">
+      <span className="text-sm font-bold text-slate-900 shrink-0">{label}</span>
+      <span className="text-sm font-normal text-slate-700 text-right break-words min-w-0">
         {children}
       </span>
     </div>
