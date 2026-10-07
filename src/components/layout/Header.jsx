@@ -13,9 +13,13 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import AppLogo from '../common/AppLogo';
+import LanguageSwitcher from '../common/LanguageSwitcher';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { LEGACY_OWNER_NAME_PREFIX } from '../../constants/appDefaults';
 
 export default function Header({ onOpenAddExpense }) {
   const { user, signOut } = useAuth();
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -28,17 +32,24 @@ export default function Header({ onOpenAddExpense }) {
   };
 
   const navLinks = [
-    { name: 'मुख्यपृष्ठ', path: '/', icon: Home },
-    { name: 'खर्च', path: '/expenses', icon: IndianRupee },
-    { name: 'सेटिंग्ज', path: '/settings', icon: Settings },
+    { labelKey: 'nav.home', path: '/', icon: Home },
+    { labelKey: 'nav.expenses', path: '/expenses', icon: IndianRupee },
+    { labelKey: 'nav.settings', path: '/settings', icon: Settings },
   ];
+
+  // Older sign-ins saved a built-in Marathi placeholder as the user's name; ignore it so the avatar
+  // and tooltip follow the selected language instead.
+  const rawName = user?.user_metadata?.full_name || '';
+  const displayName = rawName.startsWith(LEGACY_OWNER_NAME_PREFIX) ? '' : rawName;
+  const mobile = user?.mobile || user?.user_metadata?.mobile;
+  const userTooltip = displayName || (mobile ? `+91 ${mobile}` : t('nav.user'));
 
   return (
     <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-[0_1px_3px_0_rgba(15,23,42,0.03)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Left: Brand Icon Only */}
-          <Link to="/" className="flex items-center group" title="Home | Expenses - मुख्यपृष्ठ">
+          <Link to="/" className="flex items-center group" title={t('app.name')}>
             <AppLogo className="w-10 h-10" rounded="rounded-xl" />
           </Link>
 
@@ -58,7 +69,7 @@ export default function Header({ onOpenAddExpense }) {
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
-                  <span>{link.name}</span>
+                  <span>{t(link.labelKey)}</span>
                 </Link>
               );
             })}
@@ -66,18 +77,21 @@ export default function Header({ onOpenAddExpense }) {
 
           {/* Right: Profile & Actions */}
           <div className="flex items-center gap-2.5">
+            {/* Language: मराठी | English */}
+            <LanguageSwitcher />
+
             {/* Profile Avatar & Logout */}
             <div className="flex items-center gap-1.5 pl-2">
               <div
-                title={user?.email || 'वापरकर्ता'}
+                title={userTooltip}
                 className="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 text-xs font-bold shadow-2xs"
               >
-                {user?.user_metadata?.full_name ? user.user_metadata.full_name[0].toUpperCase() : <User className="w-4 h-4 text-slate-600" />}
+                {displayName ? displayName[0].toUpperCase() : <User className="w-4 h-4 text-slate-600" />}
               </div>
 
               <button
                 onClick={handleLogout}
-                title="लॉगआउट करा"
+                title={t('nav.logout')}
                 className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
               >
                 <LogOut className="w-4 h-4" />
@@ -87,7 +101,7 @@ export default function Header({ onOpenAddExpense }) {
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-xl"
-                aria-label="Menu"
+                aria-label={t('nav.menu')}
               >
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
@@ -111,7 +125,7 @@ export default function Header({ onOpenAddExpense }) {
                   }`}
                 >
                   <Icon className="w-4 h-4" />
-                  <span>{link.name}</span>
+                  <span>{t(link.labelKey)}</span>
                 </Link>
               );
             })}

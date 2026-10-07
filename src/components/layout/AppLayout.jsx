@@ -3,8 +3,10 @@ import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import ExpenseModal from '../modals/ExpenseModal';
 import PhotoViewerModal from '../modals/PhotoViewerModal';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 export default function AppLayout() {
+  const { t } = useLanguage();
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [viewingPhotoUrl, setViewingPhotoUrl] = useState(null);
@@ -39,12 +41,12 @@ export default function AppLayout() {
       <footer className="border-t border-slate-200/70 bg-white/60 backdrop-blur-md py-4 text-center text-[12px] text-slate-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-800">Home | Expenses</span>
+            <span className="font-semibold text-slate-800">{t('app.name')}</span>
             <span className="text-slate-300">•</span>
-            <span>वैयक्तिक घर बांधकाम खर्च व्यवस्थापन</span>
+            <span>{t('app.footerTitle')}</span>
           </div>
           <div className="text-slate-400 text-[11px]">
-            सुरक्षित आणि सोपे पर्सनल फायनान्स ट्रॅकर
+            {t('app.footerNote')}
           </div>
         </div>
       </footer>

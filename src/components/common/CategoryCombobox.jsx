@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Plus, ChevronDown, Check, X } from 'lucide-react';
-import { matchesCategory, getCategoryEnglishLabel } from '../../utils/bilingualSearch';
+import { matchesCategory } from '../../utils/bilingualSearch';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { errorMessage } from '../../utils/appError';
 
 const hasDevanagari = (text) => /[\u0900-\u097F]/.test(text);
 
@@ -11,6 +13,7 @@ export default function CategoryCombobox({
   onAddNewCategory, // (marathiName, englishName) => Promise<category>
   error
 }) {
+  const { t, tRich, catLabel } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddingNew, setIsAddingNew] = useState(false);
@@ -81,11 +84,11 @@ export default function CategoryCombobox({
     const english = newEnglishName.trim();
 
     if (!marathi) {
-      setCreateError('मराठी नाव (Marathi Name) टाका.');
+      setCreateError(t('category.marathiRequired'));
       return;
     }
     if (!english) {
-      setCreateError('English Name टाका.');
+      setCreateError(t('category.englishRequired'));
       return;
     }
 
@@ -99,7 +102,7 @@ export default function CategoryCombobox({
       setIsCreating(false);
       setIsOpen(false);
     } catch (err) {
-      setCreateError(err?.message || 'प्रकार जोडता आला नाही.');
+      setCreateError(errorMessage(err, 'category.addFailed'));
     } finally {
       setIsAddingNew(false);
     }
@@ -123,7 +126,7 @@ export default function CategoryCombobox({
         }`}
       >
         <span className={selectedCategory ? 'text-slate-900 font-medium' : 'text-slate-400'}>
-          {selectedCategory ? selectedCategory.name : 'खर्चाचा प्रकार निवडा'}
+          {selectedCategory ? catLabel(selectedCategory.name, selectedCategory.name_en) : t('category.selectPlaceholder')}
         </span>
         <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180 text-slate-700' : ''}`} />
       </button>
@@ -135,12 +138,12 @@ export default function CategoryCombobox({
             /* ---------- New category: Marathi Name + English Name ---------- */
             <div className="p-3 space-y-2.5">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-slate-900">नवीन प्रकार जोडा</h4>
+                <h4 className="text-xs font-bold text-slate-900">{t('category.addNewTitle')}</h4>
                 <button
                   type="button"
                   onClick={() => setIsCreating(false)}
                   className="p-1 text-slate-400 hover:text-slate-700 rounded-lg"
-                  title="मागे"
+                  title={t('common.back')}
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -148,14 +151,14 @@ export default function CategoryCombobox({
 
               <div>
                 <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                  मराठी नाव (Marathi Name) <span className="text-rose-500">*</span>
+                  {t('category.marathiName')} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={newMarathiName}
                   onChange={(e) => { setNewMarathiName(e.target.value); setCreateError(''); }}
                   onKeyDown={handleFormKeyDown}
-                  placeholder="उदा. लॅपटॉप"
+                  placeholder={t('category.marathiPlaceholder')}
                   className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
                   autoFocus={!newMarathiName}
                 />
@@ -163,19 +166,19 @@ export default function CategoryCombobox({
 
               <div>
                 <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                  English Name <span className="text-rose-500">*</span>
+                  {t('category.englishName')} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={newEnglishName}
                   onChange={(e) => { setNewEnglishName(e.target.value); setCreateError(''); }}
                   onKeyDown={handleFormKeyDown}
-                  placeholder="e.g. Laptop"
+                  placeholder={t('category.englishPlaceholder')}
                   className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
                   autoFocus={Boolean(newMarathiName)}
                 />
                 <p className="mt-1 text-[10px] text-slate-400">
-                  इंग्रजीत शोधल्यावरही हा प्रकार सापडेल.
+                  {t('category.englishHint')}
                 </p>
               </div>
 
@@ -189,7 +192,7 @@ export default function CategoryCombobox({
                   onClick={() => setIsCreating(false)}
                   className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
                 >
-                  रद्द करा
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="button"
@@ -197,7 +200,7 @@ export default function CategoryCombobox({
                   onClick={handleCreateNew}
                   className="px-3.5 py-1.5 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-60"
                 >
-                  {isAddingNew ? 'जोडत आहे...' : 'जोडा व निवडा'}
+                  {isAddingNew ? t('common.adding') : t('category.addAndSelect')}
                 </button>
               </div>
             </div>
@@ -212,7 +215,7 @@ export default function CategoryCombobox({
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="शोधा... (मराठी / English)"
+                    placeholder={t('category.searchPlaceholder')}
                     className="w-full pl-8 pr-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
@@ -233,7 +236,6 @@ export default function CategoryCombobox({
                 {filteredCategories.length > 0 ? (
                   filteredCategories.map((cat) => {
                     const isSelected = cat.id === selectedCategoryId;
-                    const engLabel = cat.name_en || getCategoryEnglishLabel(cat.name);
                     return (
                       <button
                         key={cat.id}
@@ -246,12 +248,7 @@ export default function CategoryCombobox({
                         }`}
                       >
                         <div className="flex items-center gap-1.5 truncate">
-                          <span className="font-semibold">{cat.name}</span>
-                          {engLabel && (
-                            <span className={`text-[11px] font-normal truncate ${isSelected ? 'text-slate-300' : 'text-slate-400'}`}>
-                              ({engLabel})
-                            </span>
-                          )}
+                          <span className="font-semibold truncate">{catLabel(cat.name, cat.name_en)}</span>
                         </div>
                         {isSelected && <Check className="w-4 h-4 text-white shrink-0 ml-2" />}
                       </button>
@@ -259,7 +256,7 @@ export default function CategoryCombobox({
                   })
                 ) : (
                   <div className="py-2.5 px-3 text-xs text-slate-400 text-center">
-                    कोणताही प्रकार सापडला नाही
+                    {t('category.noneFound')}
                   </div>
                 )}
 
@@ -275,7 +272,7 @@ export default function CategoryCombobox({
                         <Plus className="w-3.5 h-3.5" />
                       </div>
                       <span>
-                        <strong>"{trimmedQuery}"</strong> नवीन प्रकार म्हणून जोडा
+                        {tRich('category.addAsNew', { query: <strong>"{trimmedQuery}"</strong> })}
                       </span>
                     </button>
                   </div>

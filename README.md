@@ -60,6 +60,16 @@ Built with **React 19 + Vite**, **Tailwind CSS**, **Recharts**, **Lucide Icons**
 
 ---
 
+## 🌐 Languages (मराठी / English)
+
+The language switcher (**मराठी | English**) is in the header and on the login pages. The choice is remembered in the browser. In Marathi mode no English text is shown; in English mode no Marathi text is shown (except text you typed yourself, such as expense descriptions).
+
+* **All screen text** lives in two files: [`src/i18n/locales/mr.js`](./src/i18n/locales/mr.js) and [`src/i18n/locales/en.js`](./src/i18n/locales/en.js). Components never contain fixed text; they call `t('some.key')`.
+* To change a word, edit it in both files. To add a new text, add the same key to both files and use `t('your.key')` in the component.
+* **Categories** are stored with a Marathi name and an English name; the one matching the selected language is shown. Run [`supabase_migration_category_english_name.sql`](./supabase_migration_category_english_name.sql) once on an existing database so the English names are saved in the cloud.
+
+---
+
 ## 🛠️ Technology Stack
 
 | Layer | Technology |

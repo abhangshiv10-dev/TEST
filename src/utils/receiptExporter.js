@@ -1,3 +1,5 @@
+import { translate } from '../i18n';
+
 // html2canvas & jsPDF are heavy (~600KB) — load only when the user actually exports
 const loadHtml2Canvas = async () => (await import('html2canvas')).default;
 const loadJsPDF = async () => (await import('jspdf')).jsPDF;
@@ -413,7 +415,7 @@ export async function shareToWhatsApp(element, captionText = '') {
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
-            title: 'बांधकाम खर्च पावती',
+            title: translate('receipt.shareTitle'),
             text: captionText
           });
           return;

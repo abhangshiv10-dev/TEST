@@ -23,16 +23,18 @@ import {
   FileText,
   Eye
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { toast, alertBox, confirmDelete } from '../utils/alerts';
+import { errorMessage } from '../utils/appError';
+import { useLanguage } from '../i18n/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useBudget } from '../contexts/BudgetContext';
 import { formatINR } from '../utils/marathiCurrency';
-import { formatMarathiDateTime } from '../utils/marathiDate';
 import { getCategoryIconMeta } from '../utils/categoryIcons';
 import { SingleExpenseReceiptModal, ReportReceiptModal } from '../components/receipts/lazyReceipts';
 
 export default function Settings() {
   const { user } = useAuth();
+  const { t, tRich, catLabel, projectLabel, fmtDate, fmtDateTime } = useLanguage();
   const {
     summary,
     categories,
@@ -70,11 +72,7 @@ export default function Settings() {
     e.preventDefault();
     const val = Number(budgetInput);
     if (!budgetInput || isNaN(val) || val <= 0) {
-      Swal.fire({
-        icon: 'error',
-        title: 'अवैध रक्कम',
-        text: 'कृपया योग्य रक्कम टाका.'
-      });
+      alertBox('error', t('settings.invalidAmount'), t('settings.invalidAmountText'));
       return;
     }
 
@@ -86,22 +84,15 @@ export default function Settings() {
       await updateBudget(finalBudget, budgetMode, val);
       setIsEditingBudget(false);
       setBudgetInput('');
-      Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'success',
-        title: budgetMode === 'add' 
-          ? `बजेटमध्ये ${formatINR(val)} वाढवले! (एकूण: ${formatINR(finalBudget)})` 
-          : 'बजेट यशस्वीरित्या बदलले',
-        showConfirmButton: false,
-        timer: 2200
-      });
+      toast(
+        'success',
+        budgetMode === 'add'
+          ? t('settings.budgetAddedToast', { amount: formatINR(val), total: formatINR(finalBudget) })
+          : t('settings.budgetChangedToast'),
+        2200
+      );
     } catch (err) {
-      Swal.fire({
-        icon: 'error',
-        title: 'त्रुटी',
-        text: 'बजेट जतन करता आले नाही.'
-      });
+      alertBox('error', t('common.error'), t('settings.budgetSaveFailed'));
     } finally {
       setBudgetSaving(false);
     }
@@ -113,11 +104,7 @@ export default function Settings() {
     const trimmed = newCatName.trim();
     const trimmedEn = newCatNameEn.trim();
     if (!trimmed || !trimmedEn) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'माहिती अपूर्ण आहे',
-        text: 'मराठी नाव (Marathi Name) आणि English Name दोन्ही टाका.'
-      });
+      alertBox('warning', t('settings.incompleteTitle'), t('settings.incompleteText'));
       return;
     }
 
@@ -126,20 +113,9 @@ export default function Settings() {
       setNewCatName('');
       setNewCatNameEn('');
       setIsAddingCat(false);
-      Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'success',
-        title: `"${trimmed} / ${trimmedEn}" प्रकार जोडला`,
-        showConfirmButton: false,
-        timer: 2000
-      });
+      toast('success', t('settings.categoryAdded', { name: catLabel(trimmed, trimmedEn) }), 2000);
     } catch (err) {
-      Swal.fire({
-        icon: 'error',
-        title: 'त्रुटी',
-        text: err.message || 'प्रकार जोडता आला नाही.'
-      });
+      alertBox('error', t('common.error'), errorMessage(err, 'settings.categoryAddFailed'));
     }
   };
 
@@ -148,11 +124,7 @@ export default function Settings() {
     const trimmed = editingCatName.trim();
     const trimmedEn = editingCatNameEn.trim();
     if (!trimmed || !trimmedEn) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'माहिती अपूर्ण आहे',
-        text: 'मराठी नाव (Marathi Name) आणि English Name दोन्ही टाका.'
-      });
+      alertBox('warning', t('settings.incompleteTitle'), t('settings.incompleteText'));
       return;
     }
 
@@ -161,53 +133,25 @@ export default function Settings() {
       setEditingCatId(null);
       setEditingCatName('');
       setEditingCatNameEn('');
-      Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'success',
-        title: 'नाव बदलले',
-        showConfirmButton: false,
-        timer: 1500
-      });
+      toast('success', t('settings.renamed'), 1500);
     } catch (err) {
-      Swal.fire({
-        icon: 'error',
-        title: 'त्रुटी',
-        text: err.message || 'नाव बदलता आले नाही.'
-      });
+      alertBox('error', t('common.error'), errorMessage(err, 'settings.renameFailed'));
     }
   };
 
   // Handle Delete Category
   const handleDeleteCategory = async (category) => {
-    const result = await Swal.fire({
-      title: 'प्रकार हटवायचा आहे?',
-      html: `<b>"${category.name}"</b> हा प्रकार कायमचा हटवला जाईल.`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#0f172a',
-      cancelButtonColor: '#94a3b8',
-      confirmButtonText: 'हटवा',
-      cancelButtonText: 'रद्द करा'
+    const confirmed = await confirmDelete({
+      title: t('settings.deleteCategoryTitle'),
+      html: t('settings.deleteCategoryHtml', { name: catLabel(category.name, category.name_en) })
     });
 
-    if (result.isConfirmed) {
+    if (confirmed) {
       try {
         await deleteCategory(category.id);
-        Swal.fire({
-          toast: true,
-          position: 'top-end',
-          icon: 'success',
-          title: 'प्रकार हटवला',
-          showConfirmButton: false,
-          timer: 1500
-        });
+        toast('success', t('settings.categoryDeleted'), 1500);
       } catch (err) {
-        Swal.fire({
-          icon: 'error',
-          title: 'हटवता आले नाही',
-          text: err.message
-        });
+        alertBox('error', t('settings.deleteFailedTitle'), errorMessage(err));
       }
     }
   };
@@ -217,10 +161,10 @@ export default function Settings() {
       {/* Header */}
       <div className="pt-1">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-          सेटिंग्ज आणि व्यवस्थापन
+          {t('settings.title')}
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 font-normal mt-0.5">
-          बांधकाम बजेट, खर्चाचे प्रकार, अहवाल पावती व वापरकर्ता प्रोफाइल
+          {t('settings.subtitle')}
         </p>
       </div>
 
@@ -233,13 +177,13 @@ export default function Settings() {
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <span>पावती व अहवाल एक्सपोर्ट (PNG, JPG & WhatsApp)</span>
+                <span>{t('settings.exportTitle')}</span>
                 <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  नवीन
+                  {t('settings.exportBadge')}
                 </span>
               </h3>
               <p className="text-xs text-slate-500 font-normal mt-0.5">
-                खर्चाचा पावती अहवाल (सर्व नोंदी) व वैयक्तिक खर्च पावती इमेज स्वरूपात डाऊनलोड करा
+                {t('settings.exportSub')}
               </p>
             </div>
           </div>
@@ -252,13 +196,13 @@ export default function Settings() {
             <div>
               <div className="flex items-center gap-2 text-blue-700 font-bold text-xs mb-1">
                 <FileSpreadsheet className="w-4 h-4" />
-                <span>अहवाल पावती (Report Slip - {expenses.length} नोंदी)</span>
+                <span>{t('expenses.reportButton', { count: expenses.length })}</span>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
-                तारीख, एकूण खर्च, नोंदींची संख्या आणि सर्व नोंदींसह आकर्षक पावती तयार करा.
+                {t('settings.reportDesc')}
               </p>
               <div className="mt-2 text-[11px] text-slate-500">
-                उपलब्ध नोंदी: <strong>{expenses.length}</strong> • एकूण: <strong>{formatINR(summary.totalSpent)}</strong>
+                {tRich('settings.availableSummary', { count: <strong>{expenses.length}</strong>, total: <strong>{formatINR(summary.totalSpent)}</strong> })}
               </div>
             </div>
 
@@ -268,7 +212,7 @@ export default function Settings() {
               className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all cursor-pointer"
             >
               <Eye className="w-4 h-4" />
-              <span>अहवाल पावती पाहा व एक्सपोर्ट करा</span>
+              <span>{t('settings.viewExportReport')}</span>
             </button>
           </div>
 
@@ -277,17 +221,17 @@ export default function Settings() {
             <div>
               <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs mb-1">
                 <FileText className="w-4 h-4" />
-                <span>वैयक्तिक खर्च पावती (Single Expense Receipt)</span>
+                <span>{t('settings.singleTitle')}</span>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
-                कोणत्याही एका खर्चाची तपशीलवार डिजिटल पावती (प्रकार, रक्कम, तारीख, तपशील व फोटो) तयार करा.
+                {t('settings.singleDesc')}
               </p>
 
               {/* Expense Selector */}
               {expenses.length > 0 ? (
                 <div className="mt-2.5">
                   <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                    खर्च निवडा:
+                    {t('settings.selectExpense')}
                   </label>
                   <select
                     value={selectedReceiptExpenseId || expenses[0]?.id}
@@ -296,13 +240,13 @@ export default function Settings() {
                   >
                     {expenses.map((exp) => (
                       <option key={exp.id} value={exp.id}>
-                        {exp.category_name} - {formatINR(exp.amount)} ({exp.expense_date})
+                        {catLabel(exp.category_name, exp.category_name_en)} - {formatINR(exp.amount)} ({fmtDate(exp.expense_date)})
                       </option>
                     ))}
                   </select>
                 </div>
               ) : (
-                <p className="mt-2 text-xs text-slate-400 italic">कोणताही खर्च उपलब्ध नाही</p>
+                <p className="mt-2 text-xs text-slate-400 italic">{t('common.noExpenseAvailable')}</p>
               )}
             </div>
 
@@ -313,7 +257,7 @@ export default function Settings() {
               className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all cursor-pointer disabled:opacity-50"
             >
               <Eye className="w-4 h-4" />
-              <span>खर्च पावती पाहा व एक्सपोर्ट करा</span>
+              <span>{t('settings.viewExportSingle')}</span>
             </button>
           </div>
         </div>
@@ -332,10 +276,10 @@ export default function Settings() {
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-sm font-bold text-slate-900">
-                    बांधकाम बजेट
+                    {t('settings.budgetTitle')}
                   </h3>
                   <p className="text-[11px] text-slate-500 font-normal">
-                    घराच्या बांधकामासाठी निश्चित केलेले बजेट
+                    {t('settings.budgetSub')}
                   </p>
                 </div>
               </div>
@@ -351,7 +295,7 @@ export default function Settings() {
                     className="flex-1 sm:flex-none px-3.5 py-2 sm:py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-2xs flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer active:scale-95"
                   >
                     <Plus className="w-3.5 h-3.5 shrink-0" />
-                    <span>बजेट वाढवा</span>
+                    <span>{t('settings.addBudget')}</span>
                   </button>
                   <button
                     onClick={() => {
@@ -361,7 +305,7 @@ export default function Settings() {
                     }}
                     className="px-3.5 py-2 sm:py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition-all shadow-2xs whitespace-nowrap cursor-pointer active:scale-95"
                   >
-                    बदला
+                    {t('common.edit')}
                   </button>
                 </div>
               )}
@@ -383,7 +327,7 @@ export default function Settings() {
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    बजेट वाढवा (Add)
+                    {t('settings.addTab')}
                   </button>
                   <button
                     type="button"
@@ -397,13 +341,13 @@ export default function Settings() {
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    थेट बदला (Set Total)
+                    {t('settings.setBudgetTab')}
                   </button>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    {budgetMode === 'add' ? 'जोडायची / वाढवायची रक्कम (₹)' : 'नवीन एकूण बजेट (₹)'}
+                    {budgetMode === 'add' ? t('settings.addAmountLabel') : t('settings.setAmountLabel')}
                   </label>
                   <div className="relative flex items-center">
                     <span className="absolute left-3.5 text-slate-400 font-bold text-base pointer-events-none">
@@ -416,7 +360,7 @@ export default function Settings() {
                       value={budgetInput}
                       onChange={(e) => setBudgetInput(e.target.value)}
                       className="w-full pl-9 pr-3 py-2 text-base font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-slate-900"
-                      placeholder={budgetMode === 'add' ? 'उदा. 100000' : 'उदा. 2500000'}
+                      placeholder={budgetMode === 'add' ? t('settings.addPlaceholder') : t('settings.setPlaceholder')}
                     />
                   </div>
                 </div>
@@ -445,7 +389,7 @@ export default function Settings() {
                 {Number(budgetInput) > 0 && (
                   <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs flex items-center justify-between">
                     <span className="text-emerald-900 font-medium">
-                      {budgetMode === 'add' ? 'एकूण नवीन बजेट होईल:' : 'नवीन निश्चित बजेट:'}
+                      {budgetMode === 'add' ? t('settings.previewAdd') : t('settings.previewSet')}
                     </span>
                     <span className="font-bold text-emerald-950 text-sm">
                       {formatINR(
@@ -463,7 +407,7 @@ export default function Settings() {
                     onClick={() => setIsEditingBudget(false)}
                     className="px-3.5 py-1.5 text-xs text-slate-600 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
                   >
-                    रद्द करा
+                    {t('common.cancel')}
                   </button>
                   <button
                     type="submit"
@@ -471,13 +415,13 @@ export default function Settings() {
                     className="px-4 py-1.5 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
                   >
                     {budgetSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                    <span>{budgetMode === 'add' ? 'बजेट वाढवा' : 'जतन करा'}</span>
+                    <span>{budgetMode === 'add' ? t('settings.addBudget') : t('common.save')}</span>
                   </button>
                 </div>
               </form>
             ) : (
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                <span className="text-xs text-slate-500 font-medium">चालू एकूण बजेट:</span>
+                <span className="text-xs text-slate-500 font-medium">{t('settings.currentTotal')}</span>
                 <span className="text-lg font-bold text-slate-900">
                   {formatINR(summary.totalBudget)}
                 </span>
@@ -494,7 +438,7 @@ export default function Settings() {
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
-                    <span>बजेट बदल व वाढीचा इतिहास</span>
+                    <span>{t('settings.historyTitle')}</span>
                     {budgetHistory.length > 0 && (
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
                         {budgetHistory.length}
@@ -502,7 +446,7 @@ export default function Settings() {
                     )}
                   </h3>
                   <p className="text-[11px] text-slate-500 font-normal truncate">
-                    सुरुवातीचे बजेट व त्यानंतर केलेल्या वाढीचा संपूर्ण ट्रॅक
+                    {t('settings.historySub')}
                   </p>
                 </div>
               </div>
@@ -540,10 +484,10 @@ export default function Settings() {
                           </div>
                           <span className="font-bold text-slate-900 text-xs sm:text-sm truncate">
                             {isInitial
-                              ? 'सुरुवातीचे बजेट'
+                              ? t('settings.historyInitial')
                               : isAdd
-                              ? `+ ${formatINR(item.amount_changed)} वाढवले`
-                              : `बजेट बदलून ${formatINR(item.new_budget)} केले`}
+                              ? t('settings.historyAdded', { amount: formatINR(item.amount_changed) })
+                              : t('settings.historyChanged', { amount: formatINR(item.new_budget) })}
                           </span>
                         </div>
 
@@ -559,17 +503,17 @@ export default function Settings() {
                       <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 pt-1 border-t border-slate-200/60">
                         <div className="flex items-center gap-1 font-medium text-slate-500">
                           <Clock className="w-3 h-3 text-slate-400 shrink-0" />
-                          <span>{formatMarathiDateTime(item.created_at)}</span>
+                          <span>{fmtDateTime(item.created_at)}</span>
                         </div>
                         <span className="text-[10px] font-semibold text-slate-400 shrink-0">
-                          {isInitial ? 'सुरुवातीची नोंद' : 'त्यावेळचे बजेट'}
+                          {isInitial ? t('settings.historyInitialEntry') : t('settings.historyBudgetThen')}
                         </span>
                       </div>
 
                       {/* Extra context if add mode */}
                       {Number(item.previous_budget) > 0 && isAdd && (
                         <div className="text-[10px] text-indigo-800 font-medium bg-indigo-50/80 px-2 py-1 rounded-lg border border-indigo-100">
-                          आधीचे: {formatINR(item.previous_budget)} ➔ नवीन एकूण: {formatINR(item.new_budget)}
+                          {t('settings.historyBefore', { previous: formatINR(item.previous_budget), total: formatINR(item.new_budget) })}
                         </div>
                       )}
                     </div>
@@ -579,8 +523,8 @@ export default function Settings() {
             ) : (
               <div className="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-500 space-y-1">
                 <Clock className="w-5 h-5 text-slate-400 mx-auto" />
-                <p className="font-semibold text-slate-700">अजून कोणताही बजेट बदल नोंदवलेला नाही.</p>
-                <p className="text-[11px] text-slate-400">तुम्ही बजेट वाढवल्यावर किंवा बदलल्यावर सर्व नोंदी इथे ट्रॅक होतील.</p>
+                <p className="font-semibold text-slate-700">{t('settings.historyEmpty')}</p>
+                <p className="text-[11px] text-slate-400">{t('settings.historyEmptyHint')}</p>
               </div>
             )}
           </div>
@@ -596,10 +540,10 @@ export default function Settings() {
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-sm font-bold text-slate-900">
-                    खर्चाचे प्रकार (Categories)
+                    {t('settings.categoriesTitle')}
                   </h3>
                   <p className="text-[11px] text-slate-500 font-normal">
-                    नवीन प्रकार (मराठी + English नाव) जोडा किंवा नाव बदला
+                    {t('settings.categoriesSub')}
                   </p>
                 </div>
               </div>
@@ -610,7 +554,7 @@ export default function Settings() {
                   className="self-start sm:self-auto px-3.5 py-2 sm:py-1.5 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-all shadow-xs flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer active:scale-95"
                 >
                   <Plus className="w-3.5 h-3.5 shrink-0" />
-                  <span>नवीन प्रकार जोडा</span>
+                  <span>{t('settings.addCategory')}</span>
                 </button>
               )}
             </div>
@@ -621,30 +565,30 @@ export default function Settings() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      मराठी नाव (Marathi Name) <span className="text-rose-500">*</span>
+                      {t('category.marathiName')} <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
                       autoFocus
                       value={newCatName}
                       onChange={(e) => setNewCatName(e.target.value)}
-                      placeholder="उदा. लॅपटॉप"
+                      placeholder={t('category.marathiPlaceholder')}
                       className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
                     />
-                    <p className="mt-1 text-[10px] text-slate-400">वेबसाइटवर हेच नाव दिसेल.</p>
+                    <p className="mt-1 text-[10px] text-slate-400">{t('settings.marathiHint')}</p>
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      English Name <span className="text-rose-500">*</span>
+                      {t('category.englishName')} <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={newCatNameEn}
                       onChange={(e) => setNewCatNameEn(e.target.value)}
-                      placeholder="e.g. Laptop"
+                      placeholder={t('category.englishPlaceholder')}
                       className="w-full px-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
                     />
-                    <p className="mt-1 text-[10px] text-slate-400">इंग्रजीत शोधण्यासाठी वापरले जाईल.</p>
+                    <p className="mt-1 text-[10px] text-slate-400">{t('settings.englishHint')}</p>
                   </div>
                 </div>
                 <div className="flex items-center justify-end gap-2">
@@ -657,13 +601,13 @@ export default function Settings() {
                     }}
                     className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200/70 rounded-lg"
                   >
-                    रद्द करा
+                    {t('common.cancel')}
                   </button>
                   <button
                     type="submit"
                     className="px-3.5 py-1.5 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800 shadow-xs"
                   >
-                    जोडा
+                    {t('common.add')}
                   </button>
                 </div>
               </form>
@@ -687,14 +631,14 @@ export default function Settings() {
                           autoFocus
                           value={editingCatName}
                           onChange={(e) => setEditingCatName(e.target.value)}
-                          placeholder="मराठी नाव"
+                          placeholder={t('category.marathiName')}
                           className="flex-1 px-2.5 py-1 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-slate-900"
                         />
                         <input
                           type="text"
                           value={editingCatNameEn}
                           onChange={(e) => setEditingCatNameEn(e.target.value)}
-                          placeholder="English Name"
+                          placeholder={t('category.englishName')}
                           className="flex-1 px-2.5 py-1 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-slate-900"
                         />
                         <div className="flex items-center gap-2 self-end sm:self-auto">
@@ -702,7 +646,7 @@ export default function Settings() {
                             type="button"
                             onClick={() => handleUpdateCategory(cat.id)}
                             className="p-1.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800"
-                            title="जतन करा"
+                            title={t('common.save')}
                           >
                             <Check className="w-3.5 h-3.5" />
                           </button>
@@ -710,7 +654,7 @@ export default function Settings() {
                             type="button"
                             onClick={() => setEditingCatId(null)}
                             className="p-1.5 text-slate-400 hover:bg-slate-200 rounded-lg"
-                            title="रद्द करा"
+                            title={t('common.cancel')}
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
@@ -723,10 +667,7 @@ export default function Settings() {
                             <CatIcon className="w-3.5 h-3.5" />
                           </div>
                           <div className="min-w-0">
-                            <span className="font-semibold text-slate-800 block leading-tight">{cat.name}</span>
-                            {cat.name_en && (
-                              <span className="text-[11px] text-slate-400 block leading-tight">{cat.name_en}</span>
-                            )}
+                            <span className="font-semibold text-slate-800 block leading-tight">{catLabel(cat.name, cat.name_en)}</span>
                           </div>
                         </div>
 
@@ -739,7 +680,7 @@ export default function Settings() {
                               setEditingCatNameEn(cat.name_en || '');
                             }}
                             className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-                            title="नाव बदला"
+                            title={t('settings.rename')}
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
@@ -747,7 +688,7 @@ export default function Settings() {
                             type="button"
                             onClick={() => handleDeleteCategory(cat)}
                             className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                            title="हटवा"
+                            title={t('common.delete')}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -766,7 +707,7 @@ export default function Settings() {
       <SingleExpenseReceiptModal
         isOpen={singleReceiptOpen}
         expense={currentReceiptExpense}
-        projectName={summary?.projectName || undefined}
+        projectName={projectLabel(summary?.projectName)}
         onClose={() => setSingleReceiptOpen(false)}
       />
 
@@ -774,7 +715,7 @@ export default function Settings() {
       <ReportReceiptModal
         isOpen={reportReceiptOpen}
         expenses={expenses}
-        projectName={summary?.projectName || undefined}
+        projectName={projectLabel(summary?.projectName)}
         totalExpenses={summary.totalSpent}
         totalEntries={expenses.length}
         dateRangeText=""

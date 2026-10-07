@@ -1,9 +1,10 @@
 import React from 'react';
 import { Camera, Edit2, Trash2, Calendar, Receipt as ReceiptIcon } from 'lucide-react';
 import { formatINR } from '../../utils/marathiCurrency';
-import { formatMarathiDate } from '../../utils/marathiDate';
 import { getCategoryIconMeta } from '../../utils/categoryIcons';
 import { getExpensePhotos } from '../../utils/expensePhotos';
+import { isPendingStatus } from '../../utils/paymentStatus';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 export default function ExpenseCard({
   expense,
@@ -13,12 +14,14 @@ export default function ExpenseCard({
   onViewReceipt,
   onToggleStatus
 }) {
+  const { t, catLabel, fmtDate } = useLanguage();
+  const categoryName = catLabel(expense.category_name, expense.category_name_en);
   const photos = getExpensePhotos(expense);
   const photoUrls = photos.map((p) => p.url);
   const hasPhoto = photos.length > 0;
-  const openPhotos = () => onViewPhoto(photoUrls[0], `${expense.category_name} - पावती`, photoUrls);
+  const openPhotos = () => onViewPhoto(photoUrls[0], t('expenseCard.photoTitle', { name: categoryName }), photoUrls);
   const { icon: CategoryIcon, bg: iconBg } = getCategoryIconMeta(expense.category_name);
-  const isPending = (expense.payment_status || '').toLowerCase() === 'pending' || expense.payment_status === 'बाकी';
+  const isPending = isPendingStatus(expense.payment_status);
   const cleanDescription = expense.description && expense.description.trim() !== '-' ? expense.description.trim() : null;
 
   return (
@@ -32,11 +35,11 @@ export default function ExpenseCard({
               type="button"
               onClick={openPhotos}
               className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden border border-slate-200 shrink-0 group/thumb transition-transform hover:scale-105 shadow-2xs cursor-pointer"
-              title="फोटो / पावती पाहा"
+              title={t('expenseCard.viewPhoto')}
             >
               <img
                 src={photoUrls[0]}
-                alt="पावती"
+                alt={t('common.receipt')}
                 loading="lazy"
                 decoding="async"
                 className="w-full h-full object-cover"
@@ -61,7 +64,7 @@ export default function ExpenseCard({
             {/* Category Name & Status Badge */}
             <div className="flex items-center gap-1.5 flex-wrap">
               <h4 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug truncate">
-                {expense.category_name || 'इतर'}
+                {categoryName}
               </h4>
 
               {/* Status Pill (Clickable to Toggle Status) */}
@@ -77,20 +80,20 @@ export default function ExpenseCard({
                       ? 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
                       : 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
                   }`}
-                  title={isPending ? 'स्थिती बदला: पूर्ण करा (Click to Mark as Completed)' : 'स्थिती बदला: बाकी ठेवा (Click to Mark as Pending)'}
+                  title={isPending ? t('expenseCard.markPaid') : t('expenseCard.markPending')}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full ${isPending ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
-                  <span>{isPending ? 'बाकी (Pending)' : 'पूर्ण (Paid)'}</span>
+                  <span>{isPending ? t('status.pending') : t('status.paid')}</span>
                 </button>
               ) : isPending ? (
                 <span className="inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200/80 leading-none">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  <span>बाकी (Pending)</span>
+                  <span>{t('status.pending')}</span>
                 </span>
               ) : (
                 <span className="inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200/70 leading-none">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>पूर्ण</span>
+                  <span>{t('status.paid')}</span>
                 </span>
               )}
 
@@ -101,7 +104,7 @@ export default function ExpenseCard({
                   className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-medium border border-blue-200/60 transition-colors"
                 >
                   <Camera className="w-2.5 h-2.5" />
-                  <span>{photos.length > 1 ? `फोटो (${photos.length})` : 'फोटो'}</span>
+                  <span>{photos.length > 1 ? t('expenseCard.photoCount', { count: photos.length }) : t('common.photo')}</span>
                 </button>
               )}
             </div>
@@ -116,7 +119,7 @@ export default function ExpenseCard({
             {/* Date */}
             <div className="flex items-center gap-1 text-[11px] text-slate-400">
               <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
-              <span>{formatMarathiDate(expense.expense_date, true)}</span>
+              <span>{fmtDate(expense.expense_date, true)}</span>
             </div>
           </div>
         </div>
@@ -137,10 +140,10 @@ export default function ExpenseCard({
                 type="button"
                 onClick={() => onViewReceipt(expense)}
                 className="inline-flex items-center gap-1 px-2 py-1 text-[10px] sm:text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200/80 rounded-lg transition-colors cursor-pointer shadow-2xs"
-                title="पावती पाहा (Receipt)"
+                title={t('expenseCard.viewReceipt')}
               >
                 <ReceiptIcon className="w-3 h-3" />
-                <span>पावती</span>
+                <span>{t('common.receipt')}</span>
               </button>
             )}
 
@@ -148,7 +151,7 @@ export default function ExpenseCard({
               type="button"
               onClick={() => onEdit(expense)}
               className="p-1 sm:px-2 sm:py-1 text-slate-500 hover:text-slate-800 bg-slate-100/70 hover:bg-slate-200/70 rounded-lg transition-colors cursor-pointer"
-              title="बदला"
+              title={t('common.edit')}
             >
               <Edit2 className="w-3 h-3" />
             </button>
@@ -157,7 +160,7 @@ export default function ExpenseCard({
               type="button"
               onClick={() => onDelete(expense)}
               className="p-1 sm:px-2 sm:py-1 text-rose-500 hover:text-rose-700 bg-rose-50/70 hover:bg-rose-100/80 rounded-lg transition-colors cursor-pointer"
-              title="हटवा"
+              title={t('common.delete')}
             >
               <Trash2 className="w-3 h-3" />
             </button>

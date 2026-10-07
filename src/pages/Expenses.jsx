@@ -14,7 +14,8 @@ import {
   FileSpreadsheet,
   Receipt as ReceiptIcon
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { toast, alertBox, confirmDelete } from '../utils/alerts';
+import { useLanguage } from '../i18n/LanguageContext';
 import { useBudget } from '../contexts/BudgetContext';
 import { formatINR } from '../utils/marathiCurrency';
 import { formatMarathiDate } from '../utils/marathiDate';
@@ -27,6 +28,7 @@ import { matchesCategory } from '../utils/bilingualSearch';
 
 export default function Expenses() {
   const { expenses, categories, summary, deleteExpense, toggleExpenseStatus } = useBudget();
+  const { t, catLabel, projectLabel } = useLanguage();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState('all'); // all, today, yesterday, this_month, custom
@@ -65,34 +67,20 @@ export default function Expenses() {
   };
 
   const handleDelete = async (expense) => {
-    const result = await Swal.fire({
-      title: 'खर्च हटवायचा आहे?',
-      html: `<b>${formatINR(expense.amount)}</b> चा हा खर्च (${expense.category_name || 'इतर'}) कायमचा हटवला जाईल.`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#0f172a',
-      cancelButtonColor: '#94a3b8',
-      confirmButtonText: 'हटवा',
-      cancelButtonText: 'रद्द करा'
+    const confirmed = await confirmDelete({
+      title: t('expenses.deleteTitle'),
+      html: t('expenses.deleteHtml', {
+        amount: formatINR(expense.amount),
+        category: catLabel(expense.category_name, expense.category_name_en)
+      })
     });
 
-    if (result.isConfirmed) {
+    if (confirmed) {
       try {
         await deleteExpense(expense.id, getExpensePhotos(expense).map((ph) => ph.path));
-        Swal.fire({
-          toast: true,
-          position: 'top-end',
-          icon: 'success',
-          title: 'खर्च यशस्वीरित्या हटवला',
-          showConfirmButton: false,
-          timer: 2000
-        });
+        toast('success', t('expenses.deleteSuccess'), 2000);
       } catch (err) {
-        Swal.fire({
-          icon: 'error',
-          title: 'त्रुटी',
-          text: 'खर्च हटवता आला नाही.'
-        });
+        alertBox('error', t('common.error'), t('expenses.deleteFailed'));
       }
     }
   };
@@ -159,10 +147,10 @@ export default function Expenses() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-            खर्चाचे व्यवहार
+            {t('expenses.title')}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 font-normal mt-0.5">
-            सर्व बांधकाम खर्चांची यादी, शोध आणि वर्गीकरण
+            {t('expenses.subtitle')}
           </p>
         </div>
 
@@ -171,10 +159,10 @@ export default function Expenses() {
             type="button"
             onClick={() => setReportReceiptOpen(true)}
             className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
-            title="सर्व नोंदींसह पावती अहवाल PDF/PNG/JPG एक्सपोर्ट करा"
+            title={t('receiptReport.exportTitle')}
           >
             <FileSpreadsheet className="w-4 h-4 shrink-0" />
-            <span>अहवाल पावती ({filteredExpenses.length} नोंदी)</span>
+            <span>{t('expenses.reportButton', { count: filteredExpenses.length })}</span>
           </button>
 
           <button
@@ -186,7 +174,7 @@ export default function Expenses() {
             className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
           >
             <Plus className="w-4 h-4 shrink-0" />
-            <span>खर्च जोडा</span>
+            <span>{t('common.addExpense')}</span>
           </button>
         </div>
       </div>
@@ -197,13 +185,13 @@ export default function Expenses() {
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500/10 via-blue-500/5 to-cyan-500/10 border border-indigo-200/80 p-4 shadow-2xs flex items-center justify-between">
           <div>
             <span className="text-[11px] font-bold text-indigo-900 uppercase tracking-wider block">
-              निवडलेला एकूण खर्च
+              {t('expenses.statSelectedTotal')}
             </span>
             <div className="text-xl sm:text-2xl font-extrabold text-indigo-950 mt-1 tracking-tight">
               {formatINR(stats.total)}
             </div>
             <span className="text-[10px] font-semibold text-indigo-700 mt-0.5 block">
-              फिल्टरमधील बेरीज
+              {t('expenses.statSelectedNote')}
             </span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center shadow-sm shadow-indigo-200 shrink-0">
@@ -215,13 +203,13 @@ export default function Expenses() {
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-yellow-500/10 border border-amber-200/80 p-4 shadow-2xs flex items-center justify-between">
           <div>
             <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider block">
-              एकूण नोंदी संख्या
+              {t('expenses.statCount')}
             </span>
             <div className="text-xl sm:text-2xl font-extrabold text-amber-950 mt-1 tracking-tight">
-              {stats.count} व्यवहार
+              {t('common.transactions', { count: stats.count })}
             </div>
             <span className="text-[10px] font-semibold text-amber-700 mt-0.5 block">
-              नोंदवलेले रेकॉर्ड्स
+              {t('expenses.statCountNote')}
             </span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-sm shadow-amber-200 shrink-0">
@@ -233,13 +221,13 @@ export default function Expenses() {
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-green-500/10 border border-emerald-200/80 p-4 shadow-2xs flex items-center justify-between">
           <div>
             <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider block">
-              सरासरी व्यवहार खर्च
+              {t('expenses.statAverage')}
             </span>
             <div className="text-xl sm:text-2xl font-extrabold text-emerald-950 mt-1 tracking-tight">
               {formatINR(stats.avg)}
             </div>
             <span className="text-[10px] font-semibold text-emerald-700 mt-0.5 block">
-              प्रति व्यवहार सरासरी
+              {t('expenses.statAverageNote')}
             </span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-sm shadow-emerald-200 shrink-0">
@@ -259,7 +247,7 @@ export default function Expenses() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="खर्च, प्रकार किंवा तपशील शोधा..."
+              placeholder={t('expenses.searchPlaceholder')}
               className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:bg-white transition-colors"
             />
             {searchQuery && (
@@ -279,10 +267,10 @@ export default function Expenses() {
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:bg-white text-slate-800 transition-colors font-medium"
             >
-              <option value="all">सर्व प्रकार (All Categories)</option>
+              <option value="all">{t('expenses.allCategories')}</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}{c.name_en ? ` (${c.name_en})` : ''}
+                  {catLabel(c.name, c.name_en)}
                 </option>
               ))}
             </select>
@@ -292,11 +280,11 @@ export default function Expenses() {
         {/* Date Filter Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
           {[
-            { id: 'all', label: 'सर्व' },
-            { id: 'today', label: 'आज' },
-            { id: 'yesterday', label: 'काल' },
-            { id: 'this_month', label: 'या महिन्यात' },
-            { id: 'custom', label: 'दिनांक निवडा' },
+            { id: 'all', label: t('common.all') },
+            { id: 'today', label: t('common.today') },
+            { id: 'yesterday', label: t('common.yesterday') },
+            { id: 'this_month', label: t('common.thisMonth') },
+            { id: 'custom', label: t('expenses.pickDate') },
           ].map((pill) => (
             <button
               key={pill.id}
@@ -316,7 +304,7 @@ export default function Expenses() {
         {dateFilter === 'custom' && (
           <div className="flex items-center gap-2 pt-1 flex-wrap text-xs bg-slate-50/70 p-2.5 rounded-xl border border-slate-100">
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 font-medium">पासून:</span>
+              <span className="text-slate-500 font-medium">{t('common.from')}:</span>
               <input
                 type="date"
                 value={customStartDate}
@@ -325,7 +313,7 @@ export default function Expenses() {
               />
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 font-medium">पर्यंत:</span>
+              <span className="text-slate-500 font-medium">{t('common.to')}:</span>
               <input
                 type="date"
                 value={customEndDate}
@@ -357,7 +345,7 @@ export default function Expenses() {
               onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
               className="w-full py-2.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
             >
-              अधिक दाखवा ({filteredExpenses.length - visibleCount} बाकी)
+              {t('expenses.showMore', { count: filteredExpenses.length - visibleCount })}
             </button>
           )}
         </div>
@@ -365,10 +353,10 @@ export default function Expenses() {
         <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center text-slate-400 space-y-2 shadow-card">
           <div className="text-3xl">🔍</div>
           <p className="text-sm font-semibold text-slate-700">
-            कोणताही खर्च सापडला नाही
+            {t('common.noExpenseFound')}
           </p>
           <p className="text-xs text-slate-400">
-            कृपया शोध शब्द किंवा फिल्टर बदलून पुन्हा तपासा.
+            {t('expenses.emptyHint')}
           </p>
         </div>
       )}
@@ -399,7 +387,7 @@ export default function Expenses() {
       <SingleExpenseReceiptModal
         isOpen={Boolean(singleReceiptExpense)}
         expense={singleReceiptExpense}
-        projectName={summary?.projectName || undefined}
+        projectName={projectLabel(summary?.projectName)}
         onClose={() => setSingleReceiptExpense(null)}
       />
 
@@ -407,16 +395,16 @@ export default function Expenses() {
       <ReportReceiptModal
         isOpen={reportReceiptOpen}
         expenses={filteredExpenses}
-        projectName={summary?.projectName || undefined}
+        projectName={projectLabel(summary?.projectName)}
         totalExpenses={filteredExpenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)}
         totalEntries={filteredExpenses.length}
         dateRangeText={
           dateFilter === 'today'
-            ? 'आज (Today)'
+            ? t('common.today')
             : dateFilter === 'yesterday'
-            ? 'काल (Yesterday)'
+            ? t('common.yesterday')
             : dateFilter === 'this_month'
-            ? 'या महिन्यात (This Month)'
+            ? t('common.thisMonth')
             : dateFilter === 'custom' && (customStartDate || customEndDate)
             ? `${customStartDate || ''} - ${customEndDate || ''}`.trim()
             : ''

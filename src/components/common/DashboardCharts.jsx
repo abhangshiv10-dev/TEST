@@ -12,11 +12,13 @@ import {
   Pie
 } from 'recharts';
 import { formatINR } from '../../utils/marathiCurrency';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 // Recharts is ~300KB. This file is lazy-loaded from the Dashboard so the
 // numbers/cards render first and the charts stream in right after.
 
 export function MonthlyBarChart({ monthlyExpenseData }) {
+  const { t } = useLanguage();
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart 
@@ -44,7 +46,7 @@ export function MonthlyBarChart({ monthlyExpenseData }) {
           tick={{ fontSize: 10, fill: '#64748b' }}
           axisLine={false}
           tickLine={false}
-          tickFormatter={(val) => val >= 100000 ? `₹${(val / 100000).toFixed(1)}L` : val >= 1000 ? `₹${(val / 1000).toFixed(0)}k` : `₹${val}`}
+          tickFormatter={(val) => val >= 100000 ? `₹${(val / 100000).toFixed(1)}${t('charts.lakh')}` : val >= 1000 ? `₹${(val / 1000).toFixed(0)}${t('charts.thousand')}` : `₹${val}`}
         />
         <Tooltip 
           cursor={{ fill: '#f8fafc' }}
@@ -55,7 +57,7 @@ export function MonthlyBarChart({ monthlyExpenseData }) {
                 <div className="bg-slate-900 text-white p-2.5 rounded-xl shadow-xl border border-slate-700 text-xs space-y-1">
                   <div className="font-bold text-slate-200">{data.fullLabel}</div>
                   <div className="text-emerald-400 font-extrabold text-sm">{formatINR(data.amount)}</div>
-                  <div className="text-slate-400 text-[10px]">{data.count} व्यवहार</div>
+                  <div className="text-slate-400 text-[10px]">{t('charts.transactions', { count: data.count })}</div>
                 </div>
               );
             }
@@ -80,6 +82,7 @@ export function MonthlyBarChart({ monthlyExpenseData }) {
 }
 
 export function CategoryDonut({ categoryPieData, selectedCategoryName, handleCategoryClick }) {
+  const { t } = useLanguage();
   return (
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
@@ -110,9 +113,9 @@ export function CategoryDonut({ categoryPieData, selectedCategoryName, handleCat
               const data = payload[0].payload;
               return (
                 <div className="bg-slate-900 text-white p-2 rounded-xl shadow-xl text-xs space-y-0.5">
-                  <div className="font-bold">{data.name}</div>
+                  <div className="font-bold">{data.label}</div>
                   <div className="text-emerald-400 font-bold">{formatINR(data.value)}</div>
-                  <div className="text-slate-400 text-[10px]">{data.percentage}% वाटा</div>
+                  <div className="text-slate-400 text-[10px]">{t('charts.share', { percentage: data.percentage })}</div>
                 </div>
               );
             }

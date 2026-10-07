@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 // Works with a single photo (photoUrl) or many (photos = [url, url, ...]).
 export default function PhotoViewerModal({ isOpen, photoUrl, photos = null, title, onClose }) {
+  const { t } = useLanguage();
   const list = Array.isArray(photos) && photos.length > 0 ? photos : photoUrl ? [photoUrl] : [];
   const [index, setIndex] = useState(0);
 
@@ -48,7 +50,7 @@ export default function PhotoViewerModal({ isOpen, photoUrl, photos = null, titl
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 text-white">
           <div className="text-xs sm:text-sm font-medium truncate">
-            {title || 'खर्च पावती/फोटो'}
+            {title || t('photoViewer.title')}
             {count > 1 && <span className="ml-2 text-slate-400">({index + 1}/{count})</span>}
           </div>
           <div className="flex items-center gap-2">
@@ -58,14 +60,14 @@ export default function PhotoViewerModal({ isOpen, photoUrl, photos = null, titl
               rel="noopener noreferrer"
               download={`expense_photo_${index + 1}.jpg`}
               className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-              title="फोटो डाउनलोड करा"
+              title={t('photoViewer.download')}
             >
               <Download className="w-4 h-4" />
             </a>
             <button
               onClick={onClose}
               className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-              title="बंद करा"
+              title={t('common.close')}
             >
               <X className="w-5 h-5" />
             </button>
@@ -76,7 +78,7 @@ export default function PhotoViewerModal({ isOpen, photoUrl, photos = null, titl
         <div className="relative p-2 sm:p-4 flex items-center justify-center bg-black/40 max-h-[75vh] overflow-auto">
           <img
             src={currentUrl}
-            alt={title || 'Expense Photo'}
+            alt={title || t('photoViewer.alt')}
             className="max-h-[70vh] w-auto max-w-full rounded-lg object-contain"
           />
           {count > 1 && (
@@ -85,7 +87,7 @@ export default function PhotoViewerModal({ isOpen, photoUrl, photos = null, titl
                 type="button"
                 onClick={prev}
                 className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white"
-                title="मागील फोटो"
+                title={t('photoViewer.prev')}
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -93,7 +95,7 @@ export default function PhotoViewerModal({ isOpen, photoUrl, photos = null, titl
                 type="button"
                 onClick={next}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white"
-                title="पुढील फोटो"
+                title={t('photoViewer.next')}
               >
                 <ChevronRight className="w-5 h-5" />
               </button>

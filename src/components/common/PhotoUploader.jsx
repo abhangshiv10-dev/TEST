@@ -1,6 +1,7 @@
 import React, { useRef, useMemo, useEffect } from 'react';
 import { Camera, Image as ImageIcon, X, Eye, Plus } from 'lucide-react';
 import { MAX_EXPENSE_PHOTOS } from '../../utils/expensePhotos';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 // Multiple photo / bill uploader.
 //   existingPhotos : [{ url, path }]  -> already saved photos (edit mode)
@@ -13,6 +14,7 @@ export default function PhotoUploader({
   onRemoveNew,
   onViewPhoto
 }) {
+  const { t } = useLanguage();
   const cameraRef = useRef(null);
   const galleryRef = useRef(null);
 
@@ -54,21 +56,21 @@ export default function PhotoUploader({
             >
               <img
                 src={it.url}
-                alt="खर्च पावती/फोटो"
+                alt={t('photoUploader.alt')}
                 className="w-full h-full object-cover"
                 loading="lazy"
               />
               {it.kind === 'new' && (
                 <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-emerald-600 text-white text-[9px] font-bold leading-none">
-                  नवीन
+                  {t('photoUploader.new')}
                 </span>
               )}
               {onViewPhoto && (
                 <button
                   type="button"
-                  onClick={() => onViewPhoto(it.url, 'खर्च पावती/फोटो', allUrls)}
+                  onClick={() => onViewPhoto(it.url, t('photoUploader.alt'), allUrls)}
                   className="absolute inset-0 w-full h-full flex items-center justify-center bg-slate-950/0 hover:bg-slate-950/30 text-white opacity-0 hover:opacity-100 transition-all"
-                  title="फोटो पूर्ण पाहा"
+                  title={t('photoUploader.viewFull')}
                 >
                   <Eye className="w-5 h-5" />
                 </button>
@@ -77,7 +79,7 @@ export default function PhotoUploader({
                 type="button"
                 onClick={() => handleRemove(it)}
                 className="absolute top-1 right-1 p-1 rounded-full bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
-                title="फोटो हटवा"
+                title={t('photoUploader.remove')}
               >
                 <X className="w-3 h-3" />
               </button>
@@ -94,7 +96,7 @@ export default function PhotoUploader({
             className="py-2.5 px-3 rounded-xl border-2 border-dashed border-slate-200 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-100/50 transition-colors flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700"
           >
             <Camera className="w-4 h-4" />
-            <span>कॅमेरा</span>
+            <span>{t('photoUploader.camera')}</span>
           </button>
           <button
             type="button"
@@ -102,13 +104,13 @@ export default function PhotoUploader({
             className="py-2.5 px-3 rounded-xl border-2 border-dashed border-slate-200 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-100/50 transition-colors flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700"
           >
             {total > 0 ? <Plus className="w-4 h-4" /> : <ImageIcon className="w-4 h-4" />}
-            <span>{total > 0 ? 'आणखी फोटो' : 'गॅलरी (अनेक निवडा)'}</span>
+            <span>{total > 0 ? t('photoUploader.morePhotos') : t('photoUploader.gallery')}</span>
           </button>
         </div>
       ) : null}
 
       <div className="text-[10px] text-slate-400">
-        {total > 0 ? `${total} फोटो जोडले` : 'एकापेक्षा जास्त फोटो / बिल जोडता येतात'} (जास्तीत जास्त {MAX_EXPENSE_PHOTOS})
+        {total > 0 ? t('photoUploader.added', { count: total }) : t('photoUploader.hint')} {t('photoUploader.max', { max: MAX_EXPENSE_PHOTOS })}
       </div>
     </div>
   );

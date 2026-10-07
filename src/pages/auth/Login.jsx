@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, Lock, Loader2, ShieldCheck, Eye, EyeOff } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { toast, alertBox } from '../../utils/alerts';
+import { errorMessage } from '../../utils/appError';
+import { useLanguage } from '../../i18n/LanguageContext';
+import LanguageSwitcher from '../../components/common/LanguageSwitcher';
 import { useAuth, ALLOWED_MOBILES } from '../../contexts/AuthContext';
 import loginBg from '../../assets/login-bg.webp';
 import AppLogo from '../../components/common/AppLogo';
@@ -12,6 +15,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signInWithMobile } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -19,20 +23,12 @@ export default function Login() {
     const cleanMobile = mobile.trim().replace(/\D/g, '').slice(-10);
     
     if (!cleanMobile || cleanMobile.length < 10) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'मोबाईल नंबर आवश्यक',
-        text: 'कृपया १० अंकी वैध मोबाईल नंबर टाका.'
-      });
+      alertBox('warning', t('auth.login.mobileRequiredTitle'), t('auth.login.mobileRequiredText'));
       return;
     }
 
     if (!password) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'पासवर्ड आवश्यक',
-        text: 'कृपया पासवर्ड टाका.'
-      });
+      alertBox('warning', t('auth.login.passwordRequiredTitle'), t('auth.login.passwordRequiredText'));
       return;
     }
 
@@ -40,22 +36,11 @@ export default function Login() {
       setLoading(true);
       await signInWithMobile(cleanMobile, password);
       
-      Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'success',
-        title: 'लॉगिन यशस्वी!',
-        showConfirmButton: false,
-        timer: 1500
-      });
+      toast('success', t('auth.login.success'), 1500);
       
       navigate('/');
     } catch (err) {
-      Swal.fire({
-        icon: 'error',
-        title: 'लॉगिन अयशस्वी',
-        text: err.message || 'मोबाईल नंबर किंवा पासवर्ड चुकीचा आहे.'
-      });
+      alertBox('error', t('auth.login.failedTitle'), errorMessage(err, 'auth.login.failedText'));
     } finally {
       setLoading(false);
     }
@@ -69,15 +54,20 @@ export default function Login() {
       {/* Subtle backdrop tint overlay for perfect contrast */}
       <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px] pointer-events-none" />
 
+      {/* Language: मराठी | English */}
+      <div className="absolute top-4 right-4 z-20">
+        <LanguageSwitcher />
+      </div>
+
       <div className="w-full max-w-md bg-white/85 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/60 space-y-6 relative z-10">
         {/* Brand Header */}
         <div className="text-center space-y-2">
           <AppLogo className="w-16 h-16 mx-auto shadow-lg ring-4 ring-slate-900/5" rounded="rounded-2xl" />
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-            Home | Expenses
+            {t('app.name')}
           </h1>
           <p className="text-xs text-slate-500 font-medium">
-            बांधकाम खर्चाचा सोपा, सुरक्षित आणि स्मार्ट हिशोब
+            {t('app.tagline')}
           </p>
         </div>
 
@@ -86,7 +76,7 @@ export default function Login() {
           {/* Mobile Number Input */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              मोबाईल नंबर (Mobile Number)
+              {t('auth.login.mobileLabel')}
             </label>
             <div className="relative flex items-center">
               <div className="absolute left-3 flex items-center gap-1.5 text-slate-400">
@@ -99,7 +89,7 @@ export default function Login() {
                 maxLength={10}
                 value={mobile}
                 onChange={(e) => setMobile(e.target.value.replace(/\D/g, ''))}
-                placeholder="उदा. 7499563202"
+                placeholder={t('auth.login.mobilePlaceholder')}
                 className="w-full pl-16 pr-3 py-2.5 bg-white/90 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10 transition-all shadow-xs"
               />
             </div>
@@ -108,7 +98,7 @@ export default function Login() {
           {/* Password Input */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              पासवर्ड (Password)
+              {t('auth.login.passwordLabel')}
             </label>
             <div className="relative flex items-center">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3" />
@@ -139,10 +129,10 @@ export default function Login() {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>लॉगिन होत आहे...</span>
+                <span>{t('auth.login.submitting')}</span>
               </>
             ) : (
-              <span>लॉगिन करा</span>
+              <span>{t('auth.login.submit')}</span>
             )}
           </button>
         </form>
@@ -150,7 +140,7 @@ export default function Login() {
         {/* Security Badge */}
         <div className="pt-2 border-t border-slate-100 flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>सुरक्षित व अधिकृत लॉगिन</span>
+          <span>{t('auth.login.secure')}</span>
         </div>
       </div>
     </div>

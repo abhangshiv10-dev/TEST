@@ -1,6 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { marathiDataService, computeSummary } from '../services/marathiDataService';
+import { useLanguage } from '../i18n/LanguageContext';
+import { categoryLabel } from '../i18n/category';
+import { isPendingStatus } from '../utils/paymentStatus';
 
 const BudgetContext = createContext({});
 
@@ -8,6 +11,7 @@ export const useBudget = () => useContext(BudgetContext);
 
 export const BudgetProvider = ({ children }) => {
   const { user } = useAuth();
+  const { lang } = useLanguage();
   const [summary, setSummary] = useState({
     totalBudget: 0,
     totalSpent: 0,
@@ -42,19 +46,18 @@ export const BudgetProvider = ({ children }) => {
         marathiDataService.getExpenses(user.id),
         marathiDataService.getBudgetHistory(user.id)
       ]);
-      const sum = computeSummary(settings, expList);
+      // Attach each expense's category English Name (used for the English view and for search)
+      const catById = new Map(cats.map((c) => [c.id, c]));
+      const expensesWithEnglish = expList.map((e) => ({
+        ...e,
+        category_name_en: catById.get(e.category_id)?.name_en || ''
+      }));
+      const sum = computeSummary(settings, expensesWithEnglish);
       hasLoadedOnce.current = true;
 
       setSummary(sum);
       setCategories(cats);
-      // Attach each expense's category English Name so Marathi/English search finds it
-      const catById = new Map(cats.map((c) => [c.id, c]));
-      setExpenses(
-        expList.map((e) => ({
-          ...e,
-          category_name_en: catById.get(e.category_id)?.name_en || ''
-        }))
-      );
+      setExpenses(expensesWithEnglish);
       setBudgetHistory(bHistory || []);
 
       // Check if budget is not set yet and hasn't been dismissed by user
@@ -149,8 +152,7 @@ export const BudgetProvider = ({ children }) => {
   // Quick Toggle expense payment status (Paid <-> Pending)
   const toggleExpenseStatus = async (expense) => {
     if (!user || !expense) return;
-    const currentStatus = (expense.payment_status || 'Paid').toLowerCase();
-    const newStatus = currentStatus === 'pending' || expense.payment_status === 'बाकी' ? 'Paid' : 'Pending';
+    const newStatus = isPendingStatus(expense.payment_status) ? 'Paid' : 'Pending';
     
     const updated = await marathiDataService.updateExpense(user.id, expense.id, {
       ...expense,
@@ -160,9 +162,18 @@ export const BudgetProvider = ({ children }) => {
     return newStatus;
   };
 
+  // Categories sorted alphabetically in the selected language
+  const sortedCategories = useMemo(
+    () =>
+      [...categories].sort((a, b) =>
+        categoryLabel(a.name, a.name_en, lang).localeCompare(categoryLabel(b.name, b.name_en, lang), lang)
+      ),
+    [categories, lang]
+  );
+
   const value = {
     summary,
-    categories,
+    categories: sortedCategories,
     expenses,
     budgetHistory,
     loading,

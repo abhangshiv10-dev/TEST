@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { AppError } from '../utils/appError';
 
 const AuthContext = createContext({});
 
@@ -49,11 +50,11 @@ export const AuthProvider = ({ children }) => {
     const cleanPassword = (password || '').trim();
 
     if (!ALLOWED_MOBILES.includes(cleanMobile)) {
-      throw new Error('हा मोबाईल नंबर अधिकृत नाही. कृपया नोंदणीकृत मोबाईल नंबर टाका.');
+      throw new AppError('mobileNotAuthorized');
     }
 
     if (cleanPassword !== COMMON_PASSWORD) {
-      throw new Error('पासवर्ड चुकीचा आहे. कृपया पुन्हा तपासा.');
+      throw new AppError('wrongPassword');
     }
 
     let authUser = {
@@ -61,7 +62,6 @@ export const AuthProvider = ({ children }) => {
       mobile: cleanMobile,
       email: `${cleanMobile}@gharbhandkam.com`,
       user_metadata: {
-        full_name: `घरमालक (${cleanMobile})`,
         mobile: cleanMobile
       }
     };
@@ -83,7 +83,6 @@ export const AuthProvider = ({ children }) => {
             password: supabasePassword,
             options: {
               data: {
-                full_name: `घरमालक (${cleanMobile})`,
                 mobile: cleanMobile
               }
             }

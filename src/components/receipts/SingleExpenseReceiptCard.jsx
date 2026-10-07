@@ -21,74 +21,69 @@ import {
   Share2
 } from 'lucide-react';
 import { formatINR } from '../../utils/marathiCurrency';
-import { getCategoryEnglishLabel } from '../../utils/bilingualSearch';
 import AppLogo from '../common/AppLogo';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { isPaidStatus } from '../../utils/paymentStatus';
+
+// Badge width follows the text length, so longer words (Marathi or English) never get clipped
+const badgeWidth = (text, min) => Math.max(min, Math.ceil(String(text).length * 5.4 + 16));
 
 // Category icon & theme selector
 function getCategoryTheme(name = '') {
   const cat = (name || '').toLowerCase();
   if (cat.includes('सिमेंट') || cat.includes('cement')) {
-    return { icon: Package, bg: 'bg-[#E0F2FE]', text: 'text-[#0284C7]', badge: 'Material', fill: '#E0F2FE', stroke: '#BAE6FD', textColor: '#0284C7' };
+    return { icon: Package, bg: 'bg-[#E0F2FE]', text: 'text-[#0284C7]', badgeKey: 'receipt.badge.material', fill: '#E0F2FE', stroke: '#BAE6FD', textColor: '#0284C7' };
   }
   if (cat.includes('वाळू') || cat.includes('sand')) {
-    return { icon: Layers, bg: 'bg-[#FEF3C7]', text: 'text-[#D97706]', badge: 'Material', fill: '#FEF3C7', stroke: '#FDE68A', textColor: '#D97706' };
+    return { icon: Layers, bg: 'bg-[#FEF3C7]', text: 'text-[#D97706]', badgeKey: 'receipt.badge.material', fill: '#FEF3C7', stroke: '#FDE68A', textColor: '#D97706' };
   }
   if (cat.includes('मजुरी') || cat.includes('कामगार') || cat.includes('labour') || cat.includes('labor')) {
-    return { icon: HardHat, bg: 'bg-[#FFE4E6]', text: 'text-[#E11D48]', badge: 'Labour', fill: '#FFE4E6', stroke: '#FECDD3', textColor: '#E11D48' };
+    return { icon: HardHat, bg: 'bg-[#FFE4E6]', text: 'text-[#E11D48]', badgeKey: 'receipt.badge.labour', fill: '#FFE4E6', stroke: '#FECDD3', textColor: '#E11D48' };
   }
   if (cat.includes('स्टील') || cat.includes('steel') || cat.includes('लोखंड')) {
-    return { icon: Layers, bg: 'bg-[#EDE9FE]', text: 'text-[#6366F1]', badge: 'Material', fill: '#EDE9FE', stroke: '#DDD6FE', textColor: '#6366F1' };
+    return { icon: Layers, bg: 'bg-[#EDE9FE]', text: 'text-[#6366F1]', badgeKey: 'receipt.badge.material', fill: '#EDE9FE', stroke: '#DDD6FE', textColor: '#6366F1' };
   }
   if (cat.includes('विट') || cat.includes('brick') || cat.includes('ब्लॉक')) {
-    return { icon: Grid, bg: 'bg-[#FFEDD5]', text: 'text-[#EA580C]', badge: 'Material', fill: '#FFEDD5', stroke: '#FED7AA', textColor: '#EA580C' };
+    return { icon: Grid, bg: 'bg-[#FFEDD5]', text: 'text-[#EA580C]', badgeKey: 'receipt.badge.material', fill: '#FFEDD5', stroke: '#FED7AA', textColor: '#EA580C' };
   }
   if (cat.includes('वाहतूक') || cat.includes('transport') || cat.includes('jcb') || cat.includes('जेसीबी')) {
-    return { icon: Truck, bg: 'bg-[#CFFAFE]', text: 'text-[#0891B2]', badge: 'Transport', fill: '#CFFAFE', stroke: '#A5F3FC', textColor: '#0891B2' };
+    return { icon: Truck, bg: 'bg-[#CFFAFE]', text: 'text-[#0891B2]', badgeKey: 'receipt.badge.transport', fill: '#CFFAFE', stroke: '#A5F3FC', textColor: '#0891B2' };
   }
   if (cat.includes('पेंट') || cat.includes('रंग') || cat.includes('paint')) {
-    return { icon: Palette, bg: 'bg-[#FCE7F3]', text: 'text-[#DB2777]', badge: 'Finishing', fill: '#FCE7F3', stroke: '#FBCFE8', textColor: '#DB2777' };
+    return { icon: Palette, bg: 'bg-[#FCE7F3]', text: 'text-[#DB2777]', badgeKey: 'receipt.badge.finishing', fill: '#FCE7F3', stroke: '#FBCFE8', textColor: '#DB2777' };
   }
   if (cat.includes('वीज') || cat.includes('electric')) {
-    return { icon: Zap, bg: 'bg-[#FEF9C3]', text: 'text-[#CA8A04]', badge: 'Electrical', fill: '#FEF9C3', stroke: '#FEF08A', textColor: '#CA8A04' };
+    return { icon: Zap, bg: 'bg-[#FEF9C3]', text: 'text-[#CA8A04]', badgeKey: 'receipt.badge.electrical', fill: '#FEF9C3', stroke: '#FEF08A', textColor: '#CA8A04' };
   }
   if (cat.includes('प्लंबिंग') || cat.includes('plumb')) {
-    return { icon: Wrench, bg: 'bg-[#DBEAFE]', text: 'text-[#2563EB]', badge: 'Plumbing', fill: '#DBEAFE', stroke: '#BFDBFE', textColor: '#2563EB' };
+    return { icon: Wrench, bg: 'bg-[#DBEAFE]', text: 'text-[#2563EB]', badgeKey: 'receipt.badge.plumbing', fill: '#DBEAFE', stroke: '#BFDBFE', textColor: '#2563EB' };
   }
   if (cat.includes('दरवाजे') || cat.includes('door')) {
-    return { icon: DoorClosed, bg: 'bg-[#D1FAE5]', text: 'text-[#059669]', badge: 'Carpentry', fill: '#D1FAE5', stroke: '#A7F3D0', textColor: '#059669' };
+    return { icon: DoorClosed, bg: 'bg-[#D1FAE5]', text: 'text-[#059669]', badgeKey: 'receipt.badge.carpentry', fill: '#D1FAE5', stroke: '#A7F3D0', textColor: '#059669' };
   }
-  return { icon: Layers, bg: 'bg-[#F1F5F9]', text: 'text-[#475569]', badge: 'General', fill: '#F1F5F9', stroke: '#E2E8F0', textColor: '#475569' };
-}
-
-// Format date into '22 Sep 2026'
-function formatReceiptDate(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = months[d.getMonth()];
-  const year = d.getFullYear();
-  return `${day} ${month} ${year}`;
+  return { icon: Layers, bg: 'bg-[#F1F5F9]', text: 'text-[#475569]', badgeKey: 'receipt.badge.general', fill: '#F1F5F9', stroke: '#E2E8F0', textColor: '#475569' };
 }
 
 export const SingleExpenseReceiptCard = forwardRef(({
   expense = {},
-  projectName = 'माझ्या घराचे बांधकाम',
-  titleText = 'Expense Added Successfully!',
-  subtitleText = 'Your construction expense has been recorded.',
+  projectName,
+  titleText,
+  subtitleText,
   onExportClick,
   onWhatsAppClick,
   showActionButtons = false
 }, ref) => {
+  const { t, catLabel, fmtShortDate } = useLanguage();
   const catTheme = getCategoryTheme(expense.category_name);
+  const categoryName = catLabel(expense.category_name, expense.category_name_en);
+  const badgeText = t(catTheme.badgeKey);
+  const statusText = isPaidStatus(expense.payment_status) ? `✓ ${t('status.paid')}` : t('status.pending');
   const CatIcon = catTheme.icon;
-  const engLabel = getCategoryEnglishLabel(expense.category_name);
-  const formattedDate = formatReceiptDate(expense.expense_date || new Date().toISOString().split('T')[0]);
+  const formattedDate = fmtShortDate(expense.expense_date || new Date().toISOString().split('T')[0]);
   const formattedAmount = formatINR(expense.amount || 0);
   const descriptionText = expense.description || expense.unit || '-';
   const photoUrl = expense.receipt_url || expense.photo_url || null;
-  const isCompleted = (expense.payment_status || 'Paid').toLowerCase() === 'paid' || expense.payment_status === 'पूर्ण';
+  const isCompleted = isPaidStatus(expense.payment_status);
 
   return (
     <div
@@ -118,8 +113,8 @@ export const SingleExpenseReceiptCard = forwardRef(({
           <div className="flex items-center gap-2">
             <AppLogo className="w-8 h-8" rounded="rounded-lg" />
             <div className="leading-tight">
-              <h3 className="text-xs font-extrabold tracking-tight text-white drop-shadow-xs" style={{ lineHeight: '1.4' }}>Construction</h3>
-              <p className="text-[9px] text-emerald-100 font-medium" style={{ lineHeight: '1.4' }}>Expense Tracker</p>
+              <h3 className="text-xs font-extrabold tracking-tight text-white drop-shadow-xs" style={{ lineHeight: '1.4' }}>{t('receipt.single.brandTop')}</h3>
+              <p className="text-[9px] text-emerald-100 font-medium" style={{ lineHeight: '1.4' }}>{t('receipt.single.brandBottom')}</p>
             </div>
           </div>
 
@@ -129,7 +124,7 @@ export const SingleExpenseReceiptCard = forwardRef(({
               <Leaf className="w-3 h-3" />
             </div>
             <p className="text-[9px] italic font-serif text-emerald-50/90" style={{ lineHeight: '1.3' }}>
-              Small Expenses<br/>Big Progress
+              {t('receipt.single.tagline1')}<br/>{t('receipt.single.tagline2')}
             </p>
           </div>
         </div>
@@ -146,13 +141,13 @@ export const SingleExpenseReceiptCard = forwardRef(({
           className="mt-2 text-sm sm:text-base font-black text-slate-900 tracking-tight"
           style={{ lineHeight: '1.6', margin: '6px 0 0 0', padding: '2px 0' }}
         >
-          {titleText}
+          {titleText ?? t('receipt.single.title')}
         </h2>
         <p 
           className="text-[10px] text-slate-500 font-medium"
           style={{ lineHeight: '1.6', margin: 0, padding: '1px 0' }}
         >
-          {subtitleText}
+          {subtitleText ?? t('receipt.single.subtitle')}
         </p>
       </div>
 
@@ -169,17 +164,17 @@ export const SingleExpenseReceiptCard = forwardRef(({
             </div>
             <div className="min-w-0" style={{ overflow: 'visible' }}>
               <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider block" style={{ lineHeight: '1.5', paddingBottom: '1px' }}>
-                खर्चाचा प्रकार
+                {t('receipt.single.category')}
               </span>
               <span className="text-xs font-bold text-slate-900 block" style={{ lineHeight: '1.5', paddingTop: '1px' }}>
-                {expense.category_name || 'इतर'} {engLabel && !expense.category_name?.includes(engLabel) ? `(${engLabel})` : ''}
+                {categoryName}
               </span>
             </div>
           </div>
           {/* Centered SVG Category Badge */}
-          <svg width="58" height="18" viewBox="0 0 58 18" className="status-badge shrink-0" style={{ display: 'block' }}>
-            <rect x="0.5" y="0.5" width="57" height="17" rx="8.5" fill={catTheme.fill} stroke={catTheme.stroke} strokeWidth="1" />
-            <text x="29" y="9.5" dominantBaseline="central" textAnchor="middle" fill={catTheme.textColor} fontSize="8.5" fontWeight="700" fontFamily="sans-serif">{catTheme.badge}</text>
+          <svg width={badgeWidth(badgeText, 58)} height="18" viewBox={`0 0 ${badgeWidth(badgeText, 58)} 18`} className="status-badge shrink-0" style={{ display: 'block' }}>
+            <rect x="0.5" y="0.5" width={badgeWidth(badgeText, 58) - 1} height="17" rx="8.5" fill={catTheme.fill} stroke={catTheme.stroke} strokeWidth="1" />
+            <text x={badgeWidth(badgeText, 58) / 2} y="9.5" dominantBaseline="central" textAnchor="middle" fill={catTheme.textColor} fontSize="8.5" fontWeight="700" fontFamily="sans-serif">{badgeText}</text>
           </svg>
         </div>
 
@@ -194,7 +189,7 @@ export const SingleExpenseReceiptCard = forwardRef(({
             </div>
             <div className="min-w-0" style={{ overflow: 'visible' }}>
               <span className="text-[9px] text-[#059669] font-semibold uppercase tracking-wider block" style={{ lineHeight: '1.5', paddingBottom: '1px' }}>
-                रक्कम (₹)
+                {t('receipt.single.amount')}
               </span>
               <span className="text-sm font-black text-slate-900 block" style={{ lineHeight: '1.5', paddingTop: '1px' }}>
                 {formattedAmount}
@@ -203,14 +198,14 @@ export const SingleExpenseReceiptCard = forwardRef(({
           </div>
           {/* Centered SVG Payment Status Badge */}
           {isCompleted ? (
-            <svg width="50" height="18" viewBox="0 0 50 18" className="status-badge shrink-0" style={{ display: 'block' }}>
-              <rect x="0.5" y="0.5" width="49" height="17" rx="8.5" fill="#DEF7EC" stroke="#BCF0DA" strokeWidth="1" />
-              <text x="25" y="9.5" dominantBaseline="central" textAnchor="middle" fill="#03543F" fontSize="8.5" fontWeight="700" fontFamily="sans-serif">✓ Paid</text>
+            <svg width={badgeWidth(statusText, 50)} height="18" viewBox={`0 0 ${badgeWidth(statusText, 50)} 18`} className="status-badge shrink-0" style={{ display: 'block' }}>
+              <rect x="0.5" y="0.5" width={badgeWidth(statusText, 50) - 1} height="17" rx="8.5" fill="#DEF7EC" stroke="#BCF0DA" strokeWidth="1" />
+              <text x={badgeWidth(statusText, 50) / 2} y="9.5" dominantBaseline="central" textAnchor="middle" fill="#03543F" fontSize="8.5" fontWeight="700" fontFamily="sans-serif">{statusText}</text>
             </svg>
           ) : (
-            <svg width="56" height="18" viewBox="0 0 56 18" className="status-badge shrink-0" style={{ display: 'block' }}>
-              <rect x="0.5" y="0.5" width="55" height="17" rx="8.5" fill="#FEF08A" stroke="#FDE047" strokeWidth="1" />
-              <text x="28" y="9.5" dominantBaseline="central" textAnchor="middle" fill="#854D0E" fontSize="8.5" fontWeight="700" fontFamily="sans-serif">Pending</text>
+            <svg width={badgeWidth(statusText, 56)} height="18" viewBox={`0 0 ${badgeWidth(statusText, 56)} 18`} className="status-badge shrink-0" style={{ display: 'block' }}>
+              <rect x="0.5" y="0.5" width={badgeWidth(statusText, 56) - 1} height="17" rx="8.5" fill="#FEF08A" stroke="#FDE047" strokeWidth="1" />
+              <text x={badgeWidth(statusText, 56) / 2} y="9.5" dominantBaseline="central" textAnchor="middle" fill="#854D0E" fontSize="8.5" fontWeight="700" fontFamily="sans-serif">{statusText}</text>
             </svg>
           )}
         </div>
@@ -226,7 +221,7 @@ export const SingleExpenseReceiptCard = forwardRef(({
             </div>
             <div className="min-w-0" style={{ overflow: 'visible' }}>
               <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider block" style={{ lineHeight: '1.5', paddingBottom: '1px' }}>
-                दिनांक
+                {t('receipt.single.date')}
               </span>
               <span className="text-xs font-bold text-slate-900 block" style={{ lineHeight: '1.5', paddingTop: '1px' }}>
                 {formattedDate}
@@ -234,7 +229,7 @@ export const SingleExpenseReceiptCard = forwardRef(({
             </div>
           </div>
           <span className="text-[9px] font-medium text-slate-400 shrink-0" style={{ lineHeight: '1.4' }}>
-            Recorded
+            {t('receipt.single.recorded')}
           </span>
         </div>
 
@@ -249,7 +244,7 @@ export const SingleExpenseReceiptCard = forwardRef(({
             </div>
             <div className="min-w-0" style={{ overflow: 'visible' }}>
               <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider block" style={{ lineHeight: '1.5', paddingBottom: '1px' }}>
-                तपशील (संख्या/प्रमाण)
+                {t('receipt.single.details')}
               </span>
               <span className="text-xs font-bold text-slate-900 block" style={{ lineHeight: '1.5', paddingTop: '1px' }}>
                 {descriptionText}
@@ -264,14 +259,14 @@ export const SingleExpenseReceiptCard = forwardRef(({
             <div className="flex items-center justify-between mb-1">
               <h4 className="text-[10px] font-bold text-slate-700 flex items-center gap-1" style={{ lineHeight: '1.4' }}>
                 <ImageIcon className="w-3 h-3 text-slate-400" />
-                <span>पावती / बिल फोटो</span>
+                <span>{t('receipt.single.photo')}</span>
               </h4>
-              <span className="text-[8px] text-emerald-700 font-semibold bg-emerald-100 px-1.5 py-0.5 rounded" style={{ lineHeight: '1.4' }}>Attached</span>
+              <span className="text-[8px] text-emerald-700 font-semibold bg-emerald-100 px-1.5 py-0.5 rounded" style={{ lineHeight: '1.4' }}>{t('receipt.single.attached')}</span>
             </div>
             <div className="w-full max-h-36 rounded-xl overflow-hidden bg-slate-950 border border-emerald-200/60 shadow-sm flex items-center justify-center">
               <img 
                 src={photoUrl} 
-                alt="Expense Bill" 
+                alt={t('receipt.single.billAlt')} 
                 className="w-full max-h-36 object-contain"
                 crossOrigin="anonymous"
               />
@@ -281,8 +276,8 @@ export const SingleExpenseReceiptCard = forwardRef(({
 
         {/* Subtle Footer */}
         <div className="pt-2 border-t border-emerald-100/80 flex items-center justify-between text-[8px] text-slate-400 font-medium" style={{ lineHeight: '1.5' }}>
-          <span>🏛️ {projectName}</span>
-          <span>Verified Digital Slip</span>
+          <span>🏛️ {projectName || t('app.defaultProject')}</span>
+          <span>{t('receipt.single.verified')}</span>
         </div>
       </div>
     </div>

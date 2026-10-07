@@ -16,7 +16,7 @@ CREATE TABLE public.settings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id TEXT NOT NULL DEFAULT 'user-shared',
     total_budget NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (total_budget >= 0),
-    project_name TEXT DEFAULT 'माझ्या घराचे बांधकाम',
+    project_name TEXT, -- empty = the website shows the default name in the selected language
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -25,7 +25,8 @@ CREATE TABLE public.settings (
 CREATE TABLE public.categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id TEXT DEFAULT 'user-shared',
-    name TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL UNIQUE,   -- Marathi name
+    name_en TEXT,                -- English name (shown when the website language is English)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -85,30 +86,30 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authen
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO anon, authenticated, service_role;
 
 -- 4. SEED 18 DEFAULT MARATHI CATEGORIES IN DATABASE
-INSERT INTO public.categories (name) VALUES
-    ('सिमेंट'),
-    ('वाळू'),
-    ('स्टील'),
-    ('विटा'),
-    ('खडी'),
-    ('माती'),
-    ('मजुरी'),
-    ('वीज साहित्य'),
-    ('प्लंबिंग साहित्य'),
-    ('टाइल्स'),
-    ('फरशी'),
-    ('पेंट'),
-    ('लाकूड'),
-    ('दरवाजे'),
-    ('खिडक्या'),
-    ('हार्डवेअर'),
-    ('वाहतूक'),
-    ('इतर')
+INSERT INTO public.categories (name, name_en) VALUES
+    ('सिमेंट', 'Cement'),
+    ('वाळू', 'Sand'),
+    ('स्टील', 'Steel'),
+    ('विटा', 'Bricks'),
+    ('खडी', 'Gravel'),
+    ('माती', 'Soil'),
+    ('मजुरी', 'Labour'),
+    ('वीज साहित्य', 'Electrical'),
+    ('प्लंबिंग साहित्य', 'Plumbing'),
+    ('टाइल्स', 'Tiles'),
+    ('फरशी', 'Flooring'),
+    ('पेंट', 'Paint'),
+    ('लाकूड', 'Wood'),
+    ('दरवाजे', 'Doors'),
+    ('खिडक्या', 'Windows'),
+    ('हार्डवेअर', 'Hardware'),
+    ('वाहतूक', 'Transport'),
+    ('इतर', 'Other')
 ON CONFLICT (name) DO NOTHING;
 
 -- 5. INITIALIZE SHARED SETTINGS ROW IN DATABASE
 INSERT INTO public.settings (user_id, total_budget, project_name)
-VALUES ('user-shared', 0.00, 'माझ्या घराचे बांधकाम')
+VALUES ('user-shared', 0.00, NULL)
 ON CONFLICT DO NOTHING;
 
 -- 6. STORAGE BUCKET FOR RECEIPT / BILL PHOTOS

@@ -13,14 +13,18 @@ import {
 } from 'lucide-react';
 import { ReportReceiptCard } from './ReportReceiptCard';
 import { exportElementAsImage, exportElementAsPDF, shareToWhatsApp } from '../../utils/receiptExporter';
-import Swal from 'sweetalert2';
+import { toast, alertBox } from '../../utils/alerts';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { formatINR } from '../../utils/marathiCurrency';
 
 export function ReportReceiptModal({
   isOpen,
   onClose,
   expenses = [],
-  projectName = 'माझ्या घराचे बांधकाम'
+  projectName
 }) {
+  const { t } = useLanguage();
+  const shownProject = projectName || t('app.defaultProject');
   const receiptRef = useRef(null);
   const [exporting, setExporting] = useState(false);
   
@@ -85,12 +89,12 @@ export function ReportReceiptModal({
   const totalEntries = filteredExpenses.length;
 
   const dateRangeCaption = filterPreset === 'custom' && (fromDate || toDate)
-    ? `${fromDate || 'सुरुवात'} ते ${toDate || 'आज'}`
+    ? t('receipt.report.captionRange', { from: fromDate || t('receipt.report.captionStart'), to: toDate || t('common.today') })
     : filterPreset === 'this_month'
-    ? 'चालू महिना'
+    ? t('receipt.report.captionThisMonth')
     : filterPreset === 'last_30'
-    ? 'मागील ३० दिवस'
-    : 'सर्व नोंदी';
+    ? t('receipt.report.last30')
+    : t('receipt.report.allEntries');
 
   if (!isOpen) return null;
 
@@ -100,21 +104,10 @@ export function ReportReceiptModal({
       const fileName = `Expense_Report_${Date.now()}`;
       await exportElementAsImage(receiptRef.current, fileName, format);
       
-      Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'success',
-        title: `पावती ${format.toUpperCase()} स्वरूपात डाउनलोड झाली!`,
-        showConfirmButton: false,
-        timer: 2500
-      });
+      toast('success', t('receipt.downloaded', { format: t(`receipt.format.${format}`) }), 2500);
     } catch (err) {
       console.error('Image Export failed:', err);
-      Swal.fire({
-        icon: 'error',
-        title: 'त्रुटी',
-        text: 'पावती डाउनलोड करताना अडचण आली.'
-      });
+      alertBox('error', t('common.error'), t('receipt.downloadFailed'));
     } finally {
       setExporting(false);
     }
@@ -126,21 +119,10 @@ export function ReportReceiptModal({
       const fileName = `Expense_Report_Slip_${Date.now()}`;
       await exportElementAsPDF(receiptRef.current, fileName);
       
-      Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'success',
-        title: `पावती PDF स्वरूपात तयार झाली!`,
-        showConfirmButton: false,
-        timer: 2500
-      });
+      toast('success', t('receipt.pdfCreated'), 2500);
     } catch (err) {
       console.error('PDF Export failed:', err);
-      Swal.fire({
-        icon: 'error',
-        title: 'त्रुटी',
-        text: 'PDF तयार करताना अडचण आली.'
-      });
+      alertBox('error', t('common.error'), t('receipt.pdfFailed'));
     } finally {
       setExporting(false);
     }
@@ -149,12 +131,12 @@ export function ReportReceiptModal({
   const handleWhatsAppShare = async () => {
     try {
       setExporting(true);
-      const totalFormatted = totalExpenses.toLocaleString('en-IN');
-      const caption = `📊 *${projectName} - बांधकाम खर्च अहवाल पावती*\n\n` +
-        `📅 *फिल्टर:* ${dateRangeCaption}\n` +
-        `💰 *एकूण खर्च:* ₹${totalFormatted}\n` +
-        `📝 *नोंदींची संख्या:* ${totalEntries}\n\n` +
-        `_Generated via Construction Expense Tracker_`;
+      const caption = t('receipt.report.whatsappCaption', {
+        project: shownProject,
+        filter: dateRangeCaption,
+        total: formatINR(totalExpenses),
+        count: totalEntries
+      });
       
       await shareToWhatsApp(receiptRef.current, caption);
     } catch (err) {
@@ -175,8 +157,8 @@ export function ReportReceiptModal({
               <FileSpreadsheet className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">पावती अहवाल (Report Slip)</h3>
-              <p className="text-[11px] text-slate-500 font-medium">तारीख फिल्टर करा व PDF / JPG / PNG डाउनलोड करा</p>
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">{t('receipt.report.modalTitle')}</h3>
+              <p className="text-[11px] text-slate-500 font-medium">{t('receipt.report.modalSub')}</p>
             </div>
           </div>
           <button
@@ -200,7 +182,7 @@ export function ReportReceiptModal({
                   : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
               }`}
             >
-              सर्व नोंदी ({expenses.length})
+              {t('receipt.report.allEntriesCount', { count: expenses.length })}
             </button>
 
             <button
@@ -212,7 +194,7 @@ export function ReportReceiptModal({
                   : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
               }`}
             >
-              या महिन्यात
+              {t('common.thisMonth')}
             </button>
 
             <button
@@ -224,7 +206,7 @@ export function ReportReceiptModal({
                   : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
               }`}
             >
-              मागील ३० दिवस
+              {t('receipt.report.last30')}
             </button>
 
             <button
@@ -236,7 +218,7 @@ export function ReportReceiptModal({
                   : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
               }`}
             >
-              कस्टम तारीख
+              {t('receipt.report.custom')}
             </button>
           </div>
 
@@ -245,7 +227,7 @@ export function ReportReceiptModal({
             <div className="grid grid-cols-2 gap-2 pt-1 animate-in fade-in duration-150">
               <div>
                 <label className="text-[10px] font-bold text-slate-500 block mb-1">
-                  पासून (From Date)
+                  {t('receipt.report.fromDate')}
                 </label>
                 <input
                   type="date"
@@ -257,7 +239,7 @@ export function ReportReceiptModal({
 
               <div>
                 <label className="text-[10px] font-bold text-slate-500 block mb-1">
-                  पर्यंत (To Date)
+                  {t('receipt.report.toDate')}
                 </label>
                 <input
                   type="date"
@@ -277,7 +259,7 @@ export function ReportReceiptModal({
             expenses={displayExpenses}
             totalExpenses={totalExpenses}
             totalEntries={totalEntries}
-            projectName={projectName}
+            projectName={shownProject}
             filterLabel={dateRangeCaption}
             showActionButtons={false}
           />
@@ -294,7 +276,7 @@ export function ReportReceiptModal({
               className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
-              <span>PDF Export</span>
+              <span>{t('receipt.report.exportPdf')}</span>
             </button>
 
             {/* JPG Button */}
@@ -304,7 +286,7 @@ export function ReportReceiptModal({
               className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-              <span>JPG डाऊनलोड</span>
+              <span>{t('receipt.report.downloadJpg')}</span>
             </button>
 
             {/* PNG Button */}
@@ -314,7 +296,7 @@ export function ReportReceiptModal({
               className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-              <span>PNG डाऊनलोड</span>
+              <span>{t('receipt.report.downloadPng')}</span>
             </button>
           </div>
 
@@ -325,7 +307,7 @@ export function ReportReceiptModal({
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
           >
             <Share2 className="w-4 h-4" />
-            <span>WhatsApp वर शेअर करा (Share on WhatsApp)</span>
+            <span>{t('receipt.shareWhatsApp')}</span>
           </button>
         </div>
       </div>

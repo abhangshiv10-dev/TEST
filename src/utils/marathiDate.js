@@ -1,53 +1,70 @@
-const MARATHI_MONTHS = [
-  'जानेवारी', 'फेब्रुवारी', 'मार्च', 'एप्रिल', 'मे', 'जून',
-  'जुलै', 'ऑगस्ट', 'सप्टेंबर', 'ऑक्टोबर', 'नोव्हेंबर', 'डिसेंबर'
-];
+import { LOCALES, getActiveLang, translate } from '../i18n';
+
+// Date helpers. Month names, AM/PM and "today / yesterday" follow the selected language
+// (pass `lang` explicitly, or it defaults to the currently selected language).
+// File name kept as marathiDate.js so existing imports keep working.
+
+const localeOf = (lang) => LOCALES[lang] || LOCALES[getActiveLang()];
 
 /**
- * Formats a date string (YYYY-MM-DD or ISO) into natural Marathi text
- * Example: '2026-09-22' -> '22 सप्टेंबर 2026'
+ * Formats a date string (YYYY-MM-DD or ISO) into text in the selected language
+ * Example (mr): '2026-09-22' -> '22 सप्टेंबर 2026'   (en): '22 September 2026'
  * @param {string|Date} dateInput
- * @param {boolean} shortYear
+ * @param {boolean} shortYear - when true the year is left out
+ * @param {string} lang
  * @returns {string}
  */
-export function formatMarathiDate(dateInput, shortYear = false) {
+export function formatDate(dateInput, shortYear = false, lang = getActiveLang()) {
   if (!dateInput) return '';
   const d = new Date(dateInput);
   if (isNaN(d.getTime())) return String(dateInput);
 
   const day = d.getDate();
-  const month = MARATHI_MONTHS[d.getMonth()];
+  const month = localeOf(lang).months[d.getMonth()];
   const year = d.getFullYear();
 
   return shortYear ? `${day} ${month}` : `${day} ${month} ${year}`;
 }
 
 /**
- * Formats a date & time string into Marathi date with 12-hour time
- * Example: '2026-09-22T10:15:00Z' -> '22 सप्टेंबर 2026, 03:45 PM'
+ * Compact date with short month name, e.g. '22 Sep 2026' / '22 सप्टें 2026'
+ * (used on receipts)
  */
-export function formatMarathiDateTime(dateInput) {
+export function formatShortDate(dateInput, lang = getActiveLang()) {
   if (!dateInput) return '';
   const d = new Date(dateInput);
   if (isNaN(d.getTime())) return String(dateInput);
 
-  const datePart = formatMarathiDate(d);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = localeOf(lang).monthsShort[d.getMonth()];
+  return `${day} ${month} ${d.getFullYear()}`;
+}
+
+/**
+ * Formats a date & time string into a date + 12-hour time
+ * Example (mr): '22 सप्टेंबर 2026, 03:45 म.नं.'   (en): '22 September 2026, 03:45 PM'
+ */
+export function formatDateTime(dateInput, lang = getActiveLang()) {
+  if (!dateInput) return '';
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return String(dateInput);
+
+  const datePart = formatDate(d, false, lang);
   let hours = d.getHours();
   const minutes = String(d.getMinutes()).padStart(2, '0');
-  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const { am, pm } = localeOf(lang);
+  const suffix = hours >= 12 ? pm : am;
   hours = hours % 12;
   hours = hours ? hours : 12;
-  const timeStr = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+  const timeStr = `${String(hours).padStart(2, '0')}:${minutes} ${suffix}`;
 
   return `${datePart}, ${timeStr}`;
 }
 
 /**
- * Returns a friendly relative label if today or yesterday, otherwise formatted date
- * @param {string|Date} dateInput
- * @returns {string}
+ * Returns a friendly relative label if today or yesterday, otherwise the formatted date
  */
-export function formatFriendlyMarathiDate(dateInput) {
+export function formatFriendlyDate(dateInput, lang = getActiveLang()) {
   if (!dateInput) return '';
   const d = new Date(dateInput);
   if (isNaN(d.getTime())) return String(dateInput);
@@ -56,14 +73,17 @@ export function formatFriendlyMarathiDate(dateInput) {
   const yesterday = new Date();
   yesterday.setDate(today.getDate() - 1);
 
-  const isToday = d.toDateString() === today.toDateString();
-  const isYesterday = d.toDateString() === yesterday.toDateString();
+  const dayMonth = `${d.getDate()} ${localeOf(lang).months[d.getMonth()]}`;
+  if (d.toDateString() === today.toDateString()) return `${translate('common.today', undefined, lang)} (${dayMonth})`;
+  if (d.toDateString() === yesterday.toDateString()) return `${translate('common.yesterday', undefined, lang)} (${dayMonth})`;
 
-  if (isToday) return `आज (${d.getDate()} ${MARATHI_MONTHS[d.getMonth()]})`;
-  if (isYesterday) return `काल (${d.getDate()} ${MARATHI_MONTHS[d.getMonth()]})`;
-
-  return formatMarathiDate(dateInput);
+  return formatDate(dateInput, false, lang);
 }
+
+// Older names (kept so existing imports keep working)
+export const formatMarathiDate = formatDate;
+export const formatMarathiDateTime = formatDateTime;
+export const formatFriendlyMarathiDate = formatFriendlyDate;
 
 /**
  * Formats date for HTML input type="date" (YYYY-MM-DD)

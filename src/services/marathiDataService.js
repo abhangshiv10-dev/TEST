@@ -1,5 +1,8 @@
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { DEFAULT_MARATHI_CATEGORIES, DEFAULT_CATEGORY_ENGLISH } from '../constants/defaultCategories';
+import { OTHER_CATEGORY } from '../constants/appDefaults';
+import { AppError } from '../utils/appError';
+import { isPendingStatus } from '../utils/paymentStatus';
 import { compressImage } from '../utils/imageCompress';
 import { getExpensePhotos, buildPhotoColumns } from '../utils/expensePhotos';
 
@@ -53,7 +56,7 @@ const initLocalStorageIfEmpty = (userId = 'user-shared') => {
       id: `setting-shared`,
       user_id: userId,
       total_budget: 0,
-      project_name: 'माझ्या घराचे बांधकाम'
+      project_name: null // the screen shows the default name in the selected language
     };
     setLocalData(`settings_shared`, defaultSettings);
     setLocalData(`settings_${userId}`, defaultSettings);
@@ -111,7 +114,7 @@ export const marathiDataService = {
         if (userId && !data) {
           const { data: newRow, error: insertError } = await supabase
             .from('settings')
-            .insert([{ user_id: userId, total_budget: 0, project_name: 'माझ्या घराचे बांधकाम' }])
+            .insert([{ user_id: userId, total_budget: 0, project_name: null }])
             .select()
             .single();
 
@@ -130,7 +133,7 @@ export const marathiDataService = {
     return getLocalData('settings_shared', getLocalData(`settings_${userId}`, {
       user_id: userId,
       total_budget: 0,
-      project_name: 'माझ्या घराचे बांधकाम'
+      project_name: null
     }));
   },
 
@@ -170,7 +173,7 @@ export const marathiDataService = {
         } else {
           const { data, error } = await supabase
             .from('settings')
-            .insert([{ user_id: userId, total_budget: budgetNum, project_name: 'माझ्या घराचे बांधकाम' }])
+            .insert([{ user_id: userId, total_budget: budgetNum, project_name: null }])
             .select()
             .single();
           if (!error && data) updatedData = data;
@@ -186,7 +189,7 @@ export const marathiDataService = {
     }
 
     if (!updatedData) {
-      const current = getLocalData('settings_shared', getLocalData(`settings_${userId}`, { user_id: userId, project_name: 'माझ्या घराचे बांधकाम' }));
+      const current = getLocalData('settings_shared', getLocalData(`settings_${userId}`, { user_id: userId, project_name: null }));
       updatedData = { ...current, total_budget: budgetNum, updated_at: new Date().toISOString() };
       setLocalData('settings_shared', updatedData);
       if (userId) setLocalData(`settings_${userId}`, updatedData);
@@ -200,7 +203,7 @@ export const marathiDataService = {
       amount_changed: delta > 0 ? delta : budgetNum,
       previous_budget: prevBudget,
       new_budget: budgetNum,
-      note: note || (finalChangeType === 'initial' ? 'सुरुवातीचे निश्चित केलेले बजेट' : finalChangeType === 'add' ? `बजेटमध्ये वाढ केली` : 'एकूण बजेट बदलले'),
+      note: note || '',
       created_at: new Date().toISOString()
     };
 
@@ -274,7 +277,7 @@ export const marathiDataService = {
         amount_changed: budget,
         previous_budget: 0,
         new_budget: budget,
-        note: 'सुरुवातीचे निश्चित केलेले बजेट',
+        note: '',
         created_at: settings.created_at || new Date().toISOString()
       };
       setLocalData('budget_history_shared', [initialEntry]);
@@ -344,8 +347,8 @@ export const marathiDataService = {
   async addCategory(userId, name, nameEn = '') {
     const trimmed = (name || '').trim();
     const trimmedEn = (nameEn || '').trim();
-    if (!trimmed) throw new Error('प्रकाराचे मराठी नाव (Marathi Name) आवश्यक आहे.');
-    if (!trimmedEn) throw new Error('प्रकाराचे इंग्रजी नाव (English Name) आवश्यक आहे.');
+    if (!trimmed) throw new AppError('categoryMarathiNameRequired');
+    if (!trimmedEn) throw new AppError('categoryEnglishNameRequired');
 
     const known = getLocalData('categories_shared', []);
     const duplicate = known.find(
@@ -354,7 +357,7 @@ export const marathiDataService = {
         (c.name_en || '').toLowerCase() === trimmedEn.toLowerCase()
     );
     if (duplicate) {
-      throw new Error(`"${duplicate.name}${duplicate.name_en ? ` / ${duplicate.name_en}` : ''}" हा प्रकार आधीच अस्तित्वात आहे.`);
+      throw new AppError('categoryExists', { nameMr: duplicate.name, nameEn: duplicate.name_en || duplicate.name });
     }
 
     if (isSupabaseConfigured() && userId && !userId.startsWith('demo-')) {
@@ -401,8 +404,8 @@ export const marathiDataService = {
   async updateCategory(userId, categoryId, newName, newNameEn = '') {
     const trimmed = (newName || '').trim();
     const trimmedEn = (newNameEn || '').trim();
-    if (!trimmed) throw new Error('प्रकाराचे मराठी नाव (Marathi Name) आवश्यक आहे.');
-    if (!trimmedEn) throw new Error('प्रकाराचे इंग्रजी नाव (English Name) आवश्यक आहे.');
+    if (!trimmed) throw new AppError('categoryMarathiNameRequired');
+    if (!trimmedEn) throw new AppError('categoryEnglishNameRequired');
 
     const known = getLocalData('categories_shared', []);
     const duplicate = known.find(
@@ -412,7 +415,7 @@ export const marathiDataService = {
           (c.name_en || '').toLowerCase() === trimmedEn.toLowerCase())
     );
     if (duplicate) {
-      throw new Error(`"${duplicate.name}${duplicate.name_en ? ` / ${duplicate.name_en}` : ''}" हा प्रकार आधीच अस्तित्वात आहे.`);
+      throw new AppError('categoryExists', { nameMr: duplicate.name, nameEn: duplicate.name_en || duplicate.name });
     }
 
     if (isSupabaseConfigured()) {
@@ -454,7 +457,7 @@ export const marathiDataService = {
     const expenses = await this.getExpenses(userId);
     const count = expenses.filter(e => e.category_id === categoryId).length;
     if (count > 0) {
-      throw new Error(`या प्रकारात ${count} खर्च नोंदवलेले आहेत. आधी ते खर्च बदला किंवा हटवा.`);
+      throw new AppError('categoryInUse', { count });
     }
 
     if (isSupabaseConfigured()) {
@@ -564,7 +567,7 @@ export const marathiDataService = {
           const mapped = data.map(item => ({
             ...item,
             payment_status: item.payment_status || localStatusMap.get(item.id) || 'Paid',
-            category_name: item.categories?.name || 'इतर'
+            category_name: item.categories?.name || OTHER_CATEGORY
           }));
           setLocalData('expenses_shared', mapped);
           return mapped;
@@ -641,7 +644,7 @@ export const marathiDataService = {
           const newExp = {
             ...insertRes.data,
             payment_status: payload.payment_status || insertRes.data.payment_status || 'Paid',
-            category_name: insertRes.data.categories?.name || 'इतर'
+            category_name: insertRes.data.categories?.name || OTHER_CATEGORY
           };
           const expenses = getLocalData('expenses_shared', []);
           setLocalData('expenses_shared', [newExp, ...expenses]);
@@ -659,7 +662,7 @@ export const marathiDataService = {
     const newExpense = {
       ...payload,
       id: `exp-${Date.now()}`,
-      category_name: matchedCat?.name || 'इतर',
+      category_name: matchedCat?.name || OTHER_CATEGORY,
       created_at: new Date().toISOString()
     };
 
@@ -748,7 +751,7 @@ export const marathiDataService = {
           const updated = {
             ...updateRes.data,
             payment_status: payload.payment_status || updateRes.data.payment_status || 'Paid',
-            category_name: updateRes.data.categories?.name || 'इतर'
+            category_name: updateRes.data.categories?.name || OTHER_CATEGORY
           };
           const expenses = getLocalData('expenses_shared', []);
           const idx = expenses.findIndex(e => e.id === expenseId);
@@ -771,7 +774,7 @@ export const marathiDataService = {
       expenses[idx] = {
         ...expenses[idx],
         ...payload,
-        category_name: matchedCat?.name || 'इतर'
+        category_name: matchedCat?.name || OTHER_CATEGORY
       };
       setLocalData('expenses_shared', expenses);
       if (userId) setLocalData(`expenses_${userId}`, expenses);
@@ -835,6 +838,7 @@ export function computeSummary(settings, expenses) {
     const currentYear = new Date().getFullYear();
 
     const categoryMap = {};
+    const categoryNamesEn = {};
 
     let totalPaid = 0;
     let totalPending = 0;
@@ -844,7 +848,7 @@ export function computeSummary(settings, expenses) {
       const amt = Number(exp.amount) || 0;
       totalSpent += amt;
 
-      const isPending = (exp.payment_status || '').toLowerCase() === 'pending' || exp.payment_status === 'बाकी';
+      const isPending = isPendingStatus(exp.payment_status);
       if (isPending) {
         totalPending += amt;
         pendingCount += 1;
@@ -864,8 +868,9 @@ export function computeSummary(settings, expenses) {
       }
 
       // Category breakdown
-      const catName = exp.category_name || 'इतर';
+      const catName = exp.category_name || OTHER_CATEGORY;
       categoryMap[catName] = (categoryMap[catName] || 0) + amt;
+      if (exp.category_name_en && !categoryNamesEn[catName]) categoryNamesEn[catName] = exp.category_name_en;
     });
 
     const remainingBalance = totalBudget - totalSpent;
@@ -875,6 +880,7 @@ export function computeSummary(settings, expenses) {
     const categoryBreakdown = Object.entries(categoryMap)
       .map(([name, amount]) => ({
         name,
+        nameEn: categoryNamesEn[name] || '',
         amount,
         percentage: totalSpent > 0 ? Number(((amount / totalSpent) * 100).toFixed(1)) : 0
       }))

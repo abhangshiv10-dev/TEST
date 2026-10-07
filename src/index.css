@@ -29,6 +29,12 @@
   }
 }
 
+/* English mode: use Inter first (Noto Sans Devanagari stays as the fallback) */
+html[lang='en'] body,
+html[lang='en'] .font-sans {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif;
+}
+
 /* Glassmorphic card utility */
 .glass-card {
   /* backdrop-filter removed: it was expensive on mobile and invisible at 92% opacity */

@@ -3,14 +3,18 @@ import { createPortal } from 'react-dom';
 import { X, Download, Share2, Loader2, Image as ImageIcon } from 'lucide-react';
 import { SingleExpenseReceiptCard } from './SingleExpenseReceiptCard';
 import { exportElementAsImage, shareToWhatsApp } from '../../utils/receiptExporter';
-import Swal from 'sweetalert2';
+import { toast, alertBox } from '../../utils/alerts';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { formatINR } from '../../utils/marathiCurrency';
 
 export function SingleExpenseReceiptModal({
   isOpen,
   onClose,
   expense,
-  projectName = 'माझ्या घराचे बांधकाम'
+  projectName
 }) {
+  const { t, catLabel, fmtShortDate, projectLabel } = useLanguage();
+  const shownProject = projectName || projectLabel('');
   const receiptRef = useRef(null);
   const [exporting, setExporting] = useState(false);
 
@@ -33,21 +37,10 @@ export function SingleExpenseReceiptModal({
       const fileName = `Expense_Receipt_${expense.category_name || 'Item'}_${expense.expense_date || 'date'}`;
       await exportElementAsImage(receiptRef.current, fileName, format);
       
-      Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'success',
-        title: `पावती ${format.toUpperCase()} स्वरूपात डाउनलोड झाली!`,
-        showConfirmButton: false,
-        timer: 2500
-      });
+      toast('success', t('receipt.downloaded', { format: t(`receipt.format.${format}`) }), 2500);
     } catch (err) {
       console.error('Export failed:', err);
-      Swal.fire({
-        icon: 'error',
-        title: 'त्रुटी',
-        text: 'पावती डाउनलोड करताना अडचण आली.'
-      });
+      alertBox('error', t('common.error'), t('receipt.downloadFailed'));
     } finally {
       setExporting(false);
     }
@@ -56,12 +49,13 @@ export function SingleExpenseReceiptModal({
   const handleWhatsAppShare = async () => {
     try {
       setExporting(true);
-      const caption = `🏛️ *${projectName} - खर्च पावती*\n\n` +
-        `📌 *खर्चाचा प्रकार:* ${expense.category_name || '-'}\n` +
-        `💰 *रक्कम:* ₹${expense.amount?.toLocaleString('en-IN') || '0'}\n` +
-        `📅 *दिनांक:* ${expense.expense_date || '-'}\n` +
-        `📝 *तपशील:* ${expense.description || '-'}\n\n` +
-        `_Digital Construction Expense Slip_`;
+      const caption = t('receipt.single.whatsappCaption', {
+        project: shownProject,
+        category: catLabel(expense.category_name, expense.category_name_en) || '-',
+        amount: formatINR(expense.amount),
+        date: expense.expense_date ? fmtShortDate(expense.expense_date) : '-',
+        details: expense.description || '-'
+      });
       
       await shareToWhatsApp(receiptRef.current, caption);
     } catch (err) {
@@ -81,8 +75,8 @@ export function SingleExpenseReceiptModal({
               <ImageIcon className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-800">खर्च पावती (Receipt)</h3>
-              <p className="text-[11px] text-slate-500 font-medium">PNG / JPG एक्सपोर्ट व शेअर</p>
+              <h3 className="text-sm font-bold text-slate-800">{t('receipt.single.modalTitle')}</h3>
+              <p className="text-[11px] text-slate-500 font-medium">{t('receipt.single.modalSub')}</p>
             </div>
           </div>
           <button
@@ -98,7 +92,7 @@ export function SingleExpenseReceiptModal({
           <SingleExpenseReceiptCard
             ref={receiptRef}
             expense={expense}
-            projectName={projectName}
+            projectName={shownProject}
             onExportClick={() => handleExport('png')}
             onWhatsAppClick={handleWhatsAppShare}
             showActionButtons={false}
@@ -115,7 +109,7 @@ export function SingleExpenseReceiptModal({
               className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#EBF5FE] hover:bg-[#D9EDFE] text-[#2F80ED] border border-[#D0E8FF] text-xs font-bold shadow-2xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-              <span>Export (PNG)</span>
+              <span>{t('receipt.single.exportPng')}</span>
             </button>
 
             <button
@@ -124,7 +118,7 @@ export function SingleExpenseReceiptModal({
               className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-              <span>JPG डाउनलोड</span>
+              <span>{t('receipt.single.downloadJpg')}</span>
             </button>
           </div>
 
@@ -135,7 +129,7 @@ export function SingleExpenseReceiptModal({
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#00B074] hover:bg-[#009B66] text-white text-xs font-bold shadow-sm hover:shadow transition-all disabled:opacity-50 cursor-pointer"
           >
             <Share2 className="w-4 h-4" />
-            <span>Share on WhatsApp</span>
+            <span>{t('receipt.shareWhatsApp')}</span>
           </button>
         </div>
       </div>

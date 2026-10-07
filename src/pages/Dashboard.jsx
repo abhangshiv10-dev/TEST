@@ -22,7 +22,10 @@ import {
   Percent,
   X
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { toast, alertBox, confirmDelete } from '../utils/alerts';
+import { useLanguage } from '../i18n/LanguageContext';
+import { OTHER_CATEGORY } from '../constants/appDefaults';
+import { isPendingStatus } from '../utils/paymentStatus';
 import { useBudget } from '../contexts/BudgetContext';
 import { useAuth } from '../contexts/AuthContext';
 import { formatINR } from '../utils/marathiCurrency';
@@ -50,6 +53,7 @@ const CATEGORY_COLORS = [
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { t, tRich, locale, catLabel, projectLabel, fmtDate } = useLanguage();
   const {
     summary,
     expenses,
@@ -111,52 +115,27 @@ export default function Dashboard() {
         ...expense,
         payment_status: 'Paid'
       });
-      Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'success',
-        title: 'पेमेंट पूर्ण (Paid) म्हणून चिन्हांकित केले!',
-        showConfirmButton: false,
-        timer: 1800
-      });
+      toast('success', t('dashboard.markPaidToast'), 1800);
     } catch (err) {
-      Swal.fire({
-        icon: 'error',
-        title: 'त्रुटी',
-        text: 'पेमेंट स्थिती बदलता आली नाही.'
-      });
+      alertBox('error', t('common.error'), t('dashboard.markPaidFailed'));
     }
   };
 
   const handleDeleteExpense = async (expense) => {
-    const result = await Swal.fire({
-      title: 'खर्च हटवायचा आहे?',
-      html: `<b>${formatINR(expense.amount)}</b> चा हा खर्च (${expense.category_name || 'इतर'}) कायमचा हटवला जाईल.`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#0f172a',
-      cancelButtonColor: '#94a3b8',
-      confirmButtonText: 'हटवा',
-      cancelButtonText: 'रद्द करा'
+    const confirmed = await confirmDelete({
+      title: t('expenses.deleteTitle'),
+      html: t('expenses.deleteHtml', {
+        amount: formatINR(expense.amount),
+        category: catLabel(expense.category_name, expense.category_name_en)
+      })
     });
 
-    if (result.isConfirmed) {
+    if (confirmed) {
       try {
         await deleteExpense(expense.id, getExpensePhotos(expense).map((ph) => ph.path));
-        Swal.fire({
-          toast: true,
-          position: 'top-end',
-          icon: 'success',
-          title: 'खर्च यशस्वीरित्या हटवला',
-          showConfirmButton: false,
-          timer: 2000
-        });
+        toast('success', t('expenses.deleteSuccess'), 2000);
       } catch (err) {
-        Swal.fire({
-          icon: 'error',
-          title: 'त्रुटी',
-          text: 'खर्च हटवता आला नाही.'
-        });
+        alertBox('error', t('common.error'), t('expenses.deleteFailed'));
       }
     }
   };
@@ -179,7 +158,7 @@ export default function Dashboard() {
     return expenses
       .filter(e => {
         if (selectedCategoryName && selectedCategoryName !== 'all') {
-          if ((e.category_name || 'इतर') !== selectedCategoryName) return false;
+          if ((e.category_name || OTHER_CATEGORY) !== selectedCategoryName) return false;
         }
 
         if (searchQuery.trim()) {
@@ -197,7 +176,7 @@ export default function Dashboard() {
   // Selected category cha total (count + amount)
   const selectedCategoryStats = useMemo(() => {
     if (selectedCategoryName === 'all') return { count: 0, total: 0 };
-    const list = expenses.filter(e => (e.category_name || 'इतर') === selectedCategoryName);
+    const list = expenses.filter(e => (e.category_name || OTHER_CATEGORY) === selectedCategoryName);
     return {
       count: list.length,
       total: list.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
@@ -206,19 +185,13 @@ export default function Dashboard() {
 
   // Pending Expenses List
   const pendingExpensesList = useMemo(() => {
-    return expenses.filter(e => (e.payment_status || '').toLowerCase() === 'pending' || e.payment_status === 'बाकी');
+    return expenses.filter(e => isPendingStatus(e.payment_status));
   }, [expenses]);
 
   // Expense trend aggregation for the graph (weekly / monthly / yearly)
   const monthlyExpenseData = useMemo(() => {
-    const marathiMonths = [
-      'जानेवारी', 'फेब्रुवारी', 'मार्च', 'एप्रिल', 'मे', 'जून',
-      'जुलै', 'ऑगस्ट', 'सप्टेंबर', 'ऑक्टोबर', 'नोव्हेंबर', 'डिसेंबर'
-    ];
-    const marathiShortMonths = [
-      'जाने', 'फेब्रु', 'मार्च', 'एप्रि', 'मे', 'जून',
-      'जुलै', 'ऑग', 'सप्टें', 'ऑक्टो', 'नोव्हें', 'डिसें'
-    ];
+    const marathiMonths = locale.months;
+    const marathiShortMonths = locale.monthsShort;
 
     const pad = (n) => String(n).padStart(2, '0');
     const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -277,7 +250,7 @@ export default function Dashboard() {
         map[String(y)] = {
           key: String(y),
           label: String(y),
-          fullLabel: `वर्ष ${y}`,
+          fullLabel: t('dashboard.yearLabel', { year: y }),
           amount: 0,
           count: 0,
           isCurrent: y === thisYear
@@ -288,7 +261,7 @@ export default function Dashboard() {
         if (!d) return;
         const key = String(d.getFullYear());
         if (!map[key]) {
-          map[key] = { key, label: key, fullLabel: `वर्ष ${key}`, amount: 0, count: 0, isCurrent: false };
+          map[key] = { key, label: key, fullLabel: t('dashboard.yearLabel', { year: key }), amount: 0, count: 0, isCurrent: false };
         }
         map[key].amount += Number(exp.amount) || 0;
         map[key].count += 1;
@@ -323,13 +296,13 @@ export default function Dashboard() {
     }
 
     return Object.values(map).sort((a, b) => a.key.localeCompare(b.key));
-  }, [expenses, trendPeriod]);
+  }, [expenses, trendPeriod, locale, t]);
 
   // Titles / labels that change with the selected period
   const trendMeta = {
-    weekly:  { title: 'Weekly Expense Trend (साप्ताहिक खर्च कल)', sub: 'गेल्या ८ आठवड्यांचा बांधकाम खर्च', avg: 'साप्ताहिक सरासरी' },
-    monthly: { title: 'Monthly Expense Trend (मासिक खर्च कल)',   sub: 'दरमहा झालेल्या बांधकाम खर्चाचा आलेख', avg: 'मासिक सरासरी' },
-    yearly:  { title: 'Yearly Expense Trend (वार्षिक खर्च कल)',   sub: 'दरवर्षी झालेल्या बांधकाम खर्चाचा आलेख', avg: 'वार्षिक सरासरी' }
+    weekly:  { title: t('dashboard.weeklyTitle'),  sub: t('dashboard.weeklySub'),  avg: t('dashboard.weeklyAvg') },
+    monthly: { title: t('dashboard.monthlyTitle'), sub: t('dashboard.monthlySub'), avg: t('dashboard.monthlyAvg') },
+    yearly:  { title: t('dashboard.yearlyTitle'),  sub: t('dashboard.yearlySub'),  avg: t('dashboard.yearlyAvg') }
   }[trendPeriod];
 
   // Category Pie Chart Data
@@ -337,11 +310,19 @@ export default function Dashboard() {
     if (!categoryBreakdown || categoryBreakdown.length === 0) return [];
     return categoryBreakdown.slice(0, 8).map((cat, idx) => ({
       name: cat.name,
+      label: catLabel(cat.name, cat.nameEn),
       value: cat.amount,
       percentage: cat.percentage,
       color: CATEGORY_COLORS[idx % CATEGORY_COLORS.length]
     }));
-  }, [categoryBreakdown]);
+  }, [categoryBreakdown, catLabel]);
+
+  // Name (in the selected language) of the category picked from the chart
+  const selectedCategoryLabel = useMemo(() => {
+    if (selectedCategoryName === 'all') return '';
+    const match = expenses.find((e) => (e.category_name || OTHER_CATEGORY) === selectedCategoryName);
+    return catLabel(selectedCategoryName, match?.category_name_en);
+  }, [expenses, selectedCategoryName, catLabel]);
 
   const { monthlyAverage, highestMonth } = useMemo(() => {
     const activeMonths = monthlyExpenseData.filter(m => m.amount > 0);
@@ -364,20 +345,20 @@ export default function Dashboard() {
   // Determine budget progress bar color & warning state
   let progressColor = 'bg-slate-900';
   let isOverBudget = remainingBalance < 0;
-  let statusBadgeText = 'योग्य स्थिती';
+  let statusBadgeText = t('dashboard.badgeOk');
   let badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200/80';
 
   if (percentUsed >= 100 || isOverBudget) {
     progressColor = 'bg-rose-600';
-    statusBadgeText = 'बजेट संपले';
+    statusBadgeText = t('dashboard.badgeExhausted');
     badgeColor = 'bg-rose-50 text-rose-700 border-rose-200/80';
   } else if (percentUsed >= 90) {
     progressColor = 'bg-rose-500';
-    statusBadgeText = 'धोका पातळी (90%+)';
+    statusBadgeText = t('dashboard.badgeDanger');
     badgeColor = 'bg-rose-50 text-rose-700 border-rose-200/80';
   } else if (percentUsed >= 70) {
     progressColor = 'bg-amber-500';
-    statusBadgeText = 'लक्ष द्या (70%+)';
+    statusBadgeText = t('dashboard.badgeWarning');
     badgeColor = 'bg-amber-50 text-amber-700 border-amber-200/80';
   }
 
@@ -387,10 +368,10 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-            Home | Expenses
+            {t('app.name')}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 font-normal mt-0.5">
-            आजपर्यंतच्या बांधकाम खर्चाचा संपूर्ण आढावा
+            {t('dashboard.subtitle')}
           </p>
         </div>
 
@@ -399,10 +380,10 @@ export default function Dashboard() {
             type="button"
             onClick={() => setReportReceiptOpen(true)}
             className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
-            title="सर्व नोंदींसह पावती अहवाल PDF/PNG/JPG एक्सपोर्ट करा"
+            title={t('receiptReport.exportTitle')}
           >
             <Receipt className="w-4 h-4 shrink-0" />
-            <span>पावती अहवाल ({expenses.length} नोंदी)</span>
+            <span>{t('dashboard.reportButton', { count: expenses.length })}</span>
           </button>
 
           {/* Primary Action Button */}
@@ -415,7 +396,7 @@ export default function Dashboard() {
             className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
           >
             <Plus className="w-4 h-4 shrink-0" />
-            <span>खर्च जोडा</span>
+            <span>{t('common.addExpense')}</span>
           </button>
         </div>
       </div>
@@ -425,8 +406,8 @@ export default function Dashboard() {
         <div className="p-3.5 sm:p-4 rounded-2xl bg-rose-50/90 border border-rose-200 flex items-start gap-3 text-rose-900 text-xs sm:text-sm shadow-subtle animate-in fade-in">
           <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-rose-600 shrink-0 mt-0.5" />
           <div className="leading-relaxed">
-            <span className="font-bold">महत्त्वाची सूचना: </span>
-            तुमचा एकूण खर्च ठरवलेल्या बजेटपेक्षा <span className="font-bold underline">{formatINR(Math.abs(remainingBalance))}</span> ने जास्त झाला आहे. कृपया नवीन खर्चांचे पुनरावलोकन करा.
+            <span className="font-bold">{t('dashboard.overBudgetLabel')} </span>
+            {tRich('dashboard.overBudgetText', { amount: <span className="font-bold underline">{formatINR(Math.abs(remainingBalance))}</span> })}
           </div>
         </div>
       )}
@@ -437,23 +418,23 @@ export default function Dashboard() {
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500/10 via-blue-500/5 to-cyan-500/10 border border-indigo-200/80 p-3.5 sm:p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold text-indigo-900 uppercase tracking-wider">
-              Total Budget
+              {t('dashboard.totalBudget')}
             </span>
             <button
               type="button"
               onClick={() => setBudgetModalOpen(true)}
               className="px-2 py-0.5 text-[10px] font-semibold text-indigo-700 bg-white hover:bg-indigo-50 border border-indigo-200 rounded-md shadow-2xs flex items-center gap-0.5 whitespace-nowrap shrink-0"
-              title="बजेट बदला"
+              title={t('budget.change')}
             >
               <Edit3 className="w-2.5 h-2.5 shrink-0" />
-              <span>बदला</span>
+              <span>{t('common.edit')}</span>
             </button>
           </div>
           <div className="text-xl sm:text-2xl font-extrabold text-indigo-950 tracking-tight">
             {formatINR(totalBudget)}
           </div>
           <div className="text-[10px] text-indigo-800/80 font-medium mt-2 pt-1.5 border-t border-indigo-100">
-            एकूण ठरवलेले बजेट
+            {t('dashboard.totalBudgetNote')}
           </div>
         </div>
 
@@ -461,7 +442,7 @@ export default function Dashboard() {
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-rose-500/10 border border-amber-200/80 p-3.5 sm:p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider">
-              Total Expenses
+              {t('dashboard.totalExpenses')}
             </span>
             <div className="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center text-xs">
               <Receipt className="w-3.5 h-3.5" />
@@ -471,9 +452,9 @@ export default function Dashboard() {
             {formatINR(totalSpent)}
           </div>
           <div className="text-[10px] text-amber-800/80 font-medium mt-2 pt-1.5 border-t border-amber-100 flex items-center justify-between">
-            <span>{expenses.length} व्यवहार</span>
+            <span>{t('common.transactions', { count: expenses.length })}</span>
             {totalPending > 0 && (
-              <span className="text-rose-600 font-bold">बाकी: {formatINR(totalPending)}</span>
+              <span className="text-rose-600 font-bold">{t('dashboard.pendingAmount', { amount: formatINR(totalPending) })}</span>
             )}
           </div>
         </div>
@@ -488,7 +469,7 @@ export default function Dashboard() {
             <span className={`text-[11px] font-bold uppercase tracking-wider ${
               isOverBudget ? 'text-rose-900' : 'text-emerald-900'
             }`}>
-              Remaining Balance
+              {t('dashboard.remainingBalance')}
             </span>
             <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-white text-xs ${
               isOverBudget ? 'bg-rose-600' : 'bg-emerald-600'
@@ -504,7 +485,7 @@ export default function Dashboard() {
           <div className={`text-[10px] font-medium mt-2 pt-1.5 border-t ${
             isOverBudget ? 'text-rose-800 border-rose-100' : 'text-emerald-800 border-emerald-100'
           }`}>
-            {isOverBudget ? 'ओव्हर बजेट रक्कम' : 'शिल्लक उपलब्ध निधी'}
+            {isOverBudget ? t('dashboard.overBudgetAmount') : t('dashboard.fundsRemaining')}
           </div>
         </div>
 
@@ -512,7 +493,7 @@ export default function Dashboard() {
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800/5 via-slate-900/5 to-slate-950/10 border border-slate-200/90 p-3.5 sm:p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">
-              Budget Used
+              {t('dashboard.budgetUsed')}
             </span>
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${badgeColor}`}>
               {statusBadgeText}
@@ -522,7 +503,7 @@ export default function Dashboard() {
             {percentUsed}%
           </div>
           <div className="text-[10px] text-slate-600 font-medium mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between">
-            <span>या महिन्याचा: {formatINR(thisMonthSpent)}</span>
+            <span>{t('dashboard.thisMonthSpent', { amount: formatINR(thisMonthSpent) })}</span>
           </div>
         </div>
       </div>
@@ -532,11 +513,11 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs sm:text-sm font-bold text-slate-900">
-              Budget Utilization (बजेट वापर प्रमाण)
+              {t('dashboard.utilization')}
             </span>
           </div>
           <span className="text-xs sm:text-sm font-extrabold text-slate-900">
-            {percentUsed}% खर्च
+            {t('dashboard.percentSpent', { percent: percentUsed })}
           </span>
         </div>
 
@@ -581,9 +562,9 @@ export default function Dashboard() {
           {/* Period filter: Weekly / Monthly / Yearly */}
           <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 w-fit">
             {[
-              { id: 'weekly', label: 'आठवडा (Weekly)' },
-              { id: 'monthly', label: 'महिना (Monthly)' },
-              { id: 'yearly', label: 'वर्ष (Yearly)' }
+              { id: 'weekly', label: t('dashboard.periodWeekly') },
+              { id: 'monthly', label: t('dashboard.periodMonthly') },
+              { id: 'yearly', label: t('dashboard.periodYearly') }
             ].map((opt) => (
               <button
                 key={opt.id}
@@ -616,15 +597,15 @@ export default function Dashboard() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
-                  Expense by Category (प्रकारानुसार खर्च)
+                  {t('dashboard.byCategory')}
                 </h3>
                 <p className="text-[11px] text-slate-500 font-normal">
-                  प्रमुख साहित्यावर झालेला खर्च विभागणी
+                  {t('dashboard.byCategorySub')}
                 </p>
               </div>
             </div>
             <span className="text-xs font-bold px-2.5 py-0.5 bg-slate-100 text-slate-700 rounded-full">
-              {categoryBreakdown?.length || 0} प्रकार
+              {t('dashboard.categoryCount', { count: categoryBreakdown?.length || 0 })}
             </span>
           </div>
 
@@ -648,7 +629,7 @@ export default function Dashboard() {
                     type="button"
                     key={item.name}
                     onClick={() => handleCategoryClick(item.name)}
-                    title="या प्रकारचे सर्व खर्च पहा"
+                    title={t('dashboard.viewCategoryExpenses')}
                     className={`w-full text-left flex items-center justify-between text-xs p-1.5 rounded-lg border transition-colors cursor-pointer ${
                       selectedCategoryName === item.name
                         ? 'bg-slate-900 border-slate-900 text-white'
@@ -657,7 +638,7 @@ export default function Dashboard() {
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                      <span className={`font-semibold truncate ${selectedCategoryName === item.name ? 'text-white' : 'text-slate-800'}`}>{item.name}</span>
+                      <span className={`font-semibold truncate ${selectedCategoryName === item.name ? 'text-white' : 'text-slate-800'}`}>{item.label}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className={`font-bold ${selectedCategoryName === item.name ? 'text-white' : 'text-slate-900'}`}>{formatINR(item.value)}</span>
@@ -669,7 +650,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="py-12 text-center text-slate-400 text-xs">
-              कोणताही खर्च उपलब्ध नाही
+              {t('common.noExpenseAvailable')}
             </div>
           )}
         </div>
@@ -682,17 +663,17 @@ export default function Dashboard() {
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
               <h3 className="text-sm font-bold text-slate-900">
-                Recent Expenses (अलीकडील खर्च)
+                {t('dashboard.recent')}
               </h3>
               <p className="text-[11px] text-slate-500 font-normal">
-                नुकतेच नोंदवलेले सर्व बांधकाम खर्च
+                {t('dashboard.recentSub')}
               </p>
             </div>
             <Link
               to="/expenses"
               className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:underline shrink-0"
             >
-              <span>सर्व पहा</span>
+              <span>{t('common.viewAll')}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -701,9 +682,9 @@ export default function Dashboard() {
           {selectedCategoryName !== 'all' && (
             <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200">
               <div className="min-w-0">
-                <p className="text-xs font-bold text-emerald-900 truncate">{selectedCategoryName}</p>
+                <p className="text-xs font-bold text-emerald-900 truncate">{selectedCategoryLabel}</p>
                 <p className="text-[11px] text-emerald-700">
-                  {selectedCategoryStats.count} नोंदी • {formatINR(selectedCategoryStats.total)}
+                  {t('common.entries', { count: selectedCategoryStats.count })} • {formatINR(selectedCategoryStats.total)}
                 </p>
               </div>
               <button
@@ -712,7 +693,7 @@ export default function Dashboard() {
                 className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 hover:text-emerald-950 shrink-0"
               >
                 <X className="w-3.5 h-3.5" />
-                <span>फिल्टर काढा</span>
+                <span>{t('dashboard.clearFilter')}</span>
               </button>
             </div>
           )}
@@ -724,7 +705,7 @@ export default function Dashboard() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="खर्च किंवा प्रकार शोधा..."
+              placeholder={t('dashboard.searchPlaceholder')}
               className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:bg-white transition-colors"
             />
           </div>
@@ -747,7 +728,7 @@ export default function Dashboard() {
           ) : (
             <div className="py-12 text-center text-slate-400 space-y-2">
               <div className="text-2xl">📝</div>
-              <p className="text-xs font-medium text-slate-600">कोणताही खर्च सापडला नाही</p>
+              <p className="text-xs font-medium text-slate-600">{t('common.noExpenseFound')}</p>
               <button
                 type="button"
                 onClick={() => {
@@ -756,7 +737,7 @@ export default function Dashboard() {
                 }}
                 className="inline-flex items-center gap-1 text-xs font-bold text-slate-900 underline hover:text-slate-700"
               >
-                + खर्च जोडा
+                + {t('common.addExpense')}
               </button>
             </div>
           )}
@@ -771,15 +752,15 @@ export default function Dashboard() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
-                  Pending Payments (बाकी देयके)
+                  {t('dashboard.pendingTitle')}
                 </h3>
                 <p className="text-[11px] text-slate-500 font-normal">
-                  देणे बाकी असलेली बिले व मजुरी
+                  {t('dashboard.pendingSub')}
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <span className="text-[10px] text-amber-700 font-bold block">एकूण बाकी रक्कम</span>
+              <span className="text-[10px] text-amber-700 font-bold block">{t('dashboard.pendingTotal')}</span>
               <span className="text-sm font-extrabold text-amber-950">{formatINR(totalPending)}</span>
             </div>
           </div>
@@ -800,15 +781,15 @@ export default function Dashboard() {
                       </div>
                       <div className="min-w-0 space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-slate-900">{exp.category_name || 'इतर'}</span>
+                          <span className="text-xs font-bold text-slate-900">{catLabel(exp.category_name, exp.category_name_en)}</span>
                           <span className="px-1.5 py-0.2 rounded bg-amber-200/80 text-amber-900 text-[10px] font-extrabold">
-                            बाकी
+                            {t('status.pending')}
                           </span>
                         </div>
                         {exp.description && (
                           <p className="text-[11px] text-slate-600 truncate">{exp.description}</p>
                         )}
-                        <span className="text-[10px] text-slate-400 block">{exp.expense_date}</span>
+                        <span className="text-[10px] text-slate-400 block">{fmtDate(exp.expense_date)}</span>
                       </div>
                     </div>
 
@@ -820,10 +801,10 @@ export default function Dashboard() {
                         type="button"
                         onClick={() => handleMarkAsPaid(exp)}
                         className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-semibold transition-all shadow-2xs cursor-pointer hover:scale-105 active:scale-95"
-                        title="पेमेंट पूर्ण झाले म्हणून नोंदवा"
+                        title={t('dashboard.markPaidTitle')}
                       >
                         <CheckCircle className="w-3 h-3" />
-                        <span>पूर्ण झाले</span>
+                        <span>{t('dashboard.markPaidButton')}</span>
                       </button>
                     </div>
                   </div>
@@ -836,10 +817,10 @@ export default function Dashboard() {
                 ✓
               </div>
               <p className="text-xs font-bold text-emerald-800">
-                सर्व देयके व खर्च पूर्ण भरले आहेत!
+                {t('dashboard.allPaid')}
               </p>
               <p className="text-[11px] text-slate-400">
-                कोणतेही पेमेंट बाकी (Pending) नाही.
+                {t('dashboard.nonePending')}
               </p>
             </div>
           )}
@@ -854,7 +835,7 @@ export default function Dashboard() {
           setExpenseModalOpen(true);
         }}
         className="sm:hidden fixed bottom-5 right-5 z-40 w-12 h-12 rounded-full bg-slate-900 text-white shadow-modal flex items-center justify-center hover:bg-slate-800 active:scale-95 transition-transform"
-        title="नवीन खर्च जोडा"
+        title={t('dashboard.fabTitle')}
       >
         <Plus className="w-6 h-6" />
       </button>
@@ -896,7 +877,7 @@ export default function Dashboard() {
       <SingleExpenseReceiptModal
         isOpen={Boolean(singleReceiptExpense)}
         expense={singleReceiptExpense}
-        projectName={summary?.projectName || undefined}
+        projectName={projectLabel(summary?.projectName)}
         onClose={() => setSingleReceiptExpense(null)}
       />
 
@@ -904,7 +885,7 @@ export default function Dashboard() {
       <ReportReceiptModal
         isOpen={reportReceiptOpen}
         expenses={expenses}
-        projectName={summary?.projectName || undefined}
+        projectName={projectLabel(summary?.projectName)}
         totalExpenses={summary.totalSpent}
         totalEntries={expenses.length}
         dateRangeText=""

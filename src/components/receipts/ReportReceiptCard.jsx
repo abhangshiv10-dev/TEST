@@ -15,44 +15,38 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { formatINR } from '../../utils/marathiCurrency';
-import { getCategoryEnglishLabel } from '../../utils/bilingualSearch';
 import AppLogo from '../common/AppLogo';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { isPaidStatus } from '../../utils/paymentStatus';
 
-// Helper to format receipt dates
-function formatReceiptDate(dateStr) {
-  if (!dateStr) return '-';
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = months[d.getMonth()];
-  const year = d.getFullYear();
-  return `${day} ${month} ${year}`;
-}
+// Badge width follows the text length, so longer words (Marathi or English) never get clipped
+const badgeWidth = (text, min) => Math.max(min, Math.ceil(String(text).length * 5.4 + 16));
 
 export const ReportReceiptCard = forwardRef(({
   expenses = [],
   totalExpenses = 0,
   totalEntries = 0,
-  projectName = 'माझ्या घराचे बांधकाम',
-  filterLabel = 'सर्व नोंदी',
+  projectName,
+  filterLabel,
   onExportClick,
   onWhatsAppClick,
   showActionButtons = false
 }, ref) => {
+  const { t, catLabel, fmtShortDate } = useLanguage();
+  const formatReceiptDate = (d) => (d ? fmtShortDate(d) : '-');
+  const shownProject = projectName || t('app.defaultProject');
+  const shownFilter = filterLabel ?? t('receipt.report.allEntries');
   // Show ALL entries in the slip (no row limit)
   const displayExpenses = expenses;
   const calculatedTotal = totalExpenses || displayExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
   const calculatedCount = totalEntries || expenses.length;
   
-  const paidCount = displayExpenses.filter(e => (e.payment_status || 'Paid').toLowerCase() === 'paid' || e.payment_status === 'पूर्ण').length;
+  const paidCount = displayExpenses.filter(e => isPaidStatus(e.payment_status)).length;
   const pendingCount = displayExpenses.length - paidCount;
 
-  const currentDate = new Date().toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  });
+  const currentDate = fmtShortDate(new Date());
+  const paidBadgeText = `✓ ${paidCount} ${t('status.paid')}`;
+  const pendingBadgeText = `⏳ ${pendingCount} ${t('status.pending')}`;
 
   return (
     <div
@@ -75,15 +69,15 @@ export const ReportReceiptCard = forwardRef(({
             <AppLogo className="w-9 h-9" rounded="rounded-lg" />
             <div>
               <h2 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight leading-tight">
-                Home | Expenses
+                {t('app.name')}
               </h2>
               <p className="text-[11px] text-slate-500 font-semibold">
-                बांधकाम खर्च पावती अहवाल (Construction Expense Slip)
+                {t('receipt.report.slipTitle')}
               </p>
             </div>
           </div>
           <div className="text-[11px] text-slate-600 font-medium pt-1">
-            <span className="font-bold text-slate-800">प्रकल्प (Project):</span> {projectName}
+            <span className="font-bold text-slate-800">{t('receipt.report.project')}</span> {shownProject}
           </div>
         </div>
 
@@ -94,10 +88,10 @@ export const ReportReceiptCard = forwardRef(({
               <path d="M6 1L1 3.2V7.5C1 11.2 6 14.5 6 14.5C6 14.5 11 11.2 11 7.5V3.2L6 1Z" fill="#10B981" stroke="#059669" strokeWidth="0.8"/>
               <path d="M4 7.5L5.5 9L8.5 5" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
             </g>
-            <text x="75" y="12.5" dominantBaseline="central" textAnchor="middle" fill="#065F46" fontSize="9.5" fontWeight="700" fontFamily="Inter, system-ui, -apple-system, sans-serif">Verified Statement</text>
+            <text x="75" y="12.5" dominantBaseline="central" textAnchor="middle" fill="#065F46" fontSize="9.5" fontWeight="700" fontFamily="Inter, system-ui, -apple-system, sans-serif">{t('receipt.report.verifiedStatement')}</text>
           </svg>
           <p className="text-[10px] text-slate-500 font-medium pt-0.5">
-            तारीख: <span className="font-semibold text-slate-700">{currentDate}</span>
+            {t('receipt.report.dateLabel')} <span className="font-semibold text-slate-700">{currentDate}</span>
           </p>
         </div>
       </div>
@@ -107,7 +101,7 @@ export const ReportReceiptCard = forwardRef(({
         {/* Total Spent */}
         <div className="space-y-0.5">
           <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider block">
-            एकूण खर्च (Total)
+            {t('receipt.report.total')}
           </span>
           <span className="text-sm sm:text-base font-extrabold text-slate-900 block truncate">
             {formatINR(calculatedTotal)}
@@ -117,27 +111,27 @@ export const ReportReceiptCard = forwardRef(({
         {/* Total Entries */}
         <div className="space-y-0.5 border-x border-slate-200 px-2.5">
           <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider block">
-            एकूण नोंदी (Entries)
+            {t('receipt.report.totalEntries')}
           </span>
           <span className="text-sm sm:text-base font-extrabold text-slate-900 block">
-            {calculatedCount} नोंदी
+            {t('common.entries', { count: calculatedCount })}
           </span>
         </div>
 
         {/* Status Breakdown */}
         <div className="space-y-0.5 text-right">
           <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider block">
-            पेमेंट स्थिती
+            {t('expenseModal.paymentStatus')}
           </span>
           <div className="flex items-center justify-end gap-1.5 pt-0.5">
-            <svg width="64" height="20" viewBox="0 0 64 20" className="status-badge" style={{ display: 'block', margin: 0 }}>
-              <rect x="0.5" y="0.5" width="63" height="19" rx="5" fill="#D1FAE5" stroke="#A7F3D0" strokeWidth="1" />
-              <text x="32" y="10" dominantBaseline="central" textAnchor="middle" fill="#065F46" fontSize="8.5" fontWeight="700" fontFamily="Inter, system-ui, -apple-system, sans-serif">✓ {paidCount} पूर्ण</text>
+            <svg width={badgeWidth(paidBadgeText, 64)} height="20" viewBox={`0 0 ${badgeWidth(paidBadgeText, 64)} 20`} className="status-badge" style={{ display: 'block', margin: 0 }}>
+              <rect x="0.5" y="0.5" width={badgeWidth(paidBadgeText, 64) - 1} height="19" rx="5" fill="#D1FAE5" stroke="#A7F3D0" strokeWidth="1" />
+              <text x={badgeWidth(paidBadgeText, 64) / 2} y="10" dominantBaseline="central" textAnchor="middle" fill="#065F46" fontSize="8.5" fontWeight="700" fontFamily="Inter, system-ui, -apple-system, sans-serif">{paidBadgeText}</text>
             </svg>
             {pendingCount > 0 && (
-              <svg width="64" height="20" viewBox="0 0 64 20" className="status-badge" style={{ display: 'block', margin: 0 }}>
-                <rect x="0.5" y="0.5" width="63" height="19" rx="5" fill="#FEF3C7" stroke="#FDE68A" strokeWidth="1" />
-                <text x="32" y="10" dominantBaseline="central" textAnchor="middle" fill="#92400E" fontSize="8.5" fontWeight="700" fontFamily="Inter, system-ui, -apple-system, sans-serif">⏳ {pendingCount} बाकी</text>
+              <svg width={badgeWidth(pendingBadgeText, 64)} height="20" viewBox={`0 0 ${badgeWidth(pendingBadgeText, 64)} 20`} className="status-badge" style={{ display: 'block', margin: 0 }}>
+                <rect x="0.5" y="0.5" width={badgeWidth(pendingBadgeText, 64) - 1} height="19" rx="5" fill="#FEF3C7" stroke="#FDE68A" strokeWidth="1" />
+                <text x={badgeWidth(pendingBadgeText, 64) / 2} y="10" dominantBaseline="central" textAnchor="middle" fill="#92400E" fontSize="8.5" fontWeight="700" fontFamily="Inter, system-ui, -apple-system, sans-serif">{pendingBadgeText}</text>
               </svg>
             )}
           </div>
@@ -150,19 +144,19 @@ export const ReportReceiptCard = forwardRef(({
           <thead>
             <tr className="bg-slate-900 text-white text-[10px] font-bold uppercase tracking-wider">
               <th className="rr-desktop py-2 px-3 w-8 text-center align-middle" style={{ verticalAlign: 'middle', textAlign: 'center' }}>#</th>
-              <th className="py-2 px-3 align-middle" style={{ verticalAlign: 'middle' }}>खर्चाचा तपशील (ITEM DETAILS)</th>
+              <th className="py-2 px-3 align-middle" style={{ verticalAlign: 'middle' }}>{t('receipt.report.colItem')}</th>
               {/* Phone only: price + date share one column */}
-              <th className="rr-mobile py-2 px-3 text-right align-middle" style={{ verticalAlign: 'middle', textAlign: 'right' }}>रक्कम / दिनांक</th>
-              <th className="rr-desktop py-2 px-3 w-24 text-center align-middle" style={{ verticalAlign: 'middle', textAlign: 'center' }}>दिनांक</th>
-              <th className="rr-desktop py-2 px-3 w-28 text-right align-middle" style={{ verticalAlign: 'middle', textAlign: 'right' }}>रक्कम (AMOUNT)</th>
-              <th className="rr-desktop py-2 px-3 w-20 text-center align-middle" style={{ verticalAlign: 'middle', textAlign: 'center' }}>स्थिती</th>
+              <th className="rr-mobile py-2 px-3 text-right align-middle" style={{ verticalAlign: 'middle', textAlign: 'right' }}>{t('receipt.report.colAmountDate')}</th>
+              <th className="rr-desktop py-2 px-3 w-24 text-center align-middle" style={{ verticalAlign: 'middle', textAlign: 'center' }}>{t('receipt.report.colDate')}</th>
+              <th className="rr-desktop py-2 px-3 w-28 text-right align-middle" style={{ verticalAlign: 'middle', textAlign: 'right' }}>{t('receipt.report.colAmount')}</th>
+              <th className="rr-desktop py-2 px-3 w-20 text-center align-middle" style={{ verticalAlign: 'middle', textAlign: 'center' }}>{t('receipt.report.colStatus')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 text-xs text-slate-800">
             {displayExpenses.length > 0 ? (
               displayExpenses.map((item, idx) => {
-                const engLabel = getCategoryEnglishLabel(item.category_name);
-                const isCompleted = (item.payment_status || 'Paid').toLowerCase() === 'paid' || item.payment_status === 'पूर्ण';
+                const isCompleted = isPaidStatus(item.payment_status);
+                const doneText = `✓ ${t('status.paid')}`;
                 const itemDesc = item.description && item.description.trim() !== '-' ? item.description.trim() : null;
                 const isEven = idx % 2 === 0;
 
@@ -179,7 +173,7 @@ export const ReportReceiptCard = forwardRef(({
                     {/* Category & Description */}
                     <td className="py-2.5 px-3 min-w-0 align-middle" style={{ verticalAlign: 'middle', wordBreak: 'break-word' }}>
                       <div className="font-bold text-slate-900 text-xs" style={{ lineHeight: '1.4' }}>
-                        {item.category_name} {engLabel && !item.category_name.includes(engLabel) ? `(${engLabel})` : ''}
+                        {catLabel(item.category_name, item.category_name_en)}
                       </div>
                       {itemDesc && (
                         <div 
@@ -234,14 +228,14 @@ export const ReportReceiptCard = forwardRef(({
                         }}
                       >
                         {isCompleted ? (
-                          <svg width="54" height="20" viewBox="0 0 54 20" className="status-badge shrink-0" style={{ display: 'block', margin: 0 }}>
-                            <rect x="0.5" y="0.5" width="53" height="19" rx="5" fill="#D1FAE5" stroke="#A7F3D0" strokeWidth="1" />
-                            <text x="27" y="10" dominantBaseline="central" textAnchor="middle" fill="#065F46" fontSize="8.5" fontWeight="700" fontFamily="Inter, system-ui, -apple-system, sans-serif">✓ पूर्ण</text>
+                          <svg width={badgeWidth(doneText, 54)} height="20" viewBox={`0 0 ${badgeWidth(doneText, 54)} 20`} className="status-badge shrink-0" style={{ display: 'block', margin: 0 }}>
+                            <rect x="0.5" y="0.5" width={badgeWidth(doneText, 54) - 1} height="19" rx="5" fill="#D1FAE5" stroke="#A7F3D0" strokeWidth="1" />
+                            <text x={badgeWidth(doneText, 54) / 2} y="10" dominantBaseline="central" textAnchor="middle" fill="#065F46" fontSize="8.5" fontWeight="700" fontFamily="Inter, system-ui, -apple-system, sans-serif">{doneText}</text>
                           </svg>
                         ) : (
-                          <svg width="54" height="20" viewBox="0 0 54 20" className="status-badge shrink-0" style={{ display: 'block', margin: 0 }}>
-                            <rect x="0.5" y="0.5" width="53" height="19" rx="5" fill="#FEF3C7" stroke="#FDE68A" strokeWidth="1" />
-                            <text x="27" y="10" dominantBaseline="central" textAnchor="middle" fill="#92400E" fontSize="8.5" fontWeight="700" fontFamily="Inter, system-ui, -apple-system, sans-serif">बाकी</text>
+                          <svg width={badgeWidth(t('status.pending'), 54)} height="20" viewBox={`0 0 ${badgeWidth(t('status.pending'), 54)} 20`} className="status-badge shrink-0" style={{ display: 'block', margin: 0 }}>
+                            <rect x="0.5" y="0.5" width={badgeWidth(t('status.pending'), 54) - 1} height="19" rx="5" fill="#FEF3C7" stroke="#FDE68A" strokeWidth="1" />
+                            <text x={badgeWidth(t('status.pending'), 54) / 2} y="10" dominantBaseline="central" textAnchor="middle" fill="#92400E" fontSize="8.5" fontWeight="700" fontFamily="Inter, system-ui, -apple-system, sans-serif">{t('status.pending')}</text>
                           </svg>
                         )}
                       </div>
@@ -252,7 +246,7 @@ export const ReportReceiptCard = forwardRef(({
             ) : (
               <tr>
                 <td colSpan="5" className="py-8 text-center text-xs text-slate-400 align-middle" style={{ verticalAlign: 'middle', textAlign: 'center' }}>
-                  कोणताही खर्च उपलब्ध नाही
+                  {t('common.noExpenseAvailable')}
                 </td>
               </tr>
             )}
@@ -293,7 +287,7 @@ export const ReportReceiptCard = forwardRef(({
               padding: 0
             }}
           >
-            एकूण रक्कम (GRAND TOTAL)
+            {t('receipt.report.grandTotal')}
           </span>
         </div>
 
@@ -327,19 +321,19 @@ export const ReportReceiptCard = forwardRef(({
         style={{ padding: '12px 16px', boxSizing: 'border-box' }}
       >
         <div className="text-xs sm:text-sm font-extrabold text-slate-900" style={{ lineHeight: '1.5', marginBottom: '6px' }}>
-          📊 {projectName} - बांधकाम खर्च अहवाल पावती
+          📊 {t('receipt.report.summaryTitle', { project: shownProject })}
         </div>
         <div className="text-[11px] sm:text-xs text-slate-700 font-medium" style={{ lineHeight: '1.8' }}>
-          <div>📅 <span className="font-bold">फिल्टर:</span> {filterLabel}</div>
-          <div>💰 <span className="font-bold">एकूण खर्च:</span> ₹{Number(calculatedTotal).toLocaleString('en-IN')}</div>
-          <div>📝 <span className="font-bold">नोंदींची संख्या:</span> {calculatedCount}</div>
+          <div>📅 <span className="font-bold">{t('receipt.report.filter')}</span> {shownFilter}</div>
+          <div>💰 <span className="font-bold">{t('receipt.report.totalExpense')}</span> {formatINR(calculatedTotal)}</div>
+          <div>📝 <span className="font-bold">{t('receipt.report.entryCount')}</span> {calculatedCount}</div>
         </div>
       </div>
 
       {/* Official Footer Verification */}
       <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-[10px] text-slate-400 font-medium gap-1">
-        <span>✓ हे डिजिटल जनरेट केलेले अधिकृत पावती स्टेटमेंट आहे.</span>
-        <span>Home | Expenses • Track & Build</span>
+        <span>{t('receipt.report.officialNote')}</span>
+        <span>{t('receipt.report.footerBrand', { name: t('app.name') })}</span>
       </div>
 
       {/* Optional action buttons */}
@@ -351,7 +345,7 @@ export const ReportReceiptCard = forwardRef(({
             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#EBF5FE] hover:bg-[#D9EDFE] text-[#2F80ED] text-xs font-bold transition-all border border-[#D0E8FF]"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Export</span>
+            <span>{t('receipt.exportBtn')}</span>
           </button>
 
           <button
@@ -360,7 +354,7 @@ export const ReportReceiptCard = forwardRef(({
             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#00B074] hover:bg-[#009B66] text-white text-xs font-bold transition-all shadow-xs"
           >
             <Share2 className="w-3.5 h-3.5" />
-            <span>Share on WhatsApp</span>
+            <span>{t('receipt.shareWhatsApp')}</span>
           </button>
         </div>
       )}
