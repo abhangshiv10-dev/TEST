@@ -786,15 +786,8 @@ export default function Dashboard() {
                       </div>
                       <div className="min-w-0 space-y-1">
                         <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setDetailExpense(exp)}
-                            title={t('expenseCard.viewDetails')}
-                            className="text-xs font-bold text-slate-900 text-left hover:underline hover:text-blue-700 cursor-pointer"
-                          >
-                            {catLabel(exp.category_name, exp.category_name_en)}
-                          </button>
-                          <span className="px-1.5 py-0.2 rounded-[2px] bg-amber-200/80 text-amber-900 text-[10px] font-extrabold">
+                          <span className="text-xs font-bold text-slate-900">{catLabel(exp.category_name, exp.category_name_en)}</span>
+                          <span className="px-1.5 py-0.2 rounded bg-amber-200/80 text-amber-900 text-[10px] font-extrabold">
                             {t('status.pending')}
                           </span>
                         </div>
