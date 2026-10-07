@@ -7,6 +7,8 @@ import { toInputDate } from '../../utils/marathiDate';
 import { useBudget } from '../../contexts/BudgetContext';
 import { getExpensePhotos, buildPhotoColumns } from '../../utils/expensePhotos';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { confirmAction } from '../../utils/alerts';
+import { formatINR } from '../../utils/marathiCurrency';
 
 export default function ExpenseModal({
   isOpen,
@@ -15,7 +17,7 @@ export default function ExpenseModal({
   onViewPhoto
 }) {
   const { categories, addCategory, addExpense, updateExpense } = useBudget();
-  const { t } = useLanguage();
+  const { t, catLabel } = useLanguage();
 
   const [categoryId, setCategoryId] = useState('');
   const [amount, setAmount] = useState('');
@@ -78,6 +80,19 @@ export default function ExpenseModal({
   const handleSave = async (e) => {
     e.preventDefault();
     if (!validate()) return;
+
+    // Ask before saving changes to an existing transaction
+    if (expenseToEdit) {
+      const ok = await confirmAction({
+        title: t('expenses.editConfirmTitle'),
+        html: t('expenses.editConfirmHtml', {
+          amount: formatINR(Number(amount)),
+          category: catLabel(expenseToEdit.category_name, expenseToEdit.category_name_en)
+        }),
+        confirmText: t('common.update')
+      });
+      if (!ok) return;
+    }
 
     try {
       setSaving(true);

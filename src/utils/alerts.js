@@ -40,3 +40,18 @@ export async function confirmDelete({ title, html }) {
   });
   return result.isConfirmed;
 }
+
+/** Generic confirmation popup (edit / status change). Resolves to true when the user confirms. */
+export async function confirmAction({ title, html, confirmText }) {
+  const result = await Swal.fire({
+    ...base(),
+    title,
+    html,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#0f172a',
+    cancelButtonColor: '#94a3b8',
+    confirmButtonText: confirmText || translate('common.yes')
+  });
+  return result.isConfirmed;
+}

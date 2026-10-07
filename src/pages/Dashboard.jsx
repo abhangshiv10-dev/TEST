@@ -22,7 +22,7 @@ import {
   Percent,
   X
 } from 'lucide-react';
-import { toast, alertBox, confirmDelete } from '../utils/alerts';
+import { toast, alertBox, confirmDelete, confirmAction } from '../utils/alerts';
 import { useLanguage } from '../i18n/LanguageContext';
 import { OTHER_CATEGORY } from '../constants/appDefaults';
 import { isPendingStatus } from '../utils/paymentStatus';
@@ -123,6 +123,20 @@ export default function Dashboard() {
     } catch (err) {
       alertBox('error', t('common.error'), t('dashboard.markPaidFailed'));
     }
+  };
+
+  const handleToggleStatus = async (expense) => {
+    const toPending = !isPendingStatus(expense.payment_status);
+    const ok = await confirmAction({
+      title: t('expenses.statusConfirmTitle'),
+      html: t('expenses.statusConfirmHtml', {
+        amount: formatINR(expense.amount),
+        category: catLabel(expense.category_name, expense.category_name_en),
+        status: toPending ? t('status.pending') : t('status.paid')
+      })
+    });
+    if (!ok) return;
+    return toggleExpenseStatus(expense);
   };
 
   const handleDeleteExpense = async (expense) => {
@@ -723,7 +737,7 @@ export default function Dashboard() {
                   expense={exp}
                   onEdit={handleEditExpense}
                   onDelete={handleDeleteExpense}
-                  onToggleStatus={toggleExpenseStatus}
+                  onToggleStatus={handleToggleStatus}
                   onViewPhoto={handleOpenPhoto}
                   onViewDetails={(expense) => setDetailExpense(expense)}
                   onViewReceipt={(expense) => setSingleReceiptExpense(expense)}
