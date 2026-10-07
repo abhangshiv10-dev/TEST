@@ -43,7 +43,7 @@ export const QuickAddButton = ({
                 setIsOpen(false);
                 if (act.onClick) act.onClick();
               }}
-              className="flex items-center gap-3 pl-4 pr-3 py-2 rounded-2xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-soft-lg border border-slate-200 dark:border-slate-700 hover:scale-105 active:scale-95 transition-all text-xs sm:text-sm font-semibold group"
+              className="flex items-center gap-3 pl-4 pr-3 py-2 rounded-[2px] bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-soft-lg border border-slate-200 dark:border-slate-700 hover:scale-105 active:scale-95 transition-all text-xs sm:text-sm font-semibold group"
             >
               <span>{act.label}</span>
               <div className={`w-8 h-8 rounded-xl ${act.color} text-white flex items-center justify-center shadow-sm group-hover:rotate-12 transition-transform`}>
@@ -57,7 +57,7 @@ export const QuickAddButton = ({
       {/* Main Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-soft-lg transition-all duration-300 active:scale-90 ${
+        className={`w-14 h-14 rounded-[2px] flex items-center justify-center text-white shadow-soft-lg transition-all duration-300 active:scale-90 ${
           isOpen ? 'bg-slate-800 rotate-45' : 'bg-primary-600 hover:bg-primary-500 shadow-glow hover:scale-105'
         }`}
         aria-label="Quick Add"

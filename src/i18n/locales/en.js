@@ -186,6 +186,13 @@ export default {
     "expenseCard.photoCount": "Photos ({count})",
     "expenseCard.viewReceipt": "View receipt",
     "expenseCard.photoTitle": "{name} - Receipt",
+    "expenseCard.viewDetails": "View transaction details",
+
+    // ---- expenseDetail ----
+    "expenseDetail.tabDetails": "Details",
+    "expenseDetail.tabPhoto": "Photo",
+    "expenseDetail.details": "Details",
+    "expenseDetail.noPhoto": "No photo attached to this expense",
 
     // ---- charts ----
     "charts.transactions": "{count} transactions",

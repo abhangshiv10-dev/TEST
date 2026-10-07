@@ -25,7 +25,7 @@ export default function LanguageSwitcher({ className = '' }) {
             onClick={() => setLang(code)}
             aria-pressed={active}
             lang={code}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-2.5 py-1 rounded-[2px] text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
               active ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
             }`}
           >

@@ -182,6 +182,13 @@ export default {
     "expenseCard.photoCount": "फोटो ({count})",
     "expenseCard.viewReceipt": "पावती पाहा",
     "expenseCard.photoTitle": "{name} - पावती",
+    "expenseCard.viewDetails": "व्यवहाराचा तपशील पाहा",
+
+    // ---- expenseDetail ----
+    "expenseDetail.tabDetails": "तपशील",
+    "expenseDetail.tabPhoto": "फोटो",
+    "expenseDetail.details": "तपशील",
+    "expenseDetail.noPhoto": "या खर्चाला फोटो जोडलेला नाही",
 
     // ---- charts ----
     "charts.transactions": "{count} व्यवहार",

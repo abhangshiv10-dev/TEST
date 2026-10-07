@@ -112,7 +112,7 @@ export const PaymentList = () => {
               setSelectedExpense(row);
               setIsPaymentModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-all active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[2px] bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-all active:scale-95"
           >
             <CreditCard className="w-3.5 h-3.5" />
             <span>Pay Due</span>
@@ -169,7 +169,7 @@ export const PaymentList = () => {
       <div className="flex items-center gap-2">
         <button
           onClick={() => setStatusFilter('all')}
-          className={`px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all ${
+          className={`px-3.5 py-1.5 text-xs font-semibold rounded-[2px] transition-all ${
             statusFilter === 'all'
               ? 'bg-primary-600 text-white shadow-sm'
               : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
@@ -179,7 +179,7 @@ export const PaymentList = () => {
         </button>
         <button
           onClick={() => setStatusFilter('Pending')}
-          className={`px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all ${
+          className={`px-3.5 py-1.5 text-xs font-semibold rounded-[2px] transition-all ${
             statusFilter === 'Pending'
               ? 'bg-rose-600 text-white shadow-sm'
               : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
@@ -189,7 +189,7 @@ export const PaymentList = () => {
         </button>
         <button
           onClick={() => setStatusFilter('Partially Paid')}
-          className={`px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all ${
+          className={`px-3.5 py-1.5 text-xs font-semibold rounded-[2px] transition-all ${
             statusFilter === 'Partially Paid'
               ? 'bg-amber-600 text-white shadow-sm'
               : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
@@ -199,7 +199,7 @@ export const PaymentList = () => {
         </button>
         <button
           onClick={() => setStatusFilter('Paid')}
-          className={`px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all ${
+          className={`px-3.5 py-1.5 text-xs font-semibold rounded-[2px] transition-all ${
             statusFilter === 'Paid'
               ? 'bg-emerald-600 text-white shadow-sm'
               : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100'

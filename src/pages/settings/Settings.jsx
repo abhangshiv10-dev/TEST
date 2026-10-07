@@ -102,7 +102,7 @@ export const Settings = () => {
           </div>
         </div>
 
-        <span className="hidden sm:inline-block px-3 py-1 rounded-full text-xs font-bold bg-white dark:bg-slate-800 border shadow-sm">
+        <span className="hidden sm:inline-block px-3 py-1 rounded-[2px] text-xs font-bold bg-white dark:bg-slate-800 border shadow-sm">
           {supabaseConnected ? 'Cloud Mode' : 'Local Storage'}
         </span>
       </div>
@@ -143,7 +143,7 @@ export const Settings = () => {
 
           <button
             type="submit"
-            className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-bold text-xs shadow-sm transition-all"
+            className="px-4 py-2 rounded-[2px] bg-primary-600 hover:bg-primary-500 text-white font-bold text-xs shadow-sm transition-all"
           >
             Save Profile
           </button>
@@ -206,7 +206,7 @@ export const Settings = () => {
               <button
                 type="button"
                 onClick={() => setTheme('light')}
-                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-[2px] text-xs font-bold border transition-all ${
                   theme === 'light'
                     ? 'bg-primary-50 border-primary-500 text-primary-700 dark:bg-primary-950 dark:text-primary-300'
                     : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
@@ -219,7 +219,7 @@ export const Settings = () => {
               <button
                 type="button"
                 onClick={() => setTheme('dark')}
-                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-[2px] text-xs font-bold border transition-all ${
                   theme === 'dark'
                     ? 'bg-primary-950 border-primary-500 text-primary-300'
                     : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
@@ -246,7 +246,7 @@ export const Settings = () => {
         <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={handleResetDemo}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-sm transition-all active:scale-95"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[2px] bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-sm transition-all active:scale-95"
           >
             <Sparkles className="w-4 h-4" />
             <span>Reload ₹25 Lakhs Sample Dataset</span>
@@ -254,7 +254,7 @@ export const Settings = () => {
 
           <button
             onClick={handleClearAll}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-rose-200 dark:border-rose-900 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold text-xs transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[2px] border border-rose-200 dark:border-rose-900 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold text-xs transition-colors"
           >
             <Trash2 className="w-4 h-4" />
             <span>Clear All Local Records</span>

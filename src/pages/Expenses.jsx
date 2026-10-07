@@ -22,6 +22,7 @@ import { formatMarathiDate } from '../utils/marathiDate';
 import ExpenseCard from '../components/common/ExpenseCard';
 import ExpenseModal from '../components/modals/ExpenseModal';
 import PhotoViewerModal from '../components/modals/PhotoViewerModal';
+import ExpenseDetailModal from '../components/modals/ExpenseDetailModal';
 import { getExpensePhotos } from '../utils/expensePhotos';
 import { SingleExpenseReceiptModal, ReportReceiptModal } from '../components/receipts/lazyReceipts';
 import { matchesCategory } from '../utils/bilingualSearch';
@@ -43,6 +44,9 @@ export default function Expenses() {
   // Modals state
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState(null);
+
+  // Transaction detail popup (opens on title click)
+  const [detailExpense, setDetailExpense] = useState(null);
 
   // Receipt modals state
   const [singleReceiptExpense, setSingleReceiptExpense] = useState(null);
@@ -158,7 +162,7 @@ export default function Expenses() {
           <button
             type="button"
             onClick={() => setReportReceiptOpen(true)}
-            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-[2px] shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
             title={t('receiptReport.exportTitle')}
           >
             <FileSpreadsheet className="w-4 h-4 shrink-0" />
@@ -171,7 +175,7 @@ export default function Expenses() {
               setSelectedExpense(null);
               setExpenseModalOpen(true);
             }}
-            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold rounded-[2px] shadow-xs transition-all duration-150 hover:-translate-y-0.5 active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
           >
             <Plus className="w-4 h-4 shrink-0" />
             <span>{t('common.addExpense')}</span>
@@ -289,7 +293,7 @@ export default function Expenses() {
             <button
               key={pill.id}
               onClick={() => setDateFilter(pill.id)}
-              className={`px-3 py-1.5 rounded-lg whitespace-nowrap font-bold transition-all shadow-2xs ${
+              className={`px-3 py-1.5 rounded-[2px] whitespace-nowrap font-bold transition-all shadow-2xs ${
                 dateFilter === pill.id
                   ? 'bg-slate-900 text-white shadow-xs'
                   : 'bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50'
@@ -336,6 +340,7 @@ export default function Expenses() {
               onDelete={handleDelete}
               onToggleStatus={toggleExpenseStatus}
               onViewPhoto={handleOpenPhoto}
+              onViewDetails={(expense) => setDetailExpense(expense)}
               onViewReceipt={(expense) => setSingleReceiptExpense(expense)}
             />
           ))}
@@ -343,7 +348,7 @@ export default function Expenses() {
             <button
               type="button"
               onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-              className="w-full py-2.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+              className="w-full py-2.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-[2px] hover:bg-slate-50 transition-colors"
             >
               {t('expenses.showMore', { count: filteredExpenses.length - visibleCount })}
             </button>
@@ -370,6 +375,16 @@ export default function Expenses() {
           setSelectedExpense(null);
         }}
         onViewPhoto={handleOpenPhoto}
+      />
+
+      <ExpenseDetailModal
+        isOpen={Boolean(detailExpense)}
+        expense={detailExpense}
+        onClose={() => setDetailExpense(null)}
+        onEdit={(expense) => {
+          setDetailExpense(null);
+          handleEdit(expense);
+        }}
       />
 
       <PhotoViewerModal

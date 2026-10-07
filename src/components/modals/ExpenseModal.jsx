@@ -121,7 +121,7 @@ export default function ExpenseModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-[2px] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -187,7 +187,7 @@ export default function ExpenseModal({
               <button
                 type="button"
                 onClick={() => setPaymentStatus('Paid')}
-                className={`py-2 px-2 sm:px-3 rounded-xl border text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer min-h-[38px] ${
+                className={`py-2 px-2 sm:px-3 rounded-[2px] border text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer min-h-[38px] ${
                   paymentStatus === 'Paid'
                     ? 'bg-emerald-50 border-emerald-500 text-emerald-800 ring-2 ring-emerald-500/20 shadow-2xs'
                     : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -199,7 +199,7 @@ export default function ExpenseModal({
               <button
                 type="button"
                 onClick={() => setPaymentStatus('Pending')}
-                className={`py-2 px-2 sm:px-3 rounded-xl border text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer min-h-[38px] ${
+                className={`py-2 px-2 sm:px-3 rounded-[2px] border text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer min-h-[38px] ${
                   paymentStatus === 'Pending'
                     ? 'bg-amber-50 border-amber-500 text-amber-900 ring-2 ring-amber-500/20 shadow-2xs'
                     : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -275,7 +275,7 @@ export default function ExpenseModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 sm:flex-none px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/70 rounded-xl transition-colors text-center border border-slate-200 sm:border-transparent"
+            className="flex-1 sm:flex-none px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/70 rounded-[2px] transition-colors text-center border border-slate-200 sm:border-transparent"
           >
             {t('common.cancel')}
           </button>
@@ -283,7 +283,7 @@ export default function ExpenseModal({
             type="submit"
             form="expense-modal-form"
             disabled={saving}
-            className="flex-1 sm:flex-none px-5 py-2 text-xs sm:text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 whitespace-nowrap"
+            className="flex-1 sm:flex-none px-5 py-2 text-xs sm:text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-[2px] shadow-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 whitespace-nowrap"
           >
             {saving ? (
               <>

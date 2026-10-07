@@ -51,7 +51,7 @@ export const TopHeader = ({ onOpenSidebar, onOpenSearch, onOpenNewProject }) => 
       <div className="flex items-center gap-3">
         <button
           onClick={onOpenSidebar}
-          className="lg:hidden p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="lg:hidden p-2 rounded-[2px] text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
           <Menu className="w-5 h-5" />
         </button>
@@ -60,7 +60,7 @@ export const TopHeader = ({ onOpenSidebar, onOpenSearch, onOpenNewProject }) => 
         <div ref={projectRef} className="relative">
           <button
             onClick={() => setProjectMenuOpen(!projectMenuOpen)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 text-xs sm:text-sm font-semibold shadow-sm transition-all"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-[2px] border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 text-xs sm:text-sm font-semibold shadow-sm transition-all"
           >
             <Building className="w-4 h-4 text-primary-600 dark:text-primary-400" />
             <span className="max-w-[130px] sm:max-w-[220px] truncate">
@@ -84,7 +84,7 @@ export const TopHeader = ({ onOpenSidebar, onOpenSearch, onOpenNewProject }) => 
                         switchProject(proj.id);
                         setProjectMenuOpen(false);
                       }}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs sm:text-sm transition-colors ${
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-[2px] text-left text-xs sm:text-sm transition-colors ${
                         isCurrent
                           ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400 font-bold'
                           : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-200'
@@ -108,7 +108,7 @@ export const TopHeader = ({ onOpenSidebar, onOpenSearch, onOpenNewProject }) => 
                     if (onOpenNewProject) onOpenNewProject();
                     else navigate('/projects');
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-[2px] text-xs font-semibold text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Create New Project</span>
@@ -124,7 +124,7 @@ export const TopHeader = ({ onOpenSidebar, onOpenSearch, onOpenNewProject }) => 
         {/* Global Search Button */}
         <button
           onClick={onOpenSearch}
-          className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-xl hover:text-slate-700 dark:hover:text-slate-200 transition-colors border border-transparent hover:border-slate-300 dark:hover:border-slate-700"
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-[2px] hover:text-slate-700 dark:hover:text-slate-200 transition-colors border border-transparent hover:border-slate-300 dark:hover:border-slate-700"
         >
           <Search className="w-3.5 h-3.5" />
           <span>Quick Search...</span>
@@ -135,7 +135,7 @@ export const TopHeader = ({ onOpenSidebar, onOpenSearch, onOpenNewProject }) => 
 
         <button
           onClick={onOpenSearch}
-          className="sm:hidden p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+          className="sm:hidden p-2 rounded-[2px] text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
         >
           <Search className="w-5 h-5" />
         </button>
@@ -143,7 +143,7 @@ export const TopHeader = ({ onOpenSidebar, onOpenSearch, onOpenNewProject }) => 
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="p-2 rounded-[2px] text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
         >
           {theme === 'dark' ? (
@@ -157,7 +157,7 @@ export const TopHeader = ({ onOpenSidebar, onOpenSearch, onOpenNewProject }) => 
         <div ref={notifRef} className="relative">
           <button
             onClick={() => setNotifMenuOpen(!notifMenuOpen)}
-            className="p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative"
+            className="p-2 rounded-[2px] text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative"
           >
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
@@ -226,7 +226,7 @@ export const TopHeader = ({ onOpenSidebar, onOpenSearch, onOpenNewProject }) => 
         <div ref={userRef} className="relative">
           <button
             onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className="flex items-center gap-2 pl-2 pr-1.5 py-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="flex items-center gap-2 pl-2 pr-1.5 py-1 rounded-[2px] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <div className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-xs shadow-sm overflow-hidden">
               {user?.user_metadata?.avatar_url ? (
@@ -248,7 +248,7 @@ export const TopHeader = ({ onOpenSidebar, onOpenSearch, onOpenNewProject }) => 
                   {user?.email || 'suresh.sharma@homebuild.in'}
                 </p>
                 {isDemoMode && (
-                  <span className="inline-block mt-1 px-2 py-0.5 text-[9px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 rounded-md">
+                  <span className="inline-block mt-1 px-2 py-0.5 text-[9px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 rounded-[2px]">
                     Demo Mode Active
                   </span>
                 )}

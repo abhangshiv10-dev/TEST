@@ -61,7 +61,7 @@ export default function PhotoUploader({
                 loading="lazy"
               />
               {it.kind === 'new' && (
-                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-emerald-600 text-white text-[9px] font-bold leading-none">
+                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-[2px] bg-emerald-600 text-white text-[9px] font-bold leading-none">
                   {t('photoUploader.new')}
                 </span>
               )}
@@ -78,7 +78,7 @@ export default function PhotoUploader({
               <button
                 type="button"
                 onClick={() => handleRemove(it)}
-                className="absolute top-1 right-1 p-1 rounded-full bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
+                className="absolute top-1 right-1 p-1 rounded-[2px] bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
                 title={t('photoUploader.remove')}
               >
                 <X className="w-3 h-3" />
@@ -93,7 +93,7 @@ export default function PhotoUploader({
           <button
             type="button"
             onClick={() => cameraRef.current?.click()}
-            className="py-2.5 px-3 rounded-xl border-2 border-dashed border-slate-200 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-100/50 transition-colors flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700"
+            className="py-2.5 px-3 rounded-[2px] border-2 border-dashed border-slate-200 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-100/50 transition-colors flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700"
           >
             <Camera className="w-4 h-4" />
             <span>{t('photoUploader.camera')}</span>
@@ -101,7 +101,7 @@ export default function PhotoUploader({
           <button
             type="button"
             onClick={() => galleryRef.current?.click()}
-            className="py-2.5 px-3 rounded-xl border-2 border-dashed border-slate-200 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-100/50 transition-colors flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700"
+            className="py-2.5 px-3 rounded-[2px] border-2 border-dashed border-slate-200 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-100/50 transition-colors flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700"
           >
             {total > 0 ? <Plus className="w-4 h-4" /> : <ImageIcon className="w-4 h-4" />}
             <span>{total > 0 ? t('photoUploader.morePhotos') : t('photoUploader.gallery')}</span>

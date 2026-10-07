@@ -150,7 +150,7 @@ export const ConstructionStages = () => {
                 </span>
                 <button
                   onClick={() => handleEdit(stg)}
-                  className="p-1.5 text-slate-400 hover:text-primary-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold"
+                  className="p-1.5 text-slate-400 hover:text-primary-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-[2px] transition-colors flex items-center gap-1 text-xs font-semibold"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Update</span>
@@ -263,13 +263,13 @@ export const ConstructionStages = () => {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 rounded-xl"
+                className="px-4 py-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 rounded-[2px]"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 text-xs sm:text-sm font-bold bg-primary-600 hover:bg-primary-500 text-white rounded-xl shadow-sm"
+                className="px-5 py-2 text-xs sm:text-sm font-bold bg-primary-600 hover:bg-primary-500 text-white rounded-[2px] shadow-sm"
               >
                 Save Progress
               </button>

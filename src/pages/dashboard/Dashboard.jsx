@@ -118,7 +118,7 @@ export const Dashboard = () => {
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-500/20 text-primary-300 text-xs font-semibold mb-3 border border-primary-500/30">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[2px] bg-primary-500/20 text-primary-300 text-xs font-semibold mb-3 border border-primary-500/30">
               <HardHat className="w-3.5 h-3.5" />
               <span>{currentProject?.name || 'Home Construction'}</span>
             </div>
@@ -133,7 +133,7 @@ export const Dashboard = () => {
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => setExpenseModalOpen(true)}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary-500 hover:bg-primary-400 text-white font-bold text-xs sm:text-sm shadow-glow transition-all active:scale-95"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-[2px] bg-primary-500 hover:bg-primary-400 text-white font-bold text-xs sm:text-sm shadow-glow transition-all active:scale-95"
             >
               <Plus className="w-4 h-4" />
               <span>+ Add Expense</span>
@@ -141,7 +141,7 @@ export const Dashboard = () => {
 
             <button
               onClick={() => navigate('/reports')}
-              className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm border border-white/20 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-3 rounded-[2px] bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm border border-white/20 transition-colors"
             >
               <span>View Reports</span>
               <ArrowUpRight className="w-4 h-4" />
@@ -279,7 +279,7 @@ export const Dashboard = () => {
                 Monthly cash outflow across construction milestones
               </p>
             </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-[2px] bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
               INR (₹)
             </span>
           </div>
@@ -419,7 +419,7 @@ export const Dashboard = () => {
                         setSelectedMaterialForPurchase(item);
                         setMaterialModalOpen(true);
                       }}
-                      className="px-2.5 py-1 rounded-lg bg-primary-600 hover:bg-primary-500 text-white font-bold text-xs shadow-sm transition-all"
+                      className="px-2.5 py-1 rounded-[2px] bg-primary-600 hover:bg-primary-500 text-white font-bold text-xs shadow-sm transition-all"
                     >
                       + Order
                     </button>
@@ -518,7 +518,7 @@ export const Dashboard = () => {
                       {exp.receipt_url ? (
                         <button
                           onClick={() => setViewReceiptUrl(exp.receipt_url)}
-                          className="p-1.5 rounded-lg text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/50"
+                          className="p-1.5 rounded-[2px] text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/50"
                           title="View Receipt"
                         >
                           <Receipt className="w-4 h-4" />
@@ -562,7 +562,7 @@ export const Dashboard = () => {
               <h4 className="font-bold text-sm text-slate-800 dark:text-white">Receipt / Invoice Document</h4>
               <button
                 onClick={() => setViewReceiptUrl(null)}
-                className="text-xs px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200"
+                className="text-xs px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-[2px] hover:bg-slate-200"
               >
                 Close
               </button>

@@ -100,7 +100,7 @@ export default function BudgetModal({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-[2px] transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -116,7 +116,7 @@ export default function BudgetModal({
                 setMode('add');
                 setError('');
               }}
-              className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              className={`py-2 px-3 rounded-[2px] text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                 mode === 'add'
                   ? 'bg-white text-slate-900 shadow-xs border border-slate-200 ring-2 ring-slate-900/10'
                   : 'text-slate-600 hover:bg-slate-200/60'
@@ -131,7 +131,7 @@ export default function BudgetModal({
                 setMode('set');
                 setError('');
               }}
-              className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              className={`py-2 px-3 rounded-[2px] text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                 mode === 'set'
                   ? 'bg-white text-slate-900 shadow-xs border border-slate-200 ring-2 ring-slate-900/10'
                   : 'text-slate-600 hover:bg-slate-200/60'
@@ -191,7 +191,7 @@ export default function BudgetModal({
                         setAddAmount(String(amt));
                         setError('');
                       }}
-                      className={`py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                      className={`py-1.5 px-2 rounded-[2px] text-xs font-semibold border transition-all cursor-pointer ${
                         addNum === amt
                           ? 'bg-slate-900 text-white border-slate-900'
                           : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -265,7 +265,7 @@ export default function BudgetModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 sm:flex-none px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors text-center border border-slate-200 sm:border-transparent"
+                className="flex-1 sm:flex-none px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-[2px] transition-colors text-center border border-slate-200 sm:border-transparent"
               >
                 {t('common.cancel')}
               </button>
@@ -273,7 +273,7 @@ export default function BudgetModal({
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 sm:flex-none px-5 py-2.5 text-xs sm:text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 active:scale-95"
+              className="flex-1 sm:flex-none px-5 py-2.5 text-xs sm:text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-[2px] shadow-xs transition-all flex items-center justify-center gap-1.5 active:scale-95"
             >
               {saving ? (
                 <>

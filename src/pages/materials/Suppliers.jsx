@@ -118,7 +118,7 @@ export const Suppliers = () => {
         <div>
           <p className="font-bold text-slate-900 dark:text-white">{row.name}</p>
           <p className="text-xs text-primary-600 dark:text-primary-400 font-medium">{row.business_name || 'Individual Vendor'}</p>
-          <span className="inline-block mt-1 text-[11px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+          <span className="inline-block mt-1 text-[11px] px-2 py-0.5 rounded-[2px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
             {row.material_type}
           </span>
         </div>
@@ -176,13 +176,13 @@ export const Suppliers = () => {
         <div className="flex items-center justify-end gap-1.5">
           <button
             onClick={() => handleOpenEdit(row)}
-            className="p-1.5 text-slate-500 hover:text-primary-600 hover:bg-slate-100 rounded-lg"
+            className="p-1.5 text-slate-500 hover:text-primary-600 hover:bg-slate-100 rounded-[2px]"
           >
             <Edit3 className="w-4 h-4" />
           </button>
           <button
             onClick={() => handleDelete(row)}
-            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
+            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-[2px]"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -199,7 +199,7 @@ export const Suppliers = () => {
         actions={
           <button
             onClick={handleOpenAdd}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs sm:text-sm font-bold shadow-sm transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-[2px] bg-primary-600 hover:bg-primary-500 text-white text-xs sm:text-sm font-bold shadow-sm transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>Add Supplier</span>
@@ -326,13 +326,13 @@ export const Suppliers = () => {
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 rounded-xl"
+              className="px-4 py-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 rounded-[2px]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-xs sm:text-sm font-bold bg-primary-600 hover:bg-primary-500 text-white rounded-xl shadow-sm"
+              className="px-5 py-2 text-xs sm:text-sm font-bold bg-primary-600 hover:bg-primary-500 text-white rounded-[2px] shadow-sm"
             >
               Save Supplier
             </button>

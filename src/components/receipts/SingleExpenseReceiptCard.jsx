@@ -173,7 +173,7 @@ export const SingleExpenseReceiptCard = forwardRef(({
           </div>
           {/* Centered SVG Category Badge */}
           <svg width={badgeWidth(badgeText, 58)} height="18" viewBox={`0 0 ${badgeWidth(badgeText, 58)} 18`} className="status-badge shrink-0" style={{ display: 'block' }}>
-            <rect x="0.5" y="0.5" width={badgeWidth(badgeText, 58) - 1} height="17" rx="8.5" fill={catTheme.fill} stroke={catTheme.stroke} strokeWidth="1" />
+            <rect x="0.5" y="0.5" width={badgeWidth(badgeText, 58) - 1} height="17" rx="2" fill={catTheme.fill} stroke={catTheme.stroke} strokeWidth="1" />
             <text x={badgeWidth(badgeText, 58) / 2} y="9.5" dominantBaseline="central" textAnchor="middle" fill={catTheme.textColor} fontSize="8.5" fontWeight="700" fontFamily="sans-serif">{badgeText}</text>
           </svg>
         </div>
@@ -199,12 +199,12 @@ export const SingleExpenseReceiptCard = forwardRef(({
           {/* Centered SVG Payment Status Badge */}
           {isCompleted ? (
             <svg width={badgeWidth(statusText, 50)} height="18" viewBox={`0 0 ${badgeWidth(statusText, 50)} 18`} className="status-badge shrink-0" style={{ display: 'block' }}>
-              <rect x="0.5" y="0.5" width={badgeWidth(statusText, 50) - 1} height="17" rx="8.5" fill="#DEF7EC" stroke="#BCF0DA" strokeWidth="1" />
+              <rect x="0.5" y="0.5" width={badgeWidth(statusText, 50) - 1} height="17" rx="2" fill="#DEF7EC" stroke="#BCF0DA" strokeWidth="1" />
               <text x={badgeWidth(statusText, 50) / 2} y="9.5" dominantBaseline="central" textAnchor="middle" fill="#03543F" fontSize="8.5" fontWeight="700" fontFamily="sans-serif">{statusText}</text>
             </svg>
           ) : (
             <svg width={badgeWidth(statusText, 56)} height="18" viewBox={`0 0 ${badgeWidth(statusText, 56)} 18`} className="status-badge shrink-0" style={{ display: 'block' }}>
-              <rect x="0.5" y="0.5" width={badgeWidth(statusText, 56) - 1} height="17" rx="8.5" fill="#FEF08A" stroke="#FDE047" strokeWidth="1" />
+              <rect x="0.5" y="0.5" width={badgeWidth(statusText, 56) - 1} height="17" rx="2" fill="#FEF08A" stroke="#FDE047" strokeWidth="1" />
               <text x={badgeWidth(statusText, 56) / 2} y="9.5" dominantBaseline="central" textAnchor="middle" fill="#854D0E" fontSize="8.5" fontWeight="700" fontFamily="sans-serif">{statusText}</text>
             </svg>
           )}
@@ -261,7 +261,7 @@ export const SingleExpenseReceiptCard = forwardRef(({
                 <ImageIcon className="w-3 h-3 text-slate-400" />
                 <span>{t('receipt.single.photo')}</span>
               </h4>
-              <span className="text-[8px] text-emerald-700 font-semibold bg-emerald-100 px-1.5 py-0.5 rounded" style={{ lineHeight: '1.4' }}>{t('receipt.single.attached')}</span>
+              <span className="text-[8px] text-emerald-700 font-semibold bg-emerald-100 px-1.5 py-0.5 rounded-[2px]" style={{ lineHeight: '1.4' }}>{t('receipt.single.attached')}</span>
             </div>
             <div className="w-full max-h-36 rounded-xl overflow-hidden bg-slate-950 border border-emerald-200/60 shadow-sm flex items-center justify-center">
               <img 

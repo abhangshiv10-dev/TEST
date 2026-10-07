@@ -132,7 +132,7 @@ export default function Register() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs transition-colors flex items-center justify-center gap-1.5 mt-2"
+            className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-[2px] text-xs sm:text-sm font-semibold shadow-xs transition-colors flex items-center justify-center gap-1.5 mt-2"
           >
             {loading ? (
               <>

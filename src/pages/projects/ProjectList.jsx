@@ -148,7 +148,7 @@ export const ProjectList = () => {
         actions={
           <button
             onClick={handleOpenAdd}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs sm:text-sm font-bold shadow-sm transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-[2px] bg-primary-600 hover:bg-primary-500 text-white text-xs sm:text-sm font-bold shadow-sm transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>+ Create New Project</span>
@@ -225,7 +225,7 @@ export const ProjectList = () => {
               {/* Action Bar */}
               <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
                 {isActive ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-xl">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-[2px]">
                     <Check className="w-3.5 h-3.5" />
                     <span>Active Project</span>
                   </span>
@@ -235,7 +235,7 @@ export const ProjectList = () => {
                       switchProject(proj.id);
                       showSuccessToast(`Switched to "${proj.name}"`);
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-primary-50 dark:hover:bg-primary-950/50 text-slate-700 dark:text-slate-200 hover:text-primary-600 text-xs font-semibold transition-colors"
+                    className="px-3 py-1.5 rounded-[2px] bg-slate-100 dark:bg-slate-800 hover:bg-primary-50 dark:hover:bg-primary-950/50 text-slate-700 dark:text-slate-200 hover:text-primary-600 text-xs font-semibold transition-colors"
                   >
                     Select & Switch
                   </button>
@@ -244,7 +244,7 @@ export const ProjectList = () => {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => handleOpenEdit(proj)}
-                    className="p-1.5 text-slate-500 hover:text-primary-600 hover:bg-slate-100 rounded-lg"
+                    className="p-1.5 text-slate-500 hover:text-primary-600 hover:bg-slate-100 rounded-[2px]"
                     title="Edit Details"
                   >
                     <Edit3 className="w-4 h-4" />
@@ -252,7 +252,7 @@ export const ProjectList = () => {
                   {projects.length > 1 && (
                     <button
                       onClick={() => handleDelete(proj)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-[2px]"
                       title="Delete Project"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -458,13 +458,13 @@ export const ProjectList = () => {
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 rounded-xl"
+              className="px-4 py-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 rounded-[2px]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-xs sm:text-sm font-bold bg-primary-600 hover:bg-primary-500 text-white rounded-xl shadow-sm"
+              className="px-5 py-2 text-xs sm:text-sm font-bold bg-primary-600 hover:bg-primary-500 text-white rounded-[2px] shadow-sm"
             >
               Save Project
             </button>

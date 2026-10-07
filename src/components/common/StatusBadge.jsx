@@ -40,7 +40,7 @@ export const StatusBadge = ({ status, size = 'md' }) => {
     : 'px-2.5 py-1 text-xs font-medium';
 
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border ${getStyles()} ${sizeStyles}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-[2px] border ${getStyles()} ${sizeStyles}`}>
       <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70"></span>
       {status || 'Unknown'}
     </span>

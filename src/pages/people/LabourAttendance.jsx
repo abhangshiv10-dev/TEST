@@ -127,7 +127,7 @@ export const LabourAttendance = () => {
       render: (row) => (
         <button
           onClick={() => handleDelete(row)}
-          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
+          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-[2px]"
           title="Delete Entry"
         >
           <Trash2 className="w-4 h-4" />
@@ -144,7 +144,7 @@ export const LabourAttendance = () => {
         actions={
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs sm:text-sm font-bold shadow-sm transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-[2px] bg-primary-600 hover:bg-primary-500 text-white text-xs sm:text-sm font-bold shadow-sm transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>Record Daily Attendance</span>
