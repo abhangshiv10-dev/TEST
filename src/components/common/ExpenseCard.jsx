@@ -62,8 +62,9 @@ export default function ExpenseCard({
           {/* Text Information */}
           <div className="min-w-0 flex-1 space-y-1">
             {/* Category Name & Status Badge */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug truncate">
+            {/* One row: name + status + photo badge (name shortens with ... on narrow phones) */}
+            <div className="flex items-center gap-1.5 flex-nowrap min-w-0">
+              <h4 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug truncate min-w-0">
                 {categoryName}
               </h4>
 
@@ -75,7 +76,7 @@ export default function ExpenseCard({
                     e.stopPropagation();
                     onToggleStatus(expense);
                   }}
-                  className={`inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border leading-none transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-2xs ${
+                  className={`inline-flex shrink-0 items-center justify-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border leading-none transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-2xs ${
                     isPending
                       ? 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
                       : 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
@@ -86,12 +87,12 @@ export default function ExpenseCard({
                   <span>{isPending ? t('status.pending') : t('status.paid')}</span>
                 </button>
               ) : isPending ? (
-                <span className="inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200/80 leading-none">
+                <span className="inline-flex shrink-0 items-center justify-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200/80 leading-none">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                   <span>{t('status.pending')}</span>
                 </span>
               ) : (
-                <span className="inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200/70 leading-none">
+                <span className="inline-flex shrink-0 items-center justify-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200/70 leading-none">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   <span>{t('status.paid')}</span>
                 </span>
@@ -101,10 +102,12 @@ export default function ExpenseCard({
                 <button
                   type="button"
                   onClick={openPhotos}
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-medium border border-blue-200/60 transition-colors"
+                  title={t('expenseCard.viewPhoto')}
+                  aria-label={t('expenseCard.viewPhoto')}
+                  className="inline-flex shrink-0 items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-bold border border-blue-200/60 leading-none transition-colors cursor-pointer"
                 >
-                  <Camera className="w-2.5 h-2.5" />
-                  <span>{photos.length > 1 ? t('expenseCard.photoCount', { count: photos.length }) : t('common.photo')}</span>
+                  <Camera className="w-3 h-3" />
+                  {photos.length > 1 && <span>{photos.length}</span>}
                 </button>
               )}
             </div>
