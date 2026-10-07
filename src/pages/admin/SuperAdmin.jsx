@@ -13,47 +13,33 @@ import {
   ChevronDown,
   Save
 } from 'lucide-react';
-import Swal from 'sweetalert2';
 import { useAuth, getUserMobile } from '../../contexts/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { toast, alertBox } from '../../utils/alerts';
 import { auditService } from '../../services/auditService';
 import { formatINR } from '../../utils/marathiCurrency';
 import { formatMarathiDate, formatMarathiDateTime, toInputDate } from '../../utils/marathiDate';
 
 const ACTIONS = {
-  add: { label: 'जोडले', icon: Plus, badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
-  update: { label: 'बदलले', icon: Edit2, badge: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500' },
-  delete: { label: 'हटवले', icon: Trash2, badge: 'bg-rose-50 text-rose-700 border-rose-200', dot: 'bg-rose-500' }
+  add: { labelKey: 'admin.action.add', icon: Plus, badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
+  update: { labelKey: 'admin.action.update', icon: Edit2, badge: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500' },
+  delete: { labelKey: 'admin.action.delete', icon: Trash2, badge: 'bg-rose-50 text-rose-700 border-rose-200', dot: 'bg-rose-500' }
 };
 
-const ENTITIES = {
-  expense: 'खर्च',
-  category: 'प्रकार',
-  budget: 'बजेट',
-  profile: 'प्रोफाइल'
-};
+const ENTITY_KEYS = ['expense', 'category', 'budget', 'profile'];
 
-const FIELD_LABELS = {
-  category: 'प्रकार',
-  amount: 'रक्कम',
-  date: 'दिनांक',
-  status: 'स्थिती',
-  description: 'तपशील',
-  photos: 'फोटो',
-  budget: 'बजेट',
-  name: 'नाव',
-  name_en: 'English नाव'
-};
-
-const formatValue = (key, value) => {
+const formatValue = (key, value, t) => {
   if (value === null || value === undefined || value === '') return '-';
   if (key === 'amount' || key === 'budget') return formatINR(value);
   if (key === 'date') return formatMarathiDate(value);
-  if (key === 'photos') return `${value} फोटो`;
+  if (key === 'photos') return t('admin.photosCount', { count: value });
+  if (key === 'status') return t(String(value).toLowerCase() === 'pending' ? 'status.pending' : 'status.paid');
   return String(value);
 };
 
 // Shows what exactly changed (update), what was saved (add) or what was removed (delete)
 function LogDetails({ log }) {
+  const { t } = useLanguage();
   const before = log.details?.before || {};
   const after = log.details?.after || {};
   const keys = Array.from(new Set([...Object.keys(before), ...Object.keys(after)]));
@@ -64,23 +50,23 @@ function LogDetails({ log }) {
       : keys;
 
   if (rows.length === 0) {
-    return <p className="text-[11px] text-slate-400">{log.action === 'update' ? 'कोणताही बदल नाही.' : 'अधिक माहिती उपलब्ध नाही.'}</p>;
+    return <p className="text-[11px] text-slate-400">{log.action === 'update' ? t('admin.noChange') : t('admin.noMoreDetails')}</p>;
   }
 
   return (
     <div className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white overflow-hidden">
       {rows.map((k) => (
         <div key={k} className="px-2.5 py-1.5 flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-3 text-[11px]">
-          <span className="w-24 shrink-0 font-semibold text-slate-500">{FIELD_LABELS[k] || k}</span>
+          <span className="w-24 shrink-0 font-semibold text-slate-500">{t(`admin.field.${k}`) === `admin.field.${k}` ? k : t(`admin.field.${k}`)}</span>
           {log.action === 'update' ? (
             <span className="text-slate-800 break-words">
-              <span className="text-rose-600 line-through decoration-rose-300">{formatValue(k, before[k])}</span>
+              <span className="text-rose-600 line-through decoration-rose-300">{formatValue(k, before[k], t)}</span>
               <span className="mx-1.5 text-slate-400">→</span>
-              <span className="text-emerald-700 font-semibold">{formatValue(k, after[k])}</span>
+              <span className="text-emerald-700 font-semibold">{formatValue(k, after[k], t)}</span>
             </span>
           ) : (
             <span className="text-slate-800 font-medium break-words">
-              {formatValue(k, log.action === 'add' ? after[k] : before[k])}
+              {formatValue(k, log.action === 'add' ? after[k] : before[k], t)}
             </span>
           )}
         </div>
@@ -90,6 +76,7 @@ function LogDetails({ log }) {
 }
 
 function LogRow({ log }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const meta = ACTIONS[log.action] || ACTIONS.update;
   const Icon = meta.icon;
@@ -107,9 +94,9 @@ function LogRow({ log }) {
 
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className={`px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${meta.badge}`}>{meta.label}</span>
+            <span className={`px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${meta.badge}`}>{t(meta.labelKey)}</span>
             <span className="px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[10px] font-semibold text-slate-600">
-              {ENTITIES[log.entity] || log.entity}
+              {ENTITY_KEYS.includes(log.entity) ? t(`admin.entity.${log.entity}`) : log.entity}
             </span>
           </div>
           <p className="text-xs sm:text-sm font-semibold text-slate-900 leading-snug break-words">{log.summary || '-'}</p>
@@ -139,6 +126,7 @@ function LogRow({ log }) {
 }
 
 function ProfileTab() {
+  const { t } = useLanguage();
   const { user, updateProfile } = useAuth();
   const mobile = getUserMobile(user);
   const [fullName, setFullName] = useState(user?.user_metadata?.full_name || '');
@@ -149,16 +137,9 @@ function ProfileTab() {
     try {
       setSaving(true);
       await updateProfile({ fullName });
-      Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'success',
-        title: 'प्रोफाइल अपडेट झाले',
-        showConfirmButton: false,
-        timer: 1800
-      });
+      toast('success', t('admin.profileUpdated'), 1800);
     } catch (err) {
-      Swal.fire({ icon: 'error', title: 'त्रुटी', text: err.message || 'प्रोफाइल जतन करता आले नाही.' });
+      alertBox('error', t('common.error'), t('admin.profileSaveFailed'));
     } finally {
       setSaving(false);
     }
@@ -171,7 +152,7 @@ function ProfileTab() {
           {fullName ? fullName[0].toUpperCase() : <User className="w-6 h-6" />}
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-bold text-slate-900 truncate">{fullName || 'नाव नाही'}</p>
+          <p className="text-sm font-bold text-slate-900 truncate">{fullName || t('admin.noName')}</p>
           <span className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold">
             <ShieldCheck className="w-3 h-3" /> Super Admin
           </span>
@@ -180,25 +161,25 @@ function ProfileTab() {
 
       <form onSubmit={handleSave} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">पूर्ण नाव</label>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">{t('admin.fullName')}</label>
           <input
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            placeholder="उदा. रमेश पाटील"
+            placeholder={t('admin.fullNamePlaceholder')}
             className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">मोबाईल नंबर</label>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">{t('admin.mobile')}</label>
           <input
             type="text"
             value={mobile}
             disabled
             className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed"
           />
-          <p className="mt-1 text-[10px] text-slate-400">मोबाईल नंबर हा लॉगिन आयडी आहे, तो इथे बदलता येत नाही.</p>
+          <p className="mt-1 text-[10px] text-slate-400">{t('admin.mobileHint')}</p>
         </div>
 
         <button
@@ -207,7 +188,7 @@ function ProfileTab() {
           className="px-4 py-2 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-xs flex items-center gap-1.5 active:scale-95 transition-all disabled:opacity-60"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          <span>प्रोफाइल जतन करा</span>
+          <span>{t('admin.saveProfile')}</span>
         </button>
       </form>
     </div>
@@ -215,6 +196,7 @@ function ProfileTab() {
 }
 
 function TrackingLogTab() {
+  const { t } = useLanguage();
   const PAGE_SIZE = 30;
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -305,10 +287,10 @@ function TrackingLogTab() {
       {/* Counters */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         {[
-          { label: 'एकूण नोंदी', value: counts.total, cls: 'text-slate-900' },
-          { label: 'जोडले', value: counts.add, cls: 'text-emerald-700' },
-          { label: 'बदलले', value: counts.update, cls: 'text-blue-700' },
-          { label: 'हटवले', value: counts.delete, cls: 'text-rose-700' }
+          { label: t('admin.stat.total'), value: counts.total, cls: 'text-slate-900' },
+          { label: t('admin.action.add'), value: counts.add, cls: 'text-emerald-700' },
+          { label: t('admin.action.update'), value: counts.update, cls: 'text-blue-700' },
+          { label: t('admin.action.delete'), value: counts.delete, cls: 'text-rose-700' }
         ].map((c) => (
           <div key={c.label} className="glass-card rounded-xl p-3">
             <p className="text-[11px] text-slate-500 font-medium">{c.label}</p>
@@ -326,7 +308,7 @@ function TrackingLogTab() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="शोधा: नाव, मोबाईल, खर्च, प्रकार..."
+              placeholder={t('admin.search')}
               className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900"
             />
           </div>
@@ -335,7 +317,7 @@ function TrackingLogTab() {
             onChange={(e) => setUserFilter(e.target.value)}
             className="px-3 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900"
           >
-            <option value="all">सर्व वापरकर्ते</option>
+            <option value="all">{t('admin.allUsers')}</option>
             {users.map(([key, label]) => (
               <option key={key} value={key}>{label}</option>
             ))}
@@ -345,28 +327,28 @@ function TrackingLogTab() {
             onChange={(e) => setEntityFilter(e.target.value)}
             className="px-3 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900"
           >
-            <option value="all">सर्व प्रकारच्या नोंदी</option>
-            {Object.entries(ENTITIES).map(([k, label]) => (
-              <option key={k} value={k}>{label}</option>
+            <option value="all">{t('admin.allEntities')}</option>
+            {ENTITY_KEYS.map((k) => (
+              <option key={k} value={k}>{t(`admin.entity.${k}`)}</option>
             ))}
           </select>
           <button
             type="button"
             onClick={load}
             className="px-3 py-2 text-xs font-semibold bg-white border border-slate-200 hover:bg-slate-50 rounded-xl flex items-center justify-center gap-1.5 text-slate-700"
-            title="रिफ्रेश"
+            title={t('admin.refresh')}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>रिफ्रेश</span>
+            <span>{t('admin.refresh')}</span>
           </button>
         </div>
 
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
           {[
-            { id: 'all', label: 'सर्व' },
-            { id: 'add', label: 'जोडले' },
-            { id: 'update', label: 'बदलले' },
-            { id: 'delete', label: 'हटवले' }
+            { id: 'all', label: t('admin.filter.all') },
+            { id: 'add', label: t('admin.action.add') },
+            { id: 'update', label: t('admin.action.update') },
+            { id: 'delete', label: t('admin.action.delete') }
           ].map((p) => (
             <button key={p.id} onClick={() => setActionFilter(p.id)} className={pill(actionFilter === p.id)}>
               {p.label}
@@ -374,11 +356,11 @@ function TrackingLogTab() {
           ))}
           <span className="w-px h-5 bg-slate-200 mx-1 shrink-0" />
           {[
-            { id: 'all', label: 'कधीही' },
-            { id: 'today', label: 'आज' },
-            { id: 'this_week', label: 'या आठवड्यात' },
-            { id: 'this_month', label: 'या महिन्यात' },
-            { id: 'custom', label: 'दिनांक निवडा' }
+            { id: 'all', label: t('admin.range.any') },
+            { id: 'today', label: t('admin.range.today') },
+            { id: 'this_week', label: t('admin.range.thisWeek') },
+            { id: 'this_month', label: t('admin.range.thisMonth') },
+            { id: 'custom', label: t('admin.range.pick') }
           ].map((p) => (
             <button key={p.id} onClick={() => setRangeFilter(p.id)} className={pill(rangeFilter === p.id)}>
               {p.label}
@@ -388,14 +370,14 @@ function TrackingLogTab() {
 
         {rangeFilter === 'custom' && (
           <div className="flex items-center gap-2 flex-wrap text-xs bg-slate-50/70 p-2.5 rounded-xl border border-slate-100">
-            <span className="text-slate-500 font-medium">पासून:</span>
+            <span className="text-slate-500 font-medium">{t('admin.from')}</span>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
             />
-            <span className="text-slate-500 font-medium">पर्यंत:</span>
+            <span className="text-slate-500 font-medium">{t('admin.to')}</span>
             <input
               type="date"
               value={endDate}
@@ -409,13 +391,13 @@ function TrackingLogTab() {
       {/* Log list */}
       {loading && logs.length === 0 ? (
         <div className="py-12 flex items-center justify-center text-slate-400 text-xs gap-2">
-          <Loader2 className="w-4 h-4 animate-spin" /> लोड होत आहे...
+          <Loader2 className="w-4 h-4 animate-spin" /> {t('admin.loading')}
         </div>
       ) : filtered.length === 0 ? (
         <div className="p-8 rounded-2xl bg-white border border-dashed border-slate-200 text-center text-xs text-slate-500 space-y-1">
           <History className="w-6 h-6 text-slate-300 mx-auto" />
-          <p className="font-semibold text-slate-700">कोणतीही नोंद सापडली नाही.</p>
-          <p className="text-[11px] text-slate-400">खर्च जोडल्यावर, बदलल्यावर किंवा हटवल्यावर इथे नोंद दिसेल.</p>
+          <p className="font-semibold text-slate-700">{t('admin.empty.title')}</p>
+          <p className="text-[11px] text-slate-400">{t('admin.empty.hint')}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -428,7 +410,7 @@ function TrackingLogTab() {
               onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
               className="w-full py-2.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl"
             >
-              अधिक दाखवा ({filtered.length - visibleCount} बाकी)
+              {t('admin.showMore', { count: filtered.length - visibleCount })}
             </button>
           )}
         </div>
@@ -438,6 +420,7 @@ function TrackingLogTab() {
 }
 
 export default function SuperAdmin() {
+  const { t } = useLanguage();
   const [tab, setTab] = useState('log'); // 'log' | 'profile'
 
   return (
@@ -447,17 +430,17 @@ export default function SuperAdmin() {
           <ShieldCheck className="w-5 h-5" />
         </div>
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">सुपर ऍडमिन पॅनल</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">{t('admin.title')}</h1>
           <p className="text-xs sm:text-sm text-slate-500 font-normal mt-0.5">
-            प्रोफाइल अपडेट आणि कोणी, कधी, काय जोडले / बदलले / हटवले याचा ट्रॅकिंग लॉग
+            {t('admin.subtitle')}
           </p>
         </div>
       </div>
 
       <div className="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200/60">
         {[
-          { id: 'log', label: 'ट्रॅकिंग लॉग', icon: History },
-          { id: 'profile', label: 'प्रोफाइल', icon: User }
+          { id: 'log', label: t('admin.tab.log'), icon: History },
+          { id: 'profile', label: t('admin.tab.profile'), icon: User }
         ].map((t) => {
           const Icon = t.icon;
           return (

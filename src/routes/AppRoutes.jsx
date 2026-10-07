@@ -7,6 +7,7 @@ import AppLayout from '../components/layout/AppLayout';
 const Dashboard = lazy(() => import('../pages/Dashboard'));
 const Expenses = lazy(() => import('../pages/Expenses'));
 const Settings = lazy(() => import('../pages/Settings'));
+const SuperAdmin = lazy(() => import('../pages/admin/SuperAdmin'));
 const Login = lazy(() => import('../pages/auth/Login'));
 const Register = lazy(() => import('../pages/auth/Register'));
 const ForgotPassword = lazy(() => import('../pages/auth/ForgotPassword'));
@@ -38,6 +39,12 @@ const ProtectedRoute = ({ children }) => {
   }
 
   return children;
+};
+
+// Only Super Admin users may open the page, everyone else goes back to the dashboard
+const SuperAdminRoute = ({ children }) => {
+  const { isSuperAdmin } = useAuth();
+  return isSuperAdmin ? children : <Navigate to="/" replace />;
 };
 
 // Public Only Route (Redirect to / if logged in)
@@ -93,6 +100,14 @@ export default function AppRoutes() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/expenses" element={<Expenses />} />
         <Route path="/settings" element={<Settings />} />
+        <Route
+          path="/admin"
+          element={
+            <SuperAdminRoute>
+              <SuperAdmin />
+            </SuperAdminRoute>
+          }
+        />
       </Route>
 
       {/* Catch-all redirect */}

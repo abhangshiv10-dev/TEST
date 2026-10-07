@@ -9,7 +9,8 @@ import {
   User,
   Menu,
   X,
-  Hammer
+  Hammer,
+  ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import AppLogo from '../common/AppLogo';
@@ -18,7 +19,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { LEGACY_OWNER_NAME_PREFIX } from '../../constants/appDefaults';
 
 export default function Header({ onOpenAddExpense }) {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isSuperAdmin } = useAuth();
   const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
@@ -35,6 +36,8 @@ export default function Header({ onOpenAddExpense }) {
     { labelKey: 'nav.home', path: '/', icon: Home },
     { labelKey: 'nav.expenses', path: '/expenses', icon: IndianRupee },
     { labelKey: 'nav.settings', path: '/settings', icon: Settings },
+    // Only visible to Super Admin users
+    ...(isSuperAdmin ? [{ labelKey: 'nav.admin', path: '/admin', icon: ShieldCheck }] : []),
   ];
 
   // Older sign-ins saved a built-in Marathi placeholder as the user's name; ignore it so the avatar
