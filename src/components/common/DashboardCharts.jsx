@@ -22,6 +22,7 @@ export function MonthlyBarChart({ monthlyExpenseData }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart 
+        accessibilityLayer={false}
         data={monthlyExpenseData} 
         margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
       >
@@ -85,7 +86,7 @@ export function CategoryDonut({ categoryPieData, selectedCategoryName, handleCat
   const { t } = useLanguage();
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <PieChart>
+      <PieChart accessibilityLayer={false}>
         <Pie
           data={categoryPieData}
           dataKey="value"

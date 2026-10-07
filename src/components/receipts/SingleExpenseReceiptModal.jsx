@@ -2,7 +2,8 @@ import React, { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Download, Share2, Loader2, Image as ImageIcon } from 'lucide-react';
 import { SingleExpenseReceiptCard } from './SingleExpenseReceiptCard';
-import { exportElementAsImage, shareToWhatsApp } from '../../utils/receiptExporter';
+import { exportElementAsImage, shareToWhatsApp, shareFileToWhatsApp } from '../../utils/receiptExporter';
+import { useShareImage } from '../../utils/useShareImage';
 import { toast, alertBox } from '../../utils/alerts';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { formatINR } from '../../utils/marathiCurrency';
@@ -13,7 +14,7 @@ export function SingleExpenseReceiptModal({
   expense,
   projectName
 }) {
-  const { t, catLabel, fmtShortDate, projectLabel } = useLanguage();
+  const { t, lang, catLabel, fmtShortDate, projectLabel } = useLanguage();
   const shownProject = projectName || projectLabel('');
   const receiptRef = useRef(null);
   const [exporting, setExporting] = useState(false);
@@ -28,6 +29,13 @@ export function SingleExpenseReceiptModal({
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
+
+  // Image for the WhatsApp button is prepared in the background (instant share on tap)
+  const shareImage = useShareImage(receiptRef, {
+    enabled: Boolean(isOpen && expense),
+    version: `${expense?.id}|${expense?.amount}|${expense?.expense_date}|${expense?.payment_status}|${expense?.description}|${expense?.category_name}|${lang}`,
+    fileName: 'Expense_Receipt.png'
+  });
 
   if (!isOpen || !expense) return null;
 
@@ -47,19 +55,33 @@ export function SingleExpenseReceiptModal({
   };
 
   const handleWhatsAppShare = async () => {
+    const caption = t('receipt.single.whatsappCaption', {
+      project: shownProject,
+      category: catLabel(expense.category_name, expense.category_name_en) || '-',
+      amount: formatINR(expense.amount),
+      date: expense.expense_date ? fmtShortDate(expense.expense_date) : '-',
+      details: expense.description || '-'
+    });
+
+    // Fast path: image is ready -> share immediately (must happen right inside the tap)
+    if (shareImage.file) {
+      try {
+        const result = await shareFileToWhatsApp(shareImage.file, caption);
+        if (result === 'fallback') toast('info', t('receipt.shareFallback'), 4500);
+      } catch (err) {
+        console.error('WhatsApp share error:', err);
+        alertBox('error', t('common.error'), t('receipt.shareFailed'));
+      }
+      return;
+    }
+
+    // Slow path: image could not be prepared in advance
     try {
       setExporting(true);
-      const caption = t('receipt.single.whatsappCaption', {
-        project: shownProject,
-        category: catLabel(expense.category_name, expense.category_name_en) || '-',
-        amount: formatINR(expense.amount),
-        date: expense.expense_date ? fmtShortDate(expense.expense_date) : '-',
-        details: expense.description || '-'
-      });
-      
       await shareToWhatsApp(receiptRef.current, caption);
     } catch (err) {
       console.error('WhatsApp share error:', err);
+      alertBox('error', t('common.error'), t('receipt.shareFailed'));
     } finally {
       setExporting(false);
     }
@@ -125,11 +147,11 @@ export function SingleExpenseReceiptModal({
           {/* WhatsApp Share Button */}
           <button
             onClick={handleWhatsAppShare}
-            disabled={exporting}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#00B074] hover:bg-[#009B66] text-white text-xs font-bold shadow-sm hover:shadow transition-all disabled:opacity-50 cursor-pointer"
+            disabled={exporting || shareImage.preparing}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#00B074] hover:bg-[#009B66] text-white text-xs font-bold shadow-sm hover:shadow transition-all disabled:opacity-60 cursor-pointer"
           >
-            <Share2 className="w-4 h-4" />
-            <span>{t('receipt.shareWhatsApp')}</span>
+            {exporting || shareImage.preparing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
+            <span>{shareImage.preparing ? t('receipt.preparingShare') : t('receipt.shareWhatsApp')}</span>
           </button>
         </div>
       </div>

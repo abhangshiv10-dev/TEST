@@ -12,7 +12,8 @@ import {
   Check
 } from 'lucide-react';
 import { ReportReceiptCard } from './ReportReceiptCard';
-import { exportElementAsImage, exportElementAsPDF, shareToWhatsApp } from '../../utils/receiptExporter';
+import { exportElementAsImage, exportElementAsPDF, shareToWhatsApp, shareFileToWhatsApp } from '../../utils/receiptExporter';
+import { useShareImage } from '../../utils/useShareImage';
 import { toast, alertBox } from '../../utils/alerts';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { formatINR } from '../../utils/marathiCurrency';
@@ -23,7 +24,7 @@ export function ReportReceiptModal({
   expenses = [],
   projectName
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const shownProject = projectName || t('app.defaultProject');
   const receiptRef = useRef(null);
   const [exporting, setExporting] = useState(false);
@@ -96,6 +97,13 @@ export function ReportReceiptModal({
     ? t('receipt.report.last30')
     : t('receipt.report.allEntries');
 
+  // Image for the WhatsApp button is prepared in the background (instant share on tap)
+  const shareImage = useShareImage(receiptRef, {
+    enabled: isOpen,
+    version: `${filterPreset}|${fromDate}|${toDate}|${totalEntries}|${totalExpenses}|${lang}`,
+    fileName: 'Expense_Report_Slip.png'
+  });
+
   if (!isOpen) return null;
 
   const handleExportImage = async (format = 'png') => {
@@ -129,18 +137,32 @@ export function ReportReceiptModal({
   };
 
   const handleWhatsAppShare = async () => {
+    const caption = t('receipt.report.whatsappCaption', {
+      project: shownProject,
+      filter: dateRangeCaption,
+      total: formatINR(totalExpenses),
+      count: totalEntries
+    });
+
+    // Fast path: image is ready -> share immediately (must happen right inside the tap)
+    if (shareImage.file) {
+      try {
+        const result = await shareFileToWhatsApp(shareImage.file, caption);
+        if (result === 'fallback') toast('info', t('receipt.shareFallback'), 4500);
+      } catch (err) {
+        console.error('WhatsApp share error:', err);
+        alertBox('error', t('common.error'), t('receipt.shareFailed'));
+      }
+      return;
+    }
+
+    // Slow path: image could not be prepared in advance
     try {
       setExporting(true);
-      const caption = t('receipt.report.whatsappCaption', {
-        project: shownProject,
-        filter: dateRangeCaption,
-        total: formatINR(totalExpenses),
-        count: totalEntries
-      });
-      
       await shareToWhatsApp(receiptRef.current, caption);
     } catch (err) {
       console.error('WhatsApp share error:', err);
+      alertBox('error', t('common.error'), t('receipt.shareFailed'));
     } finally {
       setExporting(false);
     }
@@ -303,11 +325,11 @@ export function ReportReceiptModal({
           {/* WhatsApp Share Button */}
           <button
             onClick={handleWhatsAppShare}
-            disabled={exporting}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
+            disabled={exporting || shareImage.preparing}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-60 cursor-pointer"
           >
-            <Share2 className="w-4 h-4" />
-            <span>{t('receipt.shareWhatsApp')}</span>
+            {exporting || shareImage.preparing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
+            <span>{shareImage.preparing ? t('receipt.preparingShare') : t('receipt.shareWhatsApp')}</span>
           </button>
         </div>
       </div>

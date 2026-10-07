@@ -113,3 +113,16 @@ html[lang='en'] .font-sans {
     display: table-cell;
   }
 }
+
+
+/* ---------- Charts: no black focus box when a chart is tapped ----------
+   Recharts makes the chart focusable; browsers then draw a default outline around it. */
+.recharts-wrapper,
+.recharts-wrapper:focus,
+.recharts-wrapper *:focus,
+.recharts-surface:focus,
+.recharts-layer:focus,
+.recharts-rectangle:focus,
+.recharts-sector:focus {
+  outline: none !important;
+}

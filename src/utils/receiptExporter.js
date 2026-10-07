@@ -384,19 +384,19 @@ export async function exportElementAsPDF(element, fileName = 'receipt_report') {
 }
 
 /**
- * Shares image and text to WhatsApp using direct capture
- * @param {HTMLElement} element 
- * @param {string} captionText 
+ * Why WhatsApp sharing used to do nothing on phones:
+ *   Browsers only allow navigator.share() right after the user's tap (about 5 seconds).
+ *   Drawing a long slip into an image takes longer than that, so the share was refused and
+ *   the fallback window.open() was blocked too -> nothing happened.
+ *
+ * Fix: the image is prepared in the background while the popup is open
+ * (renderElementToFile), and the button shares the ready file instantly (shareFileToWhatsApp).
  */
-export async function shareToWhatsApp(element, captionText = '') {
-  const textEncoded = encodeURIComponent(captionText);
-  
-  if (!element) {
-    window.open(`https://api.whatsapp.com/send?text=${textEncoded}`, '_blank');
-    return;
-  }
 
-  // Ensure fonts are ready
+/** Draws the element into a PNG File (used to pre-build the image for sharing). */
+export async function renderElementToFile(element, fileName = 'construction_receipt.png', scale = 2) {
+  if (!element) throw new Error('No element to capture');
+
   if (document.fonts && document.fonts.ready) {
     try {
       await document.fonts.ready;
@@ -405,27 +405,79 @@ export async function shareToWhatsApp(element, captionText = '') {
     }
   }
 
-  try {
-    const canvas = await captureElement(element, 2.5);
+  const canvas = await captureElement(element, scale);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  if (!blob) throw new Error('Could not create the image');
+  return new File([blob], fileName, { type: 'image/png' });
+}
 
-    if (navigator.canShare) {
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-      if (blob) {
-        const file = new File([blob], 'construction_receipt.png', { type: 'image/png' });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: translate('receipt.shareTitle'),
-            text: captionText
-          });
-          return;
-        }
-      }
+function downloadFile(file) {
+  const url = URL.createObjectURL(file);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = file.name;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+/**
+ * Shares a ready image + caption. Call it straight from the click handler
+ * (no awaits before it), otherwise the browser rejects the share.
+ * Resolves to 'shared' | 'cancelled' | 'fallback'.
+ */
+export async function shareFileToWhatsApp(file, captionText = '') {
+  const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(captionText)}`;
+
+  const canShareFile =
+    typeof navigator !== 'undefined' &&
+    typeof navigator.share === 'function' &&
+    typeof navigator.canShare === 'function' &&
+    navigator.canShare({ files: [file] });
+
+  if (canShareFile) {
+    try {
+      await navigator.share({
+        files: [file],
+        title: translate('receipt.shareTitle'),
+        text: captionText
+      });
+      return 'shared';
+    } catch (err) {
+      // The user closed the share sheet - that is not an error, do not open anything else
+      if (err && err.name === 'AbortError') return 'cancelled';
+      console.warn('Native share failed, using fallback:', err);
     }
+  }
+
+  // Browsers that cannot share files (most desktops): save the image, open WhatsApp with the text
+  downloadFile(file);
+  window.open(waUrl, '_blank', 'noopener');
+  return 'fallback';
+}
+
+/**
+ * Old one-step version (captures, then shares). Only used when the background image
+ * could not be prepared. On slow phones the tap may expire - prefer shareFileToWhatsApp.
+ * @param {HTMLElement} element
+ * @param {string} captionText
+ */
+export async function shareToWhatsApp(element, captionText = '') {
+  const textEncoded = encodeURIComponent(captionText);
+
+  if (!element) {
+    window.open(`https://api.whatsapp.com/send?text=${textEncoded}`, '_blank');
+    return;
+  }
+
+  try {
+    const file = await renderElementToFile(element, 'construction_receipt.png', 2);
+    return await shareFileToWhatsApp(file, captionText);
   } catch (err) {
     console.warn('Share error fallback:', err);
   }
 
-  // Fallback direct WhatsApp text share
+  // Last resort: text only
   window.open(`https://api.whatsapp.com/send?text=${textEncoded}`, '_blank');
 }
