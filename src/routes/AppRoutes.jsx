@@ -99,7 +99,14 @@ export default function AppRoutes() {
       >
         <Route path="/" element={<Dashboard />} />
         <Route path="/expenses" element={<Expenses />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route
+          path="/settings"
+          element={
+            <SuperAdminRoute>
+              <Settings />
+            </SuperAdminRoute>
+          }
+        />
         <Route
           path="/admin"
           element={

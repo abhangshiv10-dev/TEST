@@ -21,7 +21,8 @@ import {
   Download,
   Share2,
   FileText,
-  Eye
+  Eye,
+  ChevronDown
 } from 'lucide-react';
 import { toast, alertBox, confirmDelete } from '../utils/alerts';
 import { errorMessage } from '../utils/appError';
@@ -64,6 +65,9 @@ export default function Settings() {
   const [reportReceiptOpen, setReportReceiptOpen] = useState(false);
   const [singleReceiptOpen, setSingleReceiptOpen] = useState(false);
   const [selectedReceiptExpenseId, setSelectedReceiptExpenseId] = useState('');
+  // Accordion state: only heading + description are visible until opened
+  const [openReceiptCard, setOpenReceiptCard] = useState({ report: false, single: false });
+  const toggleReceiptCard = (key) => setOpenReceiptCard((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const currentReceiptExpense = expenses.find(e => e.id === selectedReceiptExpenseId) || expenses[0] || null;
 
@@ -190,43 +194,68 @@ export default function Settings() {
         </div>
 
         {/* 2 Export Options Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
           {/* Option 1: सर्व नोंदींचा अहवाल पावती (Template 1) */}
-          <div className="p-4 rounded-xl bg-white border border-slate-200 hover:border-blue-300 transition-all shadow-2xs flex flex-col justify-between space-y-3">
-            <div>
-              <div className="flex items-center gap-2 text-blue-700 font-bold text-xs mb-1">
-                <FileSpreadsheet className="w-4 h-4" />
-                <span>{t('expenses.reportButton', { count: expenses.length })}</span>
-              </div>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                {t('settings.reportDesc')}
-              </p>
-              <div className="mt-2 text-[11px] text-slate-500">
-                {tRich('settings.availableSummary', { count: <strong>{expenses.length}</strong>, total: <strong>{formatINR(summary.totalSpent)}</strong> })}
-              </div>
-            </div>
-
+          <div className="p-4 rounded-xl bg-white border border-slate-200 hover:border-blue-300 transition-all shadow-2xs">
             <button
               type="button"
-              onClick={() => setReportReceiptOpen(true)}
-              className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-[2px] bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all cursor-pointer"
+              onClick={() => toggleReceiptCard('report')}
+              aria-expanded={openReceiptCard.report}
+              className="w-full flex items-start justify-between gap-3 text-left cursor-pointer"
             >
-              <Eye className="w-4 h-4" />
-              <span>{t('settings.viewExportReport')}</span>
+              <div>
+                <div className="flex items-center gap-2 text-blue-700 font-bold text-xs mb-1">
+                  <FileSpreadsheet className="w-4 h-4" />
+                  <span>{t('expenses.reportButton', { count: expenses.length })}</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {t('settings.reportDesc')}
+                </p>
+              </div>
+              <ChevronDown className={`w-4 h-4 mt-0.5 shrink-0 text-slate-400 transition-transform duration-200 ${openReceiptCard.report ? 'rotate-180' : ''}`} />
             </button>
+
+            {openReceiptCard.report && (
+              <div className="mt-3 space-y-3">
+                <div className="text-[11px] text-slate-500">
+                  {tRich('settings.availableSummary', { count: <strong>{expenses.length}</strong>, total: <strong>{formatINR(summary.totalSpent)}</strong> })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setReportReceiptOpen(true)}
+                  className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-[2px] bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all cursor-pointer"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>{t('settings.viewExportReport')}</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Option 2: वैयक्तिक खर्च पावती (Template 2) */}
-          <div className="p-4 rounded-xl bg-white border border-slate-200 hover:border-emerald-300 transition-all shadow-2xs flex flex-col justify-between space-y-3">
-            <div>
-              <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs mb-1">
-                <FileText className="w-4 h-4" />
-                <span>{t('settings.singleTitle')}</span>
+          <div className="p-4 rounded-xl bg-white border border-slate-200 hover:border-emerald-300 transition-all shadow-2xs">
+            <button
+              type="button"
+              onClick={() => toggleReceiptCard('single')}
+              aria-expanded={openReceiptCard.single}
+              className="w-full flex items-start justify-between gap-3 text-left cursor-pointer"
+            >
+              <div>
+                <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs mb-1">
+                  <FileText className="w-4 h-4" />
+                  <span>{t('settings.singleTitle')}</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {t('settings.singleDesc')}
+                </p>
               </div>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                {t('settings.singleDesc')}
-              </p>
+              <ChevronDown className={`w-4 h-4 mt-0.5 shrink-0 text-slate-400 transition-transform duration-200 ${openReceiptCard.single ? 'rotate-180' : ''}`} />
+            </button>
 
+            {openReceiptCard.single && (
+            <div className="mt-3 space-y-3">
+            <div>
               {/* Expense Selector */}
               {expenses.length > 0 ? (
                 <div className="mt-2.5">
@@ -259,6 +288,8 @@ export default function Settings() {
               <Eye className="w-4 h-4" />
               <span>{t('settings.viewExportSingle')}</span>
             </button>
+            </div>
+            )}
           </div>
         </div>
       </div>

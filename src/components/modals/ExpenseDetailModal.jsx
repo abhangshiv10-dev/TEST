@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FileText, Image as ImageIcon, Calendar, Edit2 } from 'lucide-react';
+import { FileText, Image as ImageIcon, Calendar, Edit2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { formatINR } from '../../utils/marathiCurrency';
 import { getExpensePhotos } from '../../utils/expensePhotos';
@@ -20,6 +20,21 @@ export default function ExpenseDetailModal({ isOpen, expense, onClose, onEdit })
     }
   }, [isOpen, expense?.id]);
 
+  const photoCount = expense ? getExpensePhotos(expense).length : 0;
+  const goPrev = () => setActiveIdx((i) => (i - 1 + photoCount) % photoCount);
+  const goNext = () => setActiveIdx((i) => (i + 1) % photoCount);
+
+  // Keyboard: ← → to move between photos while the Photo tab is open
+  useEffect(() => {
+    if (!isOpen || tab !== 'photo' || photoCount < 2) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'ArrowLeft') setActiveIdx((i) => (i - 1 + photoCount) % photoCount);
+      else if (e.key === 'ArrowRight') setActiveIdx((i) => (i + 1) % photoCount);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, tab, photoCount]);
+
   if (!isOpen || !expense) return null;
 
   const categoryName = catLabel(expense.category_name, expense.category_name_en);
@@ -27,7 +42,8 @@ export default function ExpenseDetailModal({ isOpen, expense, onClose, onEdit })
   const isPending = isPendingStatus(expense.payment_status);
   const description =
     expense.description && expense.description.trim() !== '-' ? expense.description.trim() : null;
-  const current = photos[Math.min(activeIdx, photos.length - 1)];
+  const safeIdx = Math.min(activeIdx, Math.max(photos.length - 1, 0));
+  const current = photos[safeIdx];
 
   const tabClass = (active) =>
     `flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-bold border-b-2 transition-colors cursor-pointer ${
@@ -124,13 +140,40 @@ export default function ExpenseDetailModal({ isOpen, expense, onClose, onEdit })
             </div>
           ) : (
             <div className="space-y-3">
-              <a href={current.url} target="_blank" rel="noopener noreferrer" className="block">
-                <img
-                  src={current.url}
-                  alt={t('common.receipt')}
-                  className="w-full max-h-[55vh] object-contain rounded-xl bg-slate-100 border border-slate-200"
-                />
-              </a>
+              <div className="relative">
+                <a href={current.url} target="_blank" rel="noopener noreferrer" className="block">
+                  <img
+                    src={current.url}
+                    alt={t('common.receipt')}
+                    className="w-full max-h-[55vh] object-contain rounded-xl bg-slate-100 border border-slate-200"
+                  />
+                </a>
+                {photos.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={goPrev}
+                      title={t('photoViewer.prev')}
+                      aria-label={t('photoViewer.prev')}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white shadow-md cursor-pointer"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={goNext}
+                      title={t('photoViewer.next')}
+                      aria-label={t('photoViewer.next')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white shadow-md cursor-pointer"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                    <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-slate-900/70 text-white text-[11px] font-semibold">
+                      {safeIdx + 1}/{photos.length}
+                    </span>
+                  </>
+                )}
+              </div>
               {photos.length > 1 && (
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {photos.map((p, i) => (
@@ -139,7 +182,7 @@ export default function ExpenseDetailModal({ isOpen, expense, onClose, onEdit })
                       type="button"
                       onClick={() => setActiveIdx(i)}
                       className={`w-14 h-14 shrink-0 rounded-[2px] overflow-hidden border-2 cursor-pointer ${
-                        i === activeIdx ? 'border-slate-900' : 'border-transparent opacity-70 hover:opacity-100'
+                        i === safeIdx ? 'border-slate-900' : 'border-transparent opacity-70 hover:opacity-100'
                       }`}
                     >
                       <img src={p.url} alt="" loading="lazy" className="w-full h-full object-cover" />

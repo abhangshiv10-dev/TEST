@@ -35,9 +35,10 @@ export default function Header({ onOpenAddExpense }) {
   const navLinks = [
     { labelKey: 'nav.home', path: '/', icon: Home },
     { labelKey: 'nav.expenses', path: '/expenses', icon: IndianRupee },
-    { labelKey: 'nav.settings', path: '/settings', icon: Settings },
-    // Only visible to Super Admin users
-    ...(isSuperAdmin ? [{ labelKey: 'nav.admin', path: '/admin', icon: ShieldCheck }] : []),
+    // Settings & management and Admin are only visible to Super Admin users
+    ...(isSuperAdmin
+      ? [{ labelKey: 'nav.settings', path: '/settings', icon: Settings }, { labelKey: 'nav.admin', path: '/admin', icon: ShieldCheck }]
+      : []),
   ];
 
   // Older sign-ins saved a built-in Marathi placeholder as the user's name; ignore it so the avatar

@@ -607,7 +607,7 @@ export default function Dashboard() {
         </div>
 
         {/* Right Chart: Expense by Category */}
-        <div className="glass-card rounded-2xl p-4 sm:p-5 space-y-3.5 border border-slate-200/80 flex flex-col justify-between">
+        <div className="glass-card rounded-2xl p-4 sm:p-5 space-y-3.5 border border-slate-200/80 flex flex-col justify-start">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-xs">
@@ -628,9 +628,10 @@ export default function Dashboard() {
           </div>
 
           {categoryPieData.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+            <div className="flex-1 relative min-h-48">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center lg:absolute lg:inset-0">
               {/* Donut Pie Chart */}
-              <div className="sm:col-span-5 h-48 w-full">
+              <div className="sm:col-span-5 h-48 lg:h-full max-h-80 w-full">
                 <Suspense fallback={<div className="w-full h-full animate-pulse bg-slate-100 rounded-xl" />}>
                   <CategoryDonut
                     categoryPieData={categoryPieData}
@@ -641,7 +642,7 @@ export default function Dashboard() {
               </div>
 
               {/* Category Legend List */}
-              <div className="sm:col-span-7 space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              <div className="sm:col-span-7 space-y-1.5 max-h-48 lg:max-h-full overflow-y-auto pr-1">
                 {categoryPieData.map((item) => (
                   <button
                     type="button"
@@ -665,6 +666,7 @@ export default function Dashboard() {
                   </button>
                 ))}
               </div>
+            </div>
             </div>
           ) : (
             <div className="py-12 text-center text-slate-400 text-xs">

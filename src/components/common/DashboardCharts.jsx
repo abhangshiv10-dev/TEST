@@ -93,8 +93,8 @@ export function CategoryDonut({ categoryPieData, selectedCategoryName, handleCat
           nameKey="name"
           cx="50%"
           cy="50%"
-          innerRadius={45}
-          outerRadius={70}
+          innerRadius="58%"
+          outerRadius="88%"
           paddingAngle={2}
           onClick={(data) => handleCategoryClick(data?.name)}
           style={{ cursor: 'pointer' }}
