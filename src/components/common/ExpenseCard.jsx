@@ -1,5 +1,5 @@
-import React from 'react';
-import { Camera, Edit2, Trash2, Calendar, Receipt as ReceiptIcon } from 'lucide-react';
+import React, { useState } from 'react';
+import { Camera, Check, Edit2, Trash2, Calendar, Receipt as ReceiptIcon } from 'lucide-react';
 import { formatINR } from '../../utils/marathiCurrency';
 import { getCategoryIconMeta } from '../../utils/categoryIcons';
 import { getExpensePhotos } from '../../utils/expensePhotos';
@@ -16,6 +16,7 @@ export default function ExpenseCard({
   onToggleStatus
 }) {
   const { t, catLabel, fmtDate } = useLanguage();
+  const [descOpen, setDescOpen] = useState(false);
   const categoryName = catLabel(expense.category_name, expense.category_name_en);
   const photos = getExpensePhotos(expense);
   const photoUrls = photos.map((p) => p.url);
@@ -64,14 +65,14 @@ export default function ExpenseCard({
           <div className="min-w-0 flex-1 space-y-1">
             {/* Category Name & Status Badge */}
             {/* One row: name + status + photo badge (name shortens with ... on narrow phones) */}
-            <div className="flex items-center gap-1.5 flex-nowrap min-w-0">
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug truncate min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+              <h4 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug break-words min-w-0">
                 {onViewDetails ? (
                   <button
                     type="button"
                     onClick={() => onViewDetails(expense)}
                     title={t('expenseCard.viewDetails')}
-                    className="max-w-full truncate text-left font-bold hover:underline hover:text-blue-700 cursor-pointer"
+                    className="max-w-full text-left break-words font-bold hover:underline hover:text-blue-700 cursor-pointer"
                   >
                     {categoryName}
                   </button>
@@ -95,8 +96,12 @@ export default function ExpenseCard({
                   }`}
                   title={isPending ? t('expenseCard.markPaid') : t('expenseCard.markPending')}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full ${isPending ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
-                  <span>{isPending ? t('status.pending') : t('status.paid')}</span>
+                  {isPending && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />}
+                  {isPending ? (
+                    <span>{t('status.pending')}</span>
+                  ) : (
+                    <Check className="w-3.5 h-3.5" strokeWidth={3} aria-label={t('status.paid')} />
+                  )}
                 </button>
               ) : isPending ? (
                 <span className="inline-flex shrink-0 items-center justify-center gap-1 px-1.5 py-0.5 rounded-[2px] bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200/80 leading-none">
@@ -105,28 +110,18 @@ export default function ExpenseCard({
                 </span>
               ) : (
                 <span className="inline-flex shrink-0 items-center justify-center gap-1 px-1.5 py-0.5 rounded-[2px] bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200/70 leading-none">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>{t('status.paid')}</span>
+                  <Check className="w-3.5 h-3.5" strokeWidth={3} aria-label={t('status.paid')} />
                 </span>
               )}
 
-              {hasPhoto && (
-                <button
-                  type="button"
-                  onClick={openPhotos}
-                  title={t('expenseCard.viewPhoto')}
-                  aria-label={t('expenseCard.viewPhoto')}
-                  className="inline-flex shrink-0 items-center gap-0.5 px-1.5 py-0.5 rounded-[2px] bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-bold border border-blue-200/60 leading-none transition-colors cursor-pointer"
-                >
-                  <Camera className="w-3 h-3" />
-                  {photos.length > 1 && <span>{photos.length}</span>}
-                </button>
-              )}
             </div>
 
             {/* Description (if present) */}
             {cleanDescription && (
-              <p className="text-[11px] sm:text-xs text-slate-600 font-normal leading-relaxed break-words line-clamp-2">
+              <p
+                onClick={() => setDescOpen((v) => !v)}
+                className={`text-[11px] sm:text-xs text-slate-600 font-normal leading-relaxed break-words whitespace-pre-line cursor-pointer ${descOpen ? '' : 'line-clamp-2'}`}
+              >
                 {cleanDescription}
               </p>
             )}

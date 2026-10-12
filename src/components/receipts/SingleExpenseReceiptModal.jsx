@@ -17,7 +17,8 @@ export function SingleExpenseReceiptModal({
   const { t, lang, catLabel, fmtShortDate, projectLabel } = useLanguage();
   const shownProject = projectName || projectLabel('');
   const receiptRef = useRef(null);
-  const [exporting, setExporting] = useState(false);
+  // which action is running ('pdf' | 'png' | 'jpg' | 'share' | null) - only that button shows the spinner
+  const [exporting, setExporting] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -41,7 +42,7 @@ export function SingleExpenseReceiptModal({
 
   const handleExport = async (format = 'png') => {
     try {
-      setExporting(true);
+      setExporting(format);
       const fileName = `Expense_Receipt_${expense.category_name || 'Item'}_${expense.expense_date || 'date'}`;
       await exportElementAsImage(receiptRef.current, fileName, format);
       
@@ -50,7 +51,7 @@ export function SingleExpenseReceiptModal({
       console.error('Export failed:', err);
       alertBox('error', t('common.error'), t('receipt.downloadFailed'));
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   };
 
@@ -77,13 +78,13 @@ export function SingleExpenseReceiptModal({
 
     // Slow path: image could not be prepared in advance
     try {
-      setExporting(true);
+      setExporting('share');
       await shareToWhatsApp(receiptRef.current, caption);
     } catch (err) {
       console.error('WhatsApp share error:', err);
       alertBox('error', t('common.error'), t('receipt.shareFailed'));
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   };
 
@@ -127,19 +128,19 @@ export function SingleExpenseReceiptModal({
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => handleExport('png')}
-              disabled={exporting}
+              disabled={Boolean(exporting)}
               className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-[2px] bg-[#EBF5FE] hover:bg-[#D9EDFE] text-[#2F80ED] border border-[#D0E8FF] text-xs font-bold shadow-2xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
-              {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              {exporting === 'png' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               <span>{t('receipt.single.exportPng')}</span>
             </button>
 
             <button
               onClick={() => handleExport('jpg')}
-              disabled={exporting}
+              disabled={Boolean(exporting)}
               className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-[2px] bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
-              {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              {exporting === 'jpg' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               <span>{t('receipt.single.downloadJpg')}</span>
             </button>
           </div>
@@ -147,10 +148,10 @@ export function SingleExpenseReceiptModal({
           {/* WhatsApp Share Button */}
           <button
             onClick={handleWhatsAppShare}
-            disabled={exporting || shareImage.preparing}
+            disabled={Boolean(exporting) || shareImage.preparing}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-[2px] bg-[#00B074] hover:bg-[#009B66] text-white text-xs font-bold shadow-sm hover:shadow transition-all disabled:opacity-60 cursor-pointer"
           >
-            {exporting || shareImage.preparing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
+            {exporting === 'share' || shareImage.preparing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
             <span>{shareImage.preparing ? t('receipt.preparingShare') : t('receipt.shareWhatsApp')}</span>
           </button>
         </div>

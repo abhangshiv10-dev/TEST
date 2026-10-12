@@ -30,7 +30,10 @@ export const ReportReceiptCard = forwardRef(({
   filterLabel,
   onExportClick,
   onWhatsAppClick,
-  showActionButtons = false
+  showActionButtons = false,
+  startIndex = 0,
+  summaryTotal = null, // overall total of ALL filtered records (used when the slip shows only one part)
+  summaryCount = null
 }, ref) => {
   const { t, catLabel, fmtShortDate } = useLanguage();
   const formatReceiptDate = (d) => (d ? fmtShortDate(d) : '-');
@@ -40,6 +43,8 @@ export const ReportReceiptCard = forwardRef(({
   const displayExpenses = expenses;
   const calculatedTotal = totalExpenses || displayExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
   const calculatedCount = totalEntries || expenses.length;
+  const shownSummaryTotal = summaryTotal ?? calculatedTotal;
+  const shownSummaryCount = summaryCount ?? calculatedCount;
   
   const paidCount = displayExpenses.filter(e => isPaidStatus(e.payment_status)).length;
   const pendingCount = displayExpenses.length - paidCount;
@@ -167,7 +172,7 @@ export const ReportReceiptCard = forwardRef(({
                   >
                     {/* Index */}
                     <td className="rr-desktop py-2.5 px-3 text-center text-[11px] font-semibold text-slate-400 align-middle" style={{ verticalAlign: 'middle', textAlign: 'center' }}>
-                      {idx + 1}
+                      {startIndex + idx + 1}
                     </td>
 
                     {/* Category & Description */}
@@ -325,8 +330,8 @@ export const ReportReceiptCard = forwardRef(({
         </div>
         <div className="text-[11px] sm:text-xs text-slate-700 font-medium" style={{ lineHeight: '1.8' }}>
           <div>📅 <span className="font-bold">{t('receipt.report.filter')}</span> {shownFilter}</div>
-          <div>💰 <span className="font-bold">{t('receipt.report.totalExpense')}</span> {formatINR(calculatedTotal)}</div>
-          <div>📝 <span className="font-bold">{t('receipt.report.entryCount')}</span> {calculatedCount}</div>
+          <div>💰 <span className="font-bold">{t('receipt.report.totalExpense')}</span> {formatINR(shownSummaryTotal)}</div>
+          <div>📝 <span className="font-bold">{t('receipt.report.entryCount')}</span> {shownSummaryCount}</div>
         </div>
       </div>
 

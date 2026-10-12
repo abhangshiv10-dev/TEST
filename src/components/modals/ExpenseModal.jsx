@@ -7,7 +7,7 @@ import { toInputDate } from '../../utils/marathiDate';
 import { useBudget } from '../../contexts/BudgetContext';
 import { getExpensePhotos, buildPhotoColumns } from '../../utils/expensePhotos';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { confirmAction } from '../../utils/alerts';
+import { confirmAction, alertBox } from '../../utils/alerts';
 import { formatINR } from '../../utils/marathiCurrency';
 
 export default function ExpenseModal({
@@ -115,6 +115,7 @@ export default function ExpenseModal({
       onClose();
     } catch (err) {
       console.error('Error saving expense:', err);
+      alertBox('error', t('common.error'), err?.message || '');
     } finally {
       setSaving(false);
     }

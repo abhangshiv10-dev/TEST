@@ -436,19 +436,20 @@ function downloadFile(file) {
  * (no awaits before it), otherwise the browser rejects the share.
  * Resolves to 'shared' | 'cancelled' | 'fallback'.
  */
-export async function shareFileToWhatsApp(file, captionText = '') {
+export async function shareFileToWhatsApp(fileOrFiles, captionText = '') {
+  const files = Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles];
   const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(captionText)}`;
 
   const canShareFile =
     typeof navigator !== 'undefined' &&
     typeof navigator.share === 'function' &&
     typeof navigator.canShare === 'function' &&
-    navigator.canShare({ files: [file] });
+    navigator.canShare({ files });
 
   if (canShareFile) {
     try {
       await navigator.share({
-        files: [file],
+        files,
         title: translate('receipt.shareTitle'),
         text: captionText
       });
@@ -460,8 +461,8 @@ export async function shareFileToWhatsApp(file, captionText = '') {
     }
   }
 
-  // Browsers that cannot share files (most desktops): save the image, open WhatsApp with the text
-  downloadFile(file);
+  // Browsers that cannot share files (most desktops): save the image(s), open WhatsApp with the text
+  files.forEach((f, i) => setTimeout(() => downloadFile(f), i * 400));
   window.open(waUrl, '_blank', 'noopener');
   return 'fallback';
 }

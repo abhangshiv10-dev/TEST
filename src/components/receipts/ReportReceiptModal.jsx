@@ -12,11 +12,14 @@ import {
   Check
 } from 'lucide-react';
 import { ReportReceiptCard } from './ReportReceiptCard';
-import { exportElementAsImage, exportElementAsPDF, shareToWhatsApp, shareFileToWhatsApp } from '../../utils/receiptExporter';
-import { useShareImage } from '../../utils/useShareImage';
+import { exportElementAsImage, exportElementAsPDF, shareFileToWhatsApp } from '../../utils/receiptExporter';
+import { renderPageFiles } from '../../utils/useShareImage';
 import { toast, alertBox } from '../../utils/alerts';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { formatINR } from '../../utils/marathiCurrency';
+
+// WhatsApp share: one PNG per this many records
+const RECORDS_PER_IMAGE = 15;
 
 export function ReportReceiptModal({
   isOpen,
@@ -27,7 +30,12 @@ export function ReportReceiptModal({
   const { t, lang } = useLanguage();
   const shownProject = projectName || t('app.defaultProject');
   const receiptRef = useRef(null);
-  const [exporting, setExporting] = useState(false);
+  const sharePagesRef = useRef(null);
+  // WhatsApp images are built ONLY when the share button is tapped (nothing heavy runs on filter clicks)
+  const [shareBuilding, setShareBuilding] = useState(false);
+  const [readyShare, setReadyShare] = useState({ key: '', files: [] });
+  // which action is running ('pdf' | 'png' | 'jpg' | 'share' | null) - only that button shows the spinner
+  const [exporting, setExporting] = useState(null);
   
   // Date filter states
   const [filterPreset, setFilterPreset] = useState('all'); // 'all', 'this_month', 'last_30', 'custom'
@@ -97,18 +105,24 @@ export function ReportReceiptModal({
     ? t('receipt.report.last30')
     : t('receipt.report.allEntries');
 
-  // Image for the WhatsApp button is prepared in the background (instant share on tap)
-  const shareImage = useShareImage(receiptRef, {
-    enabled: isOpen,
-    version: `${filterPreset}|${fromDate}|${toDate}|${totalEntries}|${totalExpenses}|${lang}`,
-    fileName: 'Expense_Report_Slip.png'
-  });
+  // WhatsApp share: split into slips of 15 records -> one PNG per slip (prepared in the background)
+  const sharePages = useMemo(() => {
+    const pages = [];
+    for (let i = 0; i < displayExpenses.length; i += RECORDS_PER_IMAGE) {
+      pages.push(displayExpenses.slice(i, i + RECORDS_PER_IMAGE));
+    }
+    return pages.length > 0 ? pages : [[]];
+  }, [displayExpenses]);
+
+  // changes whenever the records change -> previously built images are no longer valid
+  const shareKey = `${filterPreset}|${fromDate}|${toDate}|${totalEntries}|${totalExpenses}|${lang}`;
+  const shareReady = readyShare.key === shareKey && readyShare.files.length > 0;
 
   if (!isOpen) return null;
 
   const handleExportImage = async (format = 'png') => {
     try {
-      setExporting(true);
+      setExporting(format);
       const fileName = `Expense_Report_${Date.now()}`;
       await exportElementAsImage(receiptRef.current, fileName, format);
       
@@ -117,13 +131,13 @@ export function ReportReceiptModal({
       console.error('Image Export failed:', err);
       alertBox('error', t('common.error'), t('receipt.downloadFailed'));
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   };
 
   const handleExportPDF = async () => {
     try {
-      setExporting(true);
+      setExporting('pdf');
       const fileName = `Expense_Report_Slip_${Date.now()}`;
       await exportElementAsPDF(receiptRef.current, fileName);
       
@@ -132,7 +146,7 @@ export function ReportReceiptModal({
       console.error('PDF Export failed:', err);
       alertBox('error', t('common.error'), t('receipt.pdfFailed'));
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   };
 
@@ -144,29 +158,79 @@ export function ReportReceiptModal({
       count: totalEntries
     });
 
-    // Fast path: image is ready -> share immediately (must happen right inside the tap)
-    if (shareImage.file) {
+    const doShare = async (files) => {
       try {
-        const result = await shareFileToWhatsApp(shareImage.file, caption);
+        const result = await shareFileToWhatsApp(files, caption);
         if (result === 'fallback') toast('info', t('receipt.shareFallback'), 4500);
       } catch (err) {
         console.error('WhatsApp share error:', err);
         alertBox('error', t('common.error'), t('receipt.shareFailed'));
       }
+    };
+
+    // Images already built for the current records -> share right inside this tap
+    if (shareReady) {
+      await doShare(readyShare.files);
       return;
     }
 
-    // Slow path: image could not be prepared in advance
+    // Build the images now (only this button shows the spinner)
     try {
-      setExporting(true);
-      await shareToWhatsApp(receiptRef.current, caption);
+      setExporting('share');
+      setShareBuilding(true); // mounts the hidden slips
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const files = await renderPageFiles(sharePagesRef.current, 'Expense_Report_Slip', 3);
+      setReadyShare({ key: shareKey, files });
+      setShareBuilding(false);
+      setExporting(null);
+
+      // The browser only allows sharing shortly after a tap. If that time is over,
+      // keep the images ready and ask for one more tap (the button changes to "ready").
+      const stillAllowed = navigator.userActivation ? navigator.userActivation.isActive : true;
+      if (stillAllowed) {
+        await doShare(files);
+      } else {
+        toast('info', t('receipt.shareReadyHint'), 3500);
+      }
     } catch (err) {
       console.error('WhatsApp share error:', err);
       alertBox('error', t('common.error'), t('receipt.shareFailed'));
     } finally {
-      setExporting(false);
+      setShareBuilding(false);
+      setExporting(null);
     }
   };
+
+  // Hidden slips used only for WhatsApp sharing (max 15 records per image).
+  // Rendered straight into <body>, NOT inside the animated popup: inside it they made the popup's
+  // layer huge, so buttons next to a clicked one went blank for a moment while the screen repainted.
+  const hiddenPages = (
+    
+    <div
+      ref={sharePagesRef}
+      aria-hidden="true"
+      style={{ position: 'fixed', left: 0, top: 0, width: 800, visibility: 'hidden', zIndex: -1, pointerEvents: 'none' }}
+    >
+      {sharePages.map((page, i) => (
+        <ReportReceiptCard
+          key={i}
+          expenses={page}
+          startIndex={i * RECORDS_PER_IMAGE}
+          totalExpenses={page.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)}
+          totalEntries={page.length}
+          summaryTotal={totalExpenses}
+          summaryCount={totalEntries}
+          projectName={shownProject}
+          filterLabel={
+            sharePages.length > 1
+              ? `${dateRangeCaption} • ${t('receipt.report.pageLabel', { page: i + 1, pages: sharePages.length })}`
+              : dateRangeCaption
+          }
+          showActionButtons={false}
+        />
+      ))}
+    </div>
+  );
 
   const modalContent = (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-150">
@@ -198,7 +262,7 @@ export function ReportReceiptModal({
             <button
               type="button"
               onClick={() => { setFilterPreset('all'); setFromDate(''); setToDate(''); }}
-              className={`px-3 py-1.5 rounded-[2px] text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-[2px] text-xs font-semibold transition-all cursor-pointer select-none touch-manipulation [-webkit-tap-highlight-color:transparent] ${
                 filterPreset === 'all'
                   ? 'bg-slate-900 text-white shadow-xs'
                   : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
@@ -210,7 +274,7 @@ export function ReportReceiptModal({
             <button
               type="button"
               onClick={() => setFilterPreset('this_month')}
-              className={`px-3 py-1.5 rounded-[2px] text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-[2px] text-xs font-semibold transition-all cursor-pointer select-none touch-manipulation [-webkit-tap-highlight-color:transparent] ${
                 filterPreset === 'this_month'
                   ? 'bg-slate-900 text-white shadow-xs'
                   : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
@@ -222,7 +286,7 @@ export function ReportReceiptModal({
             <button
               type="button"
               onClick={() => setFilterPreset('last_30')}
-              className={`px-3 py-1.5 rounded-[2px] text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-[2px] text-xs font-semibold transition-all cursor-pointer select-none touch-manipulation [-webkit-tap-highlight-color:transparent] ${
                 filterPreset === 'last_30'
                   ? 'bg-slate-900 text-white shadow-xs'
                   : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
@@ -234,7 +298,7 @@ export function ReportReceiptModal({
             <button
               type="button"
               onClick={() => setFilterPreset('custom')}
-              className={`px-3 py-1.5 rounded-[2px] text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-[2px] text-xs font-semibold transition-all cursor-pointer select-none touch-manipulation [-webkit-tap-highlight-color:transparent] ${
                 filterPreset === 'custom'
                   ? 'bg-slate-900 text-white shadow-xs'
                   : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
@@ -294,30 +358,30 @@ export function ReportReceiptModal({
             {/* PDF Button */}
             <button
               onClick={handleExportPDF}
-              disabled={exporting}
+              disabled={Boolean(exporting)}
               className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[2px] bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
-              {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+              {exporting === 'pdf' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
               <span>{t('receipt.report.exportPdf')}</span>
             </button>
 
             {/* JPG Button */}
             <button
               onClick={() => handleExportImage('jpg')}
-              disabled={exporting}
+              disabled={Boolean(exporting)}
               className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[2px] bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
-              {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              {exporting === 'jpg' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               <span>{t('receipt.report.downloadJpg')}</span>
             </button>
 
             {/* PNG Button */}
             <button
               onClick={() => handleExportImage('png')}
-              disabled={exporting}
+              disabled={Boolean(exporting)}
               className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[2px] bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-50 cursor-pointer"
             >
-              {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              {exporting === 'png' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               <span>{t('receipt.report.downloadPng')}</span>
             </button>
           </div>
@@ -325,16 +389,23 @@ export function ReportReceiptModal({
           {/* WhatsApp Share Button */}
           <button
             onClick={handleWhatsAppShare}
-            disabled={exporting || shareImage.preparing}
+            disabled={Boolean(exporting)}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-[2px] bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-bold shadow-xs hover:shadow transition-all disabled:opacity-60 cursor-pointer"
           >
-            {exporting || shareImage.preparing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
-            <span>{shareImage.preparing ? t('receipt.preparingShare') : t('receipt.shareWhatsApp')}</span>
+            {exporting === 'share' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
+            <span>{exporting === 'share' ? t('receipt.preparingShare') : shareReady ? t('receipt.shareReadyBtn') : t('receipt.shareWhatsApp')}</span>
           </button>
         </div>
+
       </div>
     </div>
   );
 
-  return createPortal(modalContent, document.body);
+  return createPortal(
+    <>
+      {modalContent}
+      {shareBuilding && hiddenPages}
+    </>,
+    document.body
+  );
 }

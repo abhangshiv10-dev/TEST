@@ -64,6 +64,12 @@ html[lang='en'] .font-sans {
   background: #94a3b8;
 }
 
+/* Our modals use z-[9999]; SweetAlert2 defaults to 1060, so confirm popups (e.g. "Update this expense?")
+   opened from inside a modal were hidden BEHIND the form and Update looked stuck. Keep them on top. */
+.swal2-container {
+  z-index: 10050 !important;
+}
+
 /* SweetAlert2 Marathi custom styles */
 .swal2-popup {
   font-family: 'Noto Sans Devanagari', 'Inter', system-ui, sans-serif !important;

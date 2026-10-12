@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Plus,
   Search,
@@ -12,6 +12,10 @@ import {
   ArrowUpDown,
   CircleDollarSign,
   FileSpreadsheet,
+  Download,
+  FileText,
+  Loader2,
+  ChevronDown,
   Receipt as ReceiptIcon
 } from 'lucide-react';
 import { toast, alertBox, confirmDelete, confirmAction } from '../utils/alerts';
@@ -26,6 +30,7 @@ import PhotoViewerModal from '../components/modals/PhotoViewerModal';
 import ExpenseDetailModal from '../components/modals/ExpenseDetailModal';
 import { getExpensePhotos } from '../utils/expensePhotos';
 import { SingleExpenseReceiptModal, ReportReceiptModal } from '../components/receipts/lazyReceipts';
+import { ReportReceiptCard } from '../components/receipts/ReportReceiptCard';
 import { matchesCategory } from '../utils/bilingualSearch';
 
 export default function Expenses() {
@@ -48,6 +53,11 @@ export default function Expenses() {
 
   // Transaction detail popup (opens on title click)
   const [detailExpense, setDetailExpense] = useState(null);
+
+  // Quick export (PDF / PNG) of the currently filtered records
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState(null); // null | 'pdf' | 'png'
+  const exportRef = useRef(null);
 
   // Receipt modals state
   const [singleReceiptExpense, setSingleReceiptExpense] = useState(null);
@@ -152,6 +162,44 @@ export default function Expenses() {
     });
   }, [expenses, searchQuery, selectedCategory, dateFilter, customStartDate, customEndDate]);
 
+
+  // Runs the export after the hidden slip (with the filtered records) has been rendered
+  useEffect(() => {
+    if (!exportFormat) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        if (cancelled || !exportRef.current) return;
+        const { exportElementAsPDF, exportElementAsImage } = await import('../utils/receiptExporter');
+        const fileName = `Expense_Report_${Date.now()}`;
+        if (exportFormat === 'pdf') {
+          await exportElementAsPDF(exportRef.current, fileName);
+          toast('success', t('receipt.pdfCreated'), 2500);
+        } else {
+          await exportElementAsImage(exportRef.current, fileName, 'png');
+          toast('success', t('receipt.downloaded', { format: t('receipt.format.png') }), 2500);
+        }
+      } catch (err) {
+        console.error('Export failed:', err);
+        alertBox('error', t('common.error'), exportFormat === 'pdf' ? t('receipt.pdfFailed') : t('receipt.downloadFailed'));
+      } finally {
+        if (!cancelled) setExportFormat(null);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exportFormat]);
+
+  const startExport = (format) => {
+    setExportMenuOpen(false);
+    if (filteredExpenses.length === 0) {
+      alertBox('info', t('common.noExpenseFound'), '');
+      return;
+    }
+    setExportFormat(format);
+  };
+
   // Summary stats
   const stats = useMemo(() => {
     const count = filteredExpenses.length;
@@ -159,6 +207,18 @@ export default function Expenses() {
     const avg = count > 0 ? Math.round(total / count) : 0;
     return { count, total, avg };
   }, [filteredExpenses]);
+
+  const exportFilterLabel = [
+    dateFilter === 'today' ? t('common.today')
+      : dateFilter === 'yesterday' ? t('common.yesterday')
+      : dateFilter === 'this_month' ? t('common.thisMonth')
+      : dateFilter === 'custom' && (customStartDate || customEndDate)
+        ? `${customStartDate || ''} - ${customEndDate || ''}`.trim()
+        : t('receipt.report.allEntries'),
+    selectedCategory !== 'all'
+      ? (() => { const c = categories.find((x) => x.id === selectedCategory); return c ? catLabel(c.name, c.name_en) : null; })()
+      : null
+  ].filter(Boolean).join(' • ');
 
   return (
     <div className="space-y-5 pb-20 sm:pb-8 animate-in fade-in duration-200">
@@ -296,27 +356,60 @@ export default function Expenses() {
           </div>
         </div>
 
-        {/* Date Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-          {[
-            { id: 'all', label: t('common.all') },
-            { id: 'today', label: t('common.today') },
-            { id: 'yesterday', label: t('common.yesterday') },
-            { id: 'this_month', label: t('common.thisMonth') },
-            { id: 'custom', label: t('expenses.pickDate') },
-          ].map((pill) => (
-            <button
-              key={pill.id}
-              onClick={() => setDateFilter(pill.id)}
-              className={`px-3 py-1.5 rounded-[2px] whitespace-nowrap font-bold transition-all shadow-2xs ${
-                dateFilter === pill.id
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50'
-              }`}
+        {/* Date Filter Dropdown + Export (PDF / PNG) */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 min-w-0">
+            <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:bg-white text-slate-800 transition-colors font-medium appearance-none"
             >
-              {pill.label}
+              <option value="all">{t('common.all')}</option>
+              <option value="today">{t('common.today')}</option>
+              <option value="yesterday">{t('common.yesterday')}</option>
+              <option value="this_month">{t('common.thisMonth')}</option>
+              <option value="custom">{t('expenses.pickDate')}</option>
+            </select>
+            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setExportMenuOpen((o) => !o)}
+              disabled={Boolean(exportFormat)}
+              title={t('expenses.exportSelected')}
+              aria-label={t('expenses.exportSelected')}
+              className="w-9 h-9 sm:w-10 sm:h-10 inline-flex items-center justify-center rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-xs disabled:opacity-60 cursor-pointer"
+            >
+              {exportFormat ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             </button>
-          ))}
+
+            {exportMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setExportMenuOpen(false)} />
+                <div className="absolute right-0 top-full mt-1.5 z-50 w-44 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => startExport('pdf')}
+                    className="w-full flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold text-slate-800 hover:bg-slate-50 cursor-pointer"
+                  >
+                    <FileText className="w-4 h-4 text-rose-600" />
+                    <span>{t('receipt.format.pdf')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => startExport('png')}
+                    className="w-full flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold text-slate-800 hover:bg-slate-50 border-t border-slate-100 cursor-pointer"
+                  >
+                    <Download className="w-4 h-4 text-emerald-600" />
+                    <span>{t('receipt.format.png')}</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Custom Date Range Inputs */}
@@ -378,6 +471,20 @@ export default function Expenses() {
           <p className="text-xs text-slate-400">
             {t('expenses.emptyHint')}
           </p>
+        </div>
+      )}
+
+      {/* Hidden slip used only for the quick PDF / PNG export of the filtered records */}
+      {exportFormat && (
+        <div aria-hidden="true" style={{ position: 'fixed', left: '-100000px', top: 0, width: 800, pointerEvents: 'none' }}>
+          <ReportReceiptCard
+            ref={exportRef}
+            expenses={filteredExpenses}
+            totalExpenses={stats.total}
+            totalEntries={stats.count}
+            projectName={projectLabel(summary?.projectName)}
+            filterLabel={exportFilterLabel}
+          />
         </div>
       )}
 
