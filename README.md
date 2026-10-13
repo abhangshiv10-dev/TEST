@@ -6,7 +6,7 @@ Built with **React 19 + Vite**, **Tailwind CSS**, **Recharts**, **Lucide Icons**
 
 ---
 
-## 🌟 Key Features
+## 🌟 Key Features222
 
 ### 1. 📊 Executive Dashboard & Real-Time Analytics
 * **Financial KPIs**: Total Budget, Total Spent, Remaining Funds, Pending Payments, and Variance.
