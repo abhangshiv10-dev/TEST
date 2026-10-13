@@ -5,6 +5,8 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { categoryLabel } from '../i18n/category';
 import { isPendingStatus } from '../utils/paymentStatus';
 import { auditService } from '../services/auditService';
+import { notificationService } from '../services/notificationService';
+import { deleteRequestService } from '../services/deleteRequestService';
 import { translate } from '../i18n';
 import { getExpensePhotos } from '../utils/expensePhotos';
 import { formatINR } from '../utils/marathiCurrency';
@@ -14,7 +16,7 @@ const BudgetContext = createContext({});
 export const useBudget = () => useContext(BudgetContext);
 
 export const BudgetProvider = ({ children }) => {
-  const { user } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const { lang } = useLanguage();
   const [summary, setSummary] = useState({
     totalBudget: 0,
@@ -107,6 +109,7 @@ export const BudgetProvider = ({ children }) => {
   };
 
   const categoryNameById = (id) => categories.find((c) => c.id === id)?.name || '';
+  const categoryEnById = (id) => categories.find((c) => c.id === id)?.name_en || '';
 
   // Small readable copy of an expense for the log (shown as before -> after)
   const expenseSnapshot = (e) =>
@@ -195,6 +198,18 @@ export const BudgetProvider = ({ children }) => {
         summary: translate('admin.log.expenseAdded', expenseSummaryParams(added)),
         after: expenseSnapshot(added)
       });
+      notificationService.create({
+        type: 'expense_added',
+        actor: getAuditActor(user),
+        audience: 'all',
+        data: {
+          entity: 'expense',
+          category: added.category_name || categoryNameById(added.category_id),
+          category_en: categoryEnById(added.category_id),
+          amount: Number(added.amount) || 0,
+          date: added.expense_date
+        }
+      });
     }
     await refreshData();
     return added;
@@ -217,10 +232,50 @@ export const BudgetProvider = ({ children }) => {
     return updated;
   };
 
+  // Non-SuperAdmin users cannot delete directly: a delete request goes to the Super Admin instead.
+  const requestExpenseDelete = async (expense) => {
+    const actor = getAuditActor(user);
+    const snapshot = {
+      ...expenseSnapshot(expense),
+      category_en: expense.category_name_en || categoryEnById(expense.category_id),
+      photo_paths: getExpensePhotos(expense).map((ph) => ph.path).filter(Boolean)
+    };
+
+    const { request, duplicate } = await deleteRequestService.create({
+      entity: 'expense',
+      entityId: expense.id,
+      requester: actor,
+      snapshot
+    });
+    if (duplicate) return { duplicate: true };
+
+    await notificationService.create({
+      type: 'delete_request',
+      actor,
+      audience: 'super_admin',
+      requestId: request.id,
+      data: {
+        entity: 'expense',
+        category: snapshot.category,
+        category_en: snapshot.category_en,
+        amount: snapshot.amount,
+        date: snapshot.date
+      }
+    });
+    return { requested: true };
+  };
+
   // Delete expense
+  // Super Admin: deleted right away. Everyone else: a delete request is sent ({ requested: true }).
   const deleteExpense = async (id, photoPaths) => {
     if (!user) return;
     const before = expenses.find((e) => e.id === id);
+
+    if (!isSuperAdmin) {
+      if (!before) return { requested: false };
+      return requestExpenseDelete(before);
+    }
+
     await marathiDataService.deleteExpense(user.id, id, photoPaths);
     logAction('delete', 'expense', {
       entityId: id,
@@ -228,6 +283,69 @@ export const BudgetProvider = ({ children }) => {
       before: expenseSnapshot(before)
     });
     await refreshData();
+    return { deleted: true };
+  };
+
+  const resolutionData = (request) => ({
+    entity: request.entity,
+    category: request.snapshot?.category || '',
+    category_en: request.snapshot?.category_en || '',
+    amount: Number(request.snapshot?.amount) || 0,
+    date: request.snapshot?.date || ''
+  });
+
+  // Super Admin approves: the record is deleted now.
+  // Returns { ok: true } or { alreadyHandled: true }
+  const approveDeleteRequest = async (request) => {
+    if (!user || !isSuperAdmin) return { ok: false };
+    const resolver = getAuditActor(user);
+
+    const resolved = await deleteRequestService.resolve(request.id, 'approved', resolver);
+    if (!resolved) return { alreadyHandled: true };
+
+    const target = expenses.find((e) => e.id === request.entity_id);
+    if (target) {
+      const paths = getExpensePhotos(target).map((ph) => ph.path);
+      await marathiDataService.deleteExpense(user.id, request.entity_id, paths);
+      logAction('delete', 'expense', {
+        entityId: request.entity_id,
+        summary: translate('admin.log.expenseDeletedApproved', {
+          ...expenseSummaryParams(target),
+          requester: request.requester_name || request.requester_mobile || '-'
+        }),
+        before: expenseSnapshot(target)
+      });
+    }
+
+    await notificationService.create({
+      type: 'delete_approved',
+      actor: resolver,
+      audience: 'user',
+      targetMobile: request.requester_mobile,
+      requestId: request.id,
+      data: resolutionData(request)
+    });
+    await refreshData();
+    return { ok: true };
+  };
+
+  // Super Admin rejects: the record stays, the requester is told.
+  const rejectDeleteRequest = async (request) => {
+    if (!user || !isSuperAdmin) return { ok: false };
+    const resolver = getAuditActor(user);
+
+    const resolved = await deleteRequestService.resolve(request.id, 'rejected', resolver);
+    if (!resolved) return { alreadyHandled: true };
+
+    await notificationService.create({
+      type: 'delete_rejected',
+      actor: resolver,
+      audience: 'user',
+      targetMobile: request.requester_mobile,
+      requestId: request.id,
+      data: resolutionData(request)
+    });
+    return { ok: true };
   };
 
   // Quick Toggle expense payment status (Paid <-> Pending)
@@ -275,6 +393,8 @@ export const BudgetProvider = ({ children }) => {
     addExpense,
     updateExpense,
     deleteExpense,
+    approveDeleteRequest,
+    rejectDeleteRequest,
     toggleExpenseStatus
   };
 

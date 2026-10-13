@@ -15,6 +15,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import AppLogo from '../common/AppLogo';
 import LanguageSwitcher from '../common/LanguageSwitcher';
+import NotificationBell from './NotificationBell';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { LEGACY_OWNER_NAME_PREFIX } from '../../constants/appDefaults';
 
@@ -81,6 +82,9 @@ export default function Header({ onOpenAddExpense }) {
 
           {/* Right: Profile & Actions */}
           <div className="flex items-center gap-2.5">
+            {/* Notifications */}
+            <NotificationBell />
+
             {/* Language: मराठी | English */}
             <LanguageSwitcher />
 

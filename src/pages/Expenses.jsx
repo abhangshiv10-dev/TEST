@@ -22,6 +22,7 @@ import { toast, alertBox, confirmDelete, confirmAction } from '../utils/alerts';
 import { isPendingStatus } from '../utils/paymentStatus';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useBudget } from '../contexts/BudgetContext';
+import { useAuth } from '../contexts/AuthContext';
 import { formatINR } from '../utils/marathiCurrency';
 import { formatMarathiDate } from '../utils/marathiDate';
 import ExpenseCard from '../components/common/ExpenseCard';
@@ -36,6 +37,7 @@ import { matchesCategory } from '../utils/bilingualSearch';
 export default function Expenses() {
   const { expenses, categories, summary, deleteExpense, toggleExpenseStatus } = useBudget();
   const { t, catLabel, projectLabel } = useLanguage();
+  const { isSuperAdmin } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState('all'); // all, today, yesterday, this_month, custom
@@ -96,20 +98,32 @@ export default function Expenses() {
   };
 
   const handleDelete = async (expense) => {
-    const confirmed = await confirmDelete({
-      title: t('expenses.deleteTitle'),
-      html: t('expenses.deleteHtml', {
-        amount: formatINR(expense.amount),
-        category: catLabel(expense.category_name, expense.category_name_en)
-      })
-    });
+    const params = {
+      amount: formatINR(expense.amount),
+      category: catLabel(expense.category_name, expense.category_name_en)
+    };
+
+    // Super Admin deletes directly. Everyone else sends a delete request that needs approval.
+    const confirmed = isSuperAdmin
+      ? await confirmDelete({ title: t('expenses.deleteTitle'), html: t('expenses.deleteHtml', params) })
+      : await confirmAction({
+          title: t('expenses.requestTitle'),
+          html: t('expenses.requestHtml', params),
+          confirmText: t('expenses.requestSend')
+        });
 
     if (confirmed) {
       try {
-        await deleteExpense(expense.id, getExpensePhotos(expense).map((ph) => ph.path));
-        toast('success', t('expenses.deleteSuccess'), 2000);
+        const result = await deleteExpense(expense.id, getExpensePhotos(expense).map((ph) => ph.path));
+        if (result?.duplicate) {
+          alertBox('info', t('expenses.requestExistsTitle'), t('expenses.requestExists'));
+        } else if (result?.requested) {
+          toast('success', t('expenses.requestSent'), 2200);
+        } else {
+          toast('success', t('expenses.deleteSuccess'), 2000);
+        }
       } catch (err) {
-        alertBox('error', t('common.error'), t('expenses.deleteFailed'));
+        alertBox('error', t('common.error'), isSuperAdmin ? t('expenses.deleteFailed') : t('expenses.requestFailed'));
       }
     }
   };

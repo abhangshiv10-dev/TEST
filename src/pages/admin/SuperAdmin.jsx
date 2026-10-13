@@ -17,6 +17,8 @@ import { useAuth, getUserMobile } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { toast, alertBox } from '../../utils/alerts';
 import { auditService } from '../../services/auditService';
+import DeleteRequestsTab from '../../components/admin/DeleteRequestsTab';
+import { useNotifications } from '../../contexts/NotificationsContext';
 import { formatINR } from '../../utils/marathiCurrency';
 import { formatMarathiDate, formatMarathiDateTime, toInputDate } from '../../utils/marathiDate';
 
@@ -421,7 +423,8 @@ function TrackingLogTab() {
 
 export default function SuperAdmin() {
   const { t } = useLanguage();
-  const [tab, setTab] = useState('log'); // 'log' | 'profile'
+  const { pendingRequestCount } = useNotifications();
+  const [tab, setTab] = useState('log'); // 'log' | 'requests' | 'profile'
 
   return (
     <div className="space-y-5 pb-20 sm:pb-8 animate-in fade-in duration-200">
@@ -440,6 +443,7 @@ export default function SuperAdmin() {
       <div className="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200/60">
         {[
           { id: 'log', label: t('admin.tab.log'), icon: History },
+          { id: 'requests', label: t('admin.tab.requests'), icon: Trash2, count: pendingRequestCount },
           { id: 'profile', label: t('admin.tab.profile'), icon: User }
         ].map((t) => {
           const Icon = t.icon;
@@ -454,12 +458,17 @@ export default function SuperAdmin() {
             >
               <Icon className="w-3.5 h-3.5" />
               <span>{t.label}</span>
+              {t.count > 0 && (
+                <span className="min-w-[16px] h-4 px-1 rounded-full bg-rose-600 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                  {t.count}
+                </span>
+              )}
             </button>
           );
         })}
       </div>
 
-      {tab === 'log' ? <TrackingLogTab /> : <ProfileTab />}
+      {tab === 'log' ? <TrackingLogTab /> : tab === 'requests' ? <DeleteRequestsTab /> : <ProfileTab />}
     </div>
   );
 }
