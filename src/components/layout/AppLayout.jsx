@@ -4,9 +4,12 @@ import Header from './Header';
 import ExpenseModal from '../modals/ExpenseModal';
 import PhotoViewerModal from '../modals/PhotoViewerModal';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { useBudget } from '../../contexts/BudgetContext';
+import Preloader from '../common/Preloader';
 
 export default function AppLayout() {
   const { t } = useLanguage();
+  const { loading: dataLoading } = useBudget(); // true only while the data loads for the first time
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [viewingPhotoUrl, setViewingPhotoUrl] = useState(null);
@@ -34,7 +37,13 @@ export default function AppLayout() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <Outlet context={{ onOpenAddExpense: () => setExpenseModalOpen(true) }} />
+        {dataLoading ? (
+          <Preloader fullScreen />
+        ) : (
+          <div className="pl-content">
+            <Outlet context={{ onOpenAddExpense: () => setExpenseModalOpen(true) }} />
+          </div>
+        )}
       </main>
 
       {/* Minimal Premium Footer */}

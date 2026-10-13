@@ -131,7 +131,7 @@ export const BudgetProvider = ({ children }) => {
 
   // Update budget
   const updateBudget = async (newBudget, changeType = 'set', amountChanged = 0, note = '') => {
-    if (!user) return;
+    if (!user || !isSuperAdmin) return; // only the Super Admin can change the budget
     const previousBudget = Number(summary.totalBudget) || 0;
     await marathiDataService.updateBudget(user.id, newBudget, changeType, amountChanged, note);
     logAction(previousBudget === 0 ? 'add' : 'update', 'budget', {
@@ -143,6 +143,12 @@ export const BudgetProvider = ({ children }) => {
           : translate('admin.log.budgetChanged', { from: formatINR(previousBudget), to: formatINR(newBudget) }),
       before: { budget: previousBudget },
       after: { budget: Number(newBudget) || 0 }
+    });
+    notificationService.create({
+      type: 'budget_changed',
+      actor: getAuditActor(user),
+      audience: 'all',
+      data: { entity: 'budget', from: previousBudget, to: Number(newBudget) || 0 }
     });
     await refreshData();
   };

@@ -166,3 +166,29 @@ select:not([multiple]):not([size]) {
   padding-right: 2.25rem;
   text-overflow: ellipsis;
 }
+
+/* ---------- Preloader animations ---------- */
+@keyframes pl-enter { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+@keyframes pl-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pl-spin { to { transform: rotate(360deg); } }
+@keyframes pl-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+@keyframes pl-text { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+
+.pl-wrap { animation: pl-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.pl-track { border: 3px solid #e2e8f0; border-radius: 9999px; }
+.pl-ring {
+  border-radius: 9999px;
+  background: conic-gradient(from 0deg, rgba(245, 158, 11, 0) 0%, #f59e0b 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  animation: pl-spin 1.1s linear infinite;
+}
+.pl-logo { animation: pl-breathe 2.2s ease-in-out infinite; }
+.pl-text { animation: pl-text 1.8s ease-in-out infinite; }
+/* page content fades in after loading (opacity only, so fixed popups keep working) */
+.pl-content { animation: pl-fade 0.35s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-wrap, .pl-logo, .pl-text, .pl-content { animation: none; }
+  .pl-ring { animation-duration: 3s; }
+}

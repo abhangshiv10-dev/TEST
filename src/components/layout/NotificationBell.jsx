@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, Plus, Trash2, CheckCircle2, XCircle, Check, X, Loader2 } from 'lucide-react';
+import { Bell, Plus, Trash2, CheckCircle2, XCircle, Check, X, Loader2, Wallet } from 'lucide-react';
 import { useNotifications } from '../../contexts/NotificationsContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -9,7 +9,8 @@ const TYPE_META = {
   expense_added: { icon: Plus, cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   delete_request: { icon: Trash2, cls: 'bg-rose-50 text-rose-700 border-rose-200' },
   delete_approved: { icon: CheckCircle2, cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  delete_rejected: { icon: XCircle, cls: 'bg-amber-50 text-amber-700 border-amber-200' }
+  delete_rejected: { icon: XCircle, cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  budget_changed: { icon: Wallet, cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' }
 };
 
 const STATUS_CLS = {
@@ -70,8 +71,12 @@ export default function NotificationBell() {
     const params = {
       actor: n.actor_name || n.actor_mobile || t('notif.someone'),
       category: catLabel(n.data?.category, n.data?.category_en),
-      amount: formatINR(n.data?.amount || 0)
+      amount: formatINR(n.data?.amount || 0),
+      from: formatINR(n.data?.from || 0),
+      to: formatINR(n.data?.to || 0)
     };
+    // first time the budget is set there is no "from" value
+    if (n.type === 'budget_changed' && !n.data?.from) return t('notif.budget_set', params);
     return t(`notif.${n.type}`, params);
   };
 
@@ -107,7 +112,7 @@ export default function NotificationBell() {
             </button>
           </div>
 
-          <div className="max-h-[65vh] overflow-y-auto divide-y divide-slate-100">
+          <div className="max-h-[65vh] overflow-y-auto divide-y divide-slate-200">
             {notifications.length === 0 ? (
               <div className="py-10 text-center text-xs text-slate-500 space-y-1">
                 <Bell className="w-6 h-6 text-slate-300 mx-auto" />
@@ -123,7 +128,7 @@ export default function NotificationBell() {
                 const busy = request && busyId === request.id;
 
                 return (
-                  <div key={n.id} className={`px-4 py-3 flex gap-3 ${fresh ? 'bg-amber-50/60' : ''}`}>
+                  <div key={n.id} className={`px-4 py-3 flex gap-3 ${fresh ? 'bg-slate-200/80' : 'bg-slate-100'}`}>
                     <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${meta.cls}`}>
                       <Icon className="w-4 h-4" />
                     </div>

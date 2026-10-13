@@ -450,15 +450,18 @@ export default function Dashboard() {
             <span className="text-[11px] font-bold text-indigo-900 uppercase tracking-wider">
               {t('dashboard.totalBudget')}
             </span>
-            <button
-              type="button"
-              onClick={() => setBudgetModalOpen(true)}
-              className="px-2 py-0.5 text-[10px] font-semibold text-indigo-700 bg-white hover:bg-indigo-50 border border-indigo-200 rounded-[2px] shadow-2xs flex items-center gap-0.5 whitespace-nowrap shrink-0"
-              title={t('budget.change')}
-            >
-              <Edit3 className="w-2.5 h-2.5 shrink-0" />
-              <span>{t('common.edit')}</span>
-            </button>
+            {/* Budget can be changed by the Super Admin only */}
+            {isSuperAdmin && (
+              <button
+                type="button"
+                onClick={() => setBudgetModalOpen(true)}
+                className="px-2 py-0.5 text-[10px] font-semibold text-indigo-700 bg-white hover:bg-indigo-50 border border-indigo-200 rounded-[2px] shadow-2xs flex items-center gap-0.5 whitespace-nowrap shrink-0"
+                title={t('budget.change')}
+              >
+                <Edit3 className="w-2.5 h-2.5 shrink-0" />
+                <span>{t('common.edit')}</span>
+              </button>
+            )}
           </div>
           <div className="text-xl sm:text-2xl font-extrabold text-indigo-950 tracking-tight">
             {formatINR(totalBudget)}
